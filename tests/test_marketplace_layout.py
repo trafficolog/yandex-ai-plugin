@@ -56,6 +56,13 @@ class MarketplaceLayoutTests(unittest.TestCase):
             standard,
         )
 
+    def test_path_aware_ci_is_present(self):
+        workflow = ROOT / ".github/workflows/ci.yml"
+        self.assertTrue(workflow.is_file())
+        content = workflow.read_text(encoding="utf-8")
+        self.assertIn("scripts/validate_repo.py", content)
+        self.assertIn("plugins/yandex-direct", content)
+
 
 if __name__ == "__main__":
     unittest.main()
