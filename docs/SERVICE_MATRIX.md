@@ -6,7 +6,7 @@ Status reflects what this repository actually ships, not upstream availability.
 |---|---:|---|---|---|---|
 | Yandex Direct | 1 | **available** | 1.0.0 | campaigns, audit, reports, optimization, keywords, budget | bundled API helper; future MCP/app adapter |
 | Yandex Metrika | 1 | **available** | 1.0.0 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports | bundled API helpers; optional MCP/app backend |
-| Yandex Webmaster | 1 | planned | — | indexing, diagnostics, queries, sitemaps, recrawl, links | official API; YaAll MCP reference |
+| Yandex Webmaster | 1 | **available** | 1.0.0 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports | bundled API helpers; optional MCP/app backend |
 | Yandex Wordstat | 1 | planned | — | demand, frequency, dynamics, regions, semantics | official API/Search infrastructure; donor implementations |
 | Yandex Search | 1 | planned | — | SERP/search workflows | Yandex Cloud Search API / official MCP where applicable |
 | Yandex Tracker | 2 | planned | — | issues, queues, permissions, worklogs, boards | official API; YaAll MCP reference |

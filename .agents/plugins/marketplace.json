@@ -27,6 +27,18 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Analytics"
+    },
+    {
+      "name": "yandex-webmaster",
+      "source": {
+        "source": "local",
+        "path": "./plugins/yandex-webmaster"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "SEO"
     }
   ]
 }
