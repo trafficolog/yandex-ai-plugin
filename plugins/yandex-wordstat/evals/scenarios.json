@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt":"Собери семантику по теме зубная паста.","skill":"yandex-wordstat-semantics","write":false},
+    {"prompt":"Проведи исследование спроса для новой категории.","skill":"yandex-wordstat-research","write":false},
+    {"prompt":"Покажи частотность точной фразы и объясни операторы.","skill":"yandex-wordstat-frequency","write":false},
+    {"prompt":"Покажи динамику спроса за два года.","skill":"yandex-wordstat-dynamics","write":false},
+    {"prompt":"В каких регионах запрос аномально популярен?","skill":"yandex-wordstat-regions","write":false},
+    {"prompt":"Найди быстро растущие темы без low-volume шума.","skill":"yandex-wordstat-trends","write":false},
+    {"prompt":"Что означает оператор квадратных скобок в Wordstat?","skill":"yandex-wordstat-operators","write":false},
+    {"prompt":"Собери raw GetTop request и оцени стоимость.","skill":"yandex-wordstat-api","write":false},
+    {"prompt":"Какой skill использовать для общего вопроса про Wordstat?","skill":"yandex-wordstat","write":false}
+  ]
+}
