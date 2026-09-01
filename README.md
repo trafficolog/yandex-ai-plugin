@@ -1,123 +1,84 @@
-# Yandex Direct Suite — plugin из skills
+# Yandex AI Plugins
 
-Актуализированный на **1 сентября 2026 года** skill-only plugin для работы с Яндекс Директом: создание новой ЕПК, аудит, отчётность, оптимизация, семантика/минус-фразы, бюджет и низкоуровневые API v501 операции.
+A marketplace monorepo for independent AI plugins around Yandex services. The repository keeps one architecture, safety model, CI contract, and roadmap while allowing users to install only the service plugins they need.
 
-Проект сделан как новая модульная реализация на базе идей двух open-source проектов:
+This is **not** one giant Yandex skill.
 
-- `Silverov/yandex-direct-skill` — аудит, отчёты, бюджет, оптимизация;
-- `ai-hub-open/yandex-direct-manager` 0.12.1 — современный workflow создания кампании и подход с артефактами/гейтами.
+## Available plugins
 
-Актуальные API-факты дополнительно сверены с официальной документацией Яндекс Директа.
+| Plugin | Status | Version | Description |
+|---|---|---:|---|
+| [`yandex-direct`](plugins/yandex-direct/) | available | 1.0.0 | Create, audit, report on, and safely optimize Yandex Direct campaigns |
+| Yandex Metrika | planned | — | Reporting, conversions, ecommerce, attribution, logs, goals |
+| Yandex Webmaster | planned | — | Indexing, diagnostics, queries, sitemaps, recrawl, links |
+| Yandex Wordstat | planned | — | Search demand, frequency, dynamics, regions, semantics |
+| Yandex Search | planned | — | Yandex Search/SERP workflows |
 
-## Почему это plugin, а не один SKILL.md
+See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap across Tracker, 360, Maps, AppMetrica, YandexGPT, and SpeechKit.
 
-Исходные проекты загружают большой универсальный skill. Здесь задачи разделены, чтобы агент подтягивал только нужную методику:
-
-| Skill | Для чего |
-|---|---|
-| `yandex-direct` | router для общих запросов |
-| `yandex-direct-create` | новая кампания / ЕПК до preflight и draft |
-| `yandex-direct-audit` | аудит аккаунта и кампаний |
-| `yandex-direct-reporting` | Reports API, KPI, сравнение периодов |
-| `yandex-direct-optimize` | оптимизация существующих кампаний |
-| `yandex-direct-keywords` | ключи, запросы, минусы, автотаргетинг |
-| `yandex-direct-budget` | pace, forecast, распределение бюджета |
-| `yandex-direct-api` | raw API v501, payloads, debugging |
-
-Общие меняющиеся факты вынесены в `references/`, поэтому их можно обновлять без разрастания каждого skill.
-
-## Что обновлено относительно февральского yandex-direct-skill
-
-- новый default endpoint — `https://api.direct.yandex.com/json/v501/` для ЕПК и актуальных workflow;
-- ЕПК / Unified Performance Campaign рассматривается как default-модель для новых performance-кампаний;
-- Reports polling исправлен: при 201/202 повторяется **тот же запрос**, учитывается `retryIn`;
-- текущие поля criteria-report используют `Criterion`, `CriterionId`, `CriterionType`;
-- автотаргетинг (`---autotargeting`) рассматривается отдельно от обычных ключей;
-- поддерживается логика `NegativeKeywordSharedSets` v501;
-- из аудита убраны устаревающие универсальные требования: обязательное разделение Search/РСЯ, «2 объявления на группу», фиксированный CTR, жёсткий `3× CPA kill rule`;
-- write-операции отделены от рекомендаций: read → preview → explicit approval → write;
-- создание кампании не означает её активацию.
-
-## OpenAI Plugin / GitHub marketplace
-
-Плагин содержит:
-
-```text
-.codex-plugin/plugin.json
-.agents/plugins/marketplace.json
-skills/*/SKILL.md
-```
-
-OpenAI поддерживает импорт marketplace из GitHub по `.agents/plugins/marketplace.json`. После публикации этого каталога в отдельном GitHub-репозитории администратор workspace может импортировать URL репозитория в **Workspace settings → Plugins → Add → Import marketplace**.
-
-Это **skill-only plugin**: он не подключает Yandex Direct как ChatGPT app автоматически. В ChatGPT навыки можно использовать для анализа выгрузок, проектирования кампаний и подготовки изменений. Для прямых live API-вызовов используйте среду, которая может запускать bundled scripts (например Codex/local agent) или подключите отдельный Yandex Direct MCP/app.
-
-## Live API helper
-
-Переменные окружения:
-
-```bash
-export YANDEX_DIRECT_TOKEN='...'
-export YANDEX_DIRECT_CLIENT_LOGIN='...'   # optional for agency client
-```
-
-Read:
-
-```bash
-python scripts/yd_api.py campaigns get \
-  --params '{"SelectionCriteria":{},"FieldNames":["Id","Name","Status","State","Type"]}'
-```
-
-Write по умолчанию — только preview:
-
-```bash
-python scripts/yd_api.py campaigns update --params-file update.json
-```
-
-После проверки payload:
-
-```bash
-python scripts/yd_api.py campaigns update --params-file update.json --execute
-```
-
-## Reports helper
-
-```bash
-python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
-python scripts/yd_report.py search_query 2026-08-01 2026-08-31 --output queries.tsv
-```
-
-Helper использует v501, `returnMoneyInMicros: false`, сохраняет один `ReportName` на весь polling и ждёт `retryIn` для offline-report.
-
-## Тесты
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Тесты не обращаются к сети и не читают реальные токены.
-
-## Структура
+## Repository structure
 
 ```text
 .
 ├── .agents/plugins/marketplace.json
-├── .codex-plugin/plugin.json
-├── .claude-plugin/
-├── skills/
-│   ├── yandex-direct/
-│   ├── yandex-direct-api/
-│   ├── yandex-direct-audit/
-│   ├── yandex-direct-budget/
-│   ├── yandex-direct-create/
-│   ├── yandex-direct-keywords/
-│   ├── yandex-direct-optimize/
-│   └── yandex-direct-reporting/
-├── references/
+├── plugins/
+│   └── yandex-direct/
+├── workflows/
+├── packages/
+├── docs/
 ├── scripts/
-└── tests/
+├── tests/
+└── .github/workflows/
 ```
 
-## Лицензия и источники
+The **plugin** is the installation/versioning boundary. The **skill** is a discoverable unit of workflow or expertise inside a plugin.
 
-Новая реализация распространяется по MIT. Происхождение идей и upstream-проекты перечислены в `THIRD_PARTY_NOTICES.md` и `references/sources.md`.
+## Marketplace import
+
+The root marketplace metadata is in `.agents/plugins/marketplace.json`. Import the GitHub repository as a marketplace, then install the individual Yandex service plugin you need.
+
+The current Direct plugin is located at `plugins/yandex-direct/` and preserves its `1.0.0` version through the Phase 1 structural migration.
+
+## Common safety model
+
+Consequential actions follow:
+
+```text
+read → analyze → preview → explicit approval → write → verify
+```
+
+Draft creation is distinct from activation/publication. Plugins remain usable without live credentials by falling back from a connected MCP/app to bundled helpers and finally to exports/files where supported.
+
+## Standards
+
+- [`docs/PLUGIN_STANDARD.md`](docs/PLUGIN_STANDARD.md) — mandatory structure, safety, versioning, evals, and execution conventions.
+- [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) — service coverage and current status.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — implementation sequence.
+- [`docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md`](docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md) — approved architecture design.
+
+## Current reference implementation: Direct
+
+The Direct plugin contains eight focused skills, current v501 references, dependency-free API/report helpers, regression tests, and offline routing/safety eval fixtures.
+
+See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md).
+
+## Development
+
+Repository-level checks:
+
+```bash
+python -m unittest discover -s tests -v
+python scripts/validate_repo.py
+```
+
+Direct regression checks:
+
+```bash
+cd plugins/yandex-direct
+python -m unittest discover -s tests -v
+python -m py_compile scripts/yd_api.py scripts/yd_report.py
+```
+
+## Sources and licensing
+
+Repository code is MIT unless a plugin or vendored upstream notice states otherwise. Each plugin documents the upstream projects and public API documentation that informed it.

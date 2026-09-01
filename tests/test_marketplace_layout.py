@@ -39,6 +39,23 @@ class MarketplaceLayoutTests(unittest.TestCase):
         for path in ["references", "scripts", "tests", "evals"]:
             self.assertTrue((PLUGIN / path).is_dir(), path)
 
+    def test_repository_foundation_docs_exist(self):
+        for path in [
+            "docs/PLUGIN_STANDARD.md",
+            "docs/SERVICE_MATRIX.md",
+            "docs/ROADMAP.md",
+            "packages/README.md",
+            "workflows/README.md",
+        ]:
+            self.assertTrue((ROOT / path).is_file(), path)
+
+    def test_plugin_standard_contains_safety_contract(self):
+        standard = (ROOT / "docs/PLUGIN_STANDARD.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "read → analyze → preview → explicit approval → write → verify",
+            standard,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
