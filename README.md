@@ -13,6 +13,7 @@ This is **not** one giant Yandex skill.
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | available | 1.0.0 | Indexing, diagnostics, queries, sitemaps, recrawl, links, feeds and exports |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | available | 1.0.0 | Demand, semantics, frequency, dynamics, regions and trend research |
 | [`yandex-search`](plugins/yandex-search/) | available | 1.0.0 | Web SERP, batch, rankings, competitors and URL-overlap clustering |
+| [`yandex-seo`](plugins/yandex-seo/) | available | 1.0.0 | Cross-service SEO evidence, gaps, cannibalization, performance and prioritization |
 
 See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap across Tracker, 360, Maps, AppMetrica, YandexGPT, and SpeechKit.
 
@@ -26,7 +27,8 @@ See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap acro
 │   ├── yandex-metrika/
 │   ├── yandex-webmaster/
 │   ├── yandex-wordstat/
-│   └── yandex-search/
+│   ├── yandex-search/
+│   └── yandex-seo/
 ├── workflows/
 ├── packages/
 ├── docs/
@@ -41,7 +43,7 @@ The **plugin** is the installation/versioning boundary. The **skill** is a disco
 
 The root marketplace metadata is in `.agents/plugins/marketplace.json`. Import the GitHub repository as a marketplace, then install the individual Yandex service plugin you need.
 
-Direct, Metrika, Webmaster, Wordstat and Search are independently installable plugins under `plugins/`, each at version `1.0.0`.
+Direct, Metrika, Webmaster, Wordstat, Search and SEO are independently installable plugins under `plugins/`, each at version `1.0.0`.
 
 ## Common safety model
 
@@ -62,9 +64,9 @@ Draft creation is distinct from activation/publication. Plugins remain usable wi
 
 ## Production plugins
 
-Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers. Webmaster contains eleven SEO workflow skills plus v4/v4.1-aware helpers. Wordstat contains nine demand-research skills plus Cloud v2 helpers for semantics, dynamics, regions, trends, quota and cost planning. Search contains ten SERP workflow skills plus Search API v2 helpers for sync/deferred retrieval, snapshots, ranking, competitor presence and URL-overlap clustering.
+Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers. Webmaster contains eleven SEO workflow skills plus v4/v4.1-aware helpers. Wordstat contains nine demand-research skills plus Cloud v2 helpers for semantics, dynamics, regions, trends, quota and cost planning. Search contains ten SERP workflow skills plus Search API v2 helpers for sync/deferred retrieval, snapshots, ranking, competitor presence and URL-overlap clustering. SEO contains ten read-only cross-service workflow skills plus pure-data helpers for evidence alignment, gaps, cannibalization, performance findings and transparent prioritization.
 
-See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md), [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md), [`plugins/yandex-webmaster/README.md`](plugins/yandex-webmaster/README.md), [`plugins/yandex-wordstat/README.md`](plugins/yandex-wordstat/README.md), and [`plugins/yandex-search/README.md`](plugins/yandex-search/README.md).
+See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md), [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md), [`plugins/yandex-webmaster/README.md`](plugins/yandex-webmaster/README.md), [`plugins/yandex-wordstat/README.md`](plugins/yandex-wordstat/README.md), [`plugins/yandex-search/README.md`](plugins/yandex-search/README.md), and [`plugins/yandex-seo/README.md`](plugins/yandex-seo/README.md).
 
 ## Development
 
@@ -111,10 +113,20 @@ python -m unittest discover -s tests -v
 python -m py_compile scripts/_http.py scripts/ywstat_api.py scripts/ywstat_top.py scripts/ywstat_semantics.py scripts/ywstat_dynamics.py scripts/ywstat_regions.py scripts/ywstat_trends.py
 ```
 
+
 Search regression checks:
 
 ```bash
 cd plugins/yandex-search
 python -m unittest discover -s tests -v
 python -m py_compile scripts/_http.py scripts/ys_api.py scripts/ys_request.py scripts/ys_parse.py scripts/ys_async.py scripts/ys_batch.py scripts/ys_serp.py scripts/ys_overlap.py scripts/ys_compare.py
+```
+
+
+Yandex SEO regression checks:
+
+```bash
+cd plugins/yandex-seo
+python -m unittest discover -s tests -v
+python -m py_compile scripts/seo_context.py scripts/seo_bundle.py scripts/seo_join.py scripts/seo_quality.py scripts/seo_opportunities.py scripts/seo_cannibalization.py scripts/seo_prioritize.py
 ```

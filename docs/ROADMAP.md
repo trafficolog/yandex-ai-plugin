@@ -25,9 +25,13 @@ Implemented as plugin `1.0.0` with nine workflow skills, Cloud Wordstat v2 helpe
 
 Implemented as plugin `1.0.0` with ten workflow skills, Search API v2 sync/deferred helpers, XML SERP snapshots, cost-aware batch planning, ranking/competitor analytics and explicit-threshold URL-overlap clustering with bridge-risk diagnostics.
 
-## Phase 6 — Cross-service workflows
+## Phase 6A — Yandex SEO
 
-Add `yandex-marketing` and `yandex-seo` after Direct/Metrika/Webmaster/Wordstat/Search interfaces are stable.
+Implemented as plugin `1.0.0` with a versioned SEO Evidence Bundle, partial/full capability modes, provenance-preserving joins, quality/alignment propagation, content-gap/cannibalization/CTR/conversion/technical findings, transparent prioritization and preview-only delegated actions. The plugin contains no Yandex API clients and performs no live writes.
+
+## Phase 6B — Yandex Marketing
+
+Next cross-service plugin: Direct + Metrika + Wordstat, with Search context only where it materially improves competitive analysis.
 
 ## Phase 7 — Operations, AI, mobile
 
