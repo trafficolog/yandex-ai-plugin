@@ -17,14 +17,18 @@ Key correctness rules include current attribution models, sampling/data-lag disc
 
 Implemented as plugin `1.0.0` with eleven specialized skills, mixed v4/v4.1 endpoint routing, query/indexing helpers, quota-aware recrawl, priority Sitemap recrawl, feeds, async archive/PRO exports and destructive-write guards.
 
-## Phase 4 — Wordstat + Search
+## Phase 4 — Yandex Wordstat
 
-Ship as separate plugins. Demand statistics and web SERP/search are distinct product domains even where Yandex Search infrastructure overlaps.
+Implemented as plugin `1.0.0` with nine workflow skills, Cloud Wordstat v2 helpers, provenance-aware semantics, operator-safe dynamics, regional affinity, trend classification, and quota/cost planning.
 
-## Phase 5 — Cross-service workflows
+## Phase 5 — Yandex Search
+
+Next Tier 1 plugin. Keep SERP/search retrieval separate from Wordstat demand statistics, then use real SERP overlap for SEO clustering workflows.
+
+## Phase 6 — Cross-service workflows
 
 Add `yandex-marketing` and `yandex-seo` after Direct/Metrika/Webmaster/Wordstat/Search interfaces are stable.
 
-## Phase 6 — Operations, AI, mobile
+## Phase 7 — Operations, AI, mobile
 
 Tracker, Yandex 360, Maps, AppMetrica, YandexGPT, SpeechKit.

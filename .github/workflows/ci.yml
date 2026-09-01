@@ -30,6 +30,7 @@ jobs:
       direct: ${{ steps.detect.outputs.direct }}
       metrika: ${{ steps.detect.outputs.metrika }}
       webmaster: ${{ steps.detect.outputs.webmaster }}
+      wordstat: ${{ steps.detect.outputs.wordstat }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +45,7 @@ jobs:
             echo "direct=true" >> "$GITHUB_OUTPUT"
             echo "metrika=true" >> "$GITHUB_OUTPUT"
             echo "webmaster=true" >> "$GITHUB_OUTPUT"
+            echo "wordstat=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -78,6 +80,12 @@ jobs:
             echo "webmaster=true" >> "$GITHUB_OUTPUT"
           else
             echo "webmaster=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-wordstat/)|$shared"; then
+            echo "wordstat=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "wordstat=false" >> "$GITHUB_OUTPUT"
           fi
 
   direct:
@@ -133,3 +141,21 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile Webmaster helpers
         run: python -m py_compile scripts/_http.py scripts/yw_api.py scripts/yw_queries.py scripts/yw_indexing.py scripts/yw_recrawl.py scripts/yw_sitemaps.py scripts/yw_feeds.py scripts/yw_export.py
+
+  wordstat:
+    name: Yandex Wordstat plugin
+    needs: [validate, changes]
+    if: needs.changes.outputs.wordstat == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/yandex-wordstat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run Wordstat tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Wordstat helpers
+        run: python -m py_compile scripts/_http.py scripts/ywstat_api.py scripts/ywstat_top.py scripts/ywstat_semantics.py scripts/ywstat_dynamics.py scripts/ywstat_regions.py scripts/ywstat_trends.py
