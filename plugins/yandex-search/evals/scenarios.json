@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt":"Покажи топ выдачи Яндекса по запросу в Москве.","skill":"yandex-search-web","write":false},
+    {"prompt":"Спланируй сбор SERP по 500 запросам и сравни стоимость sync/async.","skill":"yandex-search-batch","write":false},
+    {"prompt":"Нормализуй XML выдачу в воспроизводимый SERP snapshot.","skill":"yandex-search-serp","write":false},
+    {"prompt":"Сравни присутствие конкурентов по 100 SERP.","skill":"yandex-search-competitors","write":false},
+    {"prompt":"Сравни позиции страниц между двумя совместимыми снимками выдачи.","skill":"yandex-search-rankings","write":false},
+    {"prompt":"Кластеризуй запросы по общим URL с min_shared_urls=3.","skill":"yandex-search-clustering","write":false},
+    {"prompt":"Составь запрос с site: и точной фразой.","skill":"yandex-search-operators","write":false},
+    {"prompt":"Проведи SERP research по конкурентам и интентам.","skill":"yandex-search-research","write":false},
+    {"prompt":"Собери raw Search API v2 request для FORMAT_XML.","skill":"yandex-search-api","write":false},
+    {"prompt":"Какой skill использовать для общего вопроса про Yandex Search?","skill":"yandex-search","write":false}
+  ]
+}
