@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt":"Проведи общий SEO-анализ, но Metrika недоступна.","skill":"yandex-seo","write":false},
+    {"prompt":"Собери cross-service SEO-аудит и раздели наблюдения, выводы и гипотезы.","skill":"yandex-seo-audit","write":false},
+    {"prompt":"Найди SEO-возможности, не смешивая Wordstat demand и Webmaster demand.","skill":"yandex-seo-opportunities","write":false},
+    {"prompt":"Обогати SERP-кластеры спросом и видимостью, сохрани bridge_risk.","skill":"yandex-seo-clusters","write":false},
+    {"prompt":"Определи подтвержденные content gaps и отдельно discovery candidates.","skill":"yandex-seo-content-gaps","write":false},
+    {"prompt":"Проверь кандидатов на каннибализацию по Search и Webmaster evidence.","skill":"yandex-seo-cannibalization","write":false},
+    {"prompt":"Найди CTR opportunities относительно собственного baseline сайта.","skill":"yandex-seo-ctr","write":false},
+    {"prompt":"Свяжи Webmaster visibility и Metrika conversions без причинных утверждений.","skill":"yandex-seo-conversions","write":false},
+    {"prompt":"Подготовь preview на переобход страницы из технического finding, но ничего не отправляй.","skill":"yandex-seo-technical","write":"preview-first"},
+    {"prompt":"Приоритизируй findings без скрытого SEO score и покажи delegated actions.","skill":"yandex-seo-prioritize","write":"preview-first"}
+  ]
+}
