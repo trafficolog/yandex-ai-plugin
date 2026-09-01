@@ -1,0 +1,7 @@
+{
+  "name": "yandex-webmaster",
+  "version": "1.0.0",
+  "description": "Yandex Webmaster workflow skills for SEO analysis and safe management.",
+  "author": {"name": "Trafficolog"},
+  "license": "MIT"
+}
