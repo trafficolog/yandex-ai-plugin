@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt": "Проведи аудит кампаний Яндекс Директа", "skill": "yandex-direct-audit", "write": false},
+    {"prompt": "Создай новую ЕПК до состояния черновика", "skill": "yandex-direct-create", "write": "approval-required"},
+    {"prompt": "Сделай отчет по CPA и расходу", "skill": "yandex-direct-reporting", "write": false},
+    {"prompt": "Оптимизируй работающие кампании", "skill": "yandex-direct-optimize", "write": "approval-required"},
+    {"prompt": "Разбери поисковые запросы и минус-фразы", "skill": "yandex-direct-keywords", "write": "approval-required"},
+    {"prompt": "Проверь темп расхода бюджета", "skill": "yandex-direct-budget", "write": false},
+    {"prompt": "Собери payload campaigns.update", "skill": "yandex-direct-api", "write": "preview-first"}
+  ]
+}
