@@ -63,6 +63,16 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn("scripts/validate_repo.py", content)
         self.assertIn("plugins/yandex-direct", content)
 
+    def test_marketplace_exposes_direct_and_metrika(self):
+        data = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
+        paths = {item["source"]["path"] for item in data["plugins"]}
+        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika"})
+
+    def test_ci_has_metrika_plugin_job(self):
+        content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("metrika:", content)
+        self.assertIn("plugins/yandex-metrika", content)
+
 
 if __name__ == "__main__":
     unittest.main()

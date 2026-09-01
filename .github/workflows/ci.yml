@@ -28,18 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       direct: ${{ steps.detect.outputs.direct }}
+      metrika: ${{ steps.detect.outputs.metrika }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - id: detect
-        name: Detect Direct/shared changes
+        name: Detect plugin/shared changes
         shell: bash
         run: |
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "direct=true" >> "$GITHUB_OUTPUT"
+            echo "metrika=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -56,11 +58,18 @@ jobs:
           fi
 
           printf '%s\n' "$changed_files"
+          shared='^(\.agents/|\.claude-plugin/|scripts/validate_repo\.py$|docs/PLUGIN_STANDARD\.md$|tests/)'
 
-          if printf '%s\n' "$changed_files" | grep -Eq '^(plugins/yandex-direct/|\.agents/|\.claude-plugin/|scripts/validate_repo\.py$|docs/PLUGIN_STANDARD\.md$|tests/)'; then
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-direct/)|$shared"; then
             echo "direct=true" >> "$GITHUB_OUTPUT"
           else
             echo "direct=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-metrika/)|$shared"; then
+            echo "metrika=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "metrika=false" >> "$GITHUB_OUTPUT"
           fi
 
   direct:
@@ -80,3 +89,21 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile Direct helpers
         run: python -m py_compile scripts/yd_api.py scripts/yd_report.py
+
+  metrika:
+    name: Yandex Metrika plugin
+    needs: [validate, changes]
+    if: needs.changes.outputs.metrika == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/yandex-metrika
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run Metrika tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Metrika helpers
+        run: python -m py_compile scripts/_http.py scripts/ym_api.py scripts/ym_report.py scripts/ym_logs.py scripts/ym_import.py

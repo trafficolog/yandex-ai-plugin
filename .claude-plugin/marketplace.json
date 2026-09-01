@@ -1,11 +1,19 @@
 {
   "name": "yandex-ai-plugin",
-  "owner": {"name": "Trafficolog"},
+  "owner": {
+    "name": "Trafficolog"
+  },
   "plugins": [
     {
       "name": "yandex-direct-suite",
       "source": "./plugins/yandex-direct",
       "description": "Yandex Direct workflow skills updated for 2026 API behavior.",
+      "version": "1.0.0"
+    },
+    {
+      "name": "yandex-metrika",
+      "source": "./plugins/yandex-metrika",
+      "description": "Yandex Metrika analytics, data-quality, Logs and import workflow skills.",
       "version": "1.0.0"
     }
   ]
