@@ -1,0 +1,12 @@
+{
+  "name": "yandex-direct-suite",
+  "owner": {"name": "Community"},
+  "plugins": [
+    {
+      "name": "yandex-direct-suite",
+      "source": "./",
+      "description": "Yandex Direct workflow skills updated for 2026 API behavior.",
+      "version": "1.0.0"
+    }
+  ]
+}

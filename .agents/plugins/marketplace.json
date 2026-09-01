@@ -1,0 +1,12 @@
+{
+  "name": "yandex-direct-suite-local",
+  "interface": {"displayName": "Yandex Direct Suite Marketplace"},
+  "plugins": [
+    {
+      "name": "yandex-direct-suite",
+      "source": {"source": "local", "path": "./"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+      "category": "Marketing"
+    }
+  ]
+}
