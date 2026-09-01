@@ -23,7 +23,7 @@ Implemented as plugin `1.0.0` with nine workflow skills, Cloud Wordstat v2 helpe
 
 ## Phase 5 — Yandex Search
 
-Next Tier 1 plugin. Keep SERP/search retrieval separate from Wordstat demand statistics, then use real SERP overlap for SEO clustering workflows.
+Implemented as plugin `1.0.0` with ten workflow skills, Search API v2 sync/deferred helpers, XML SERP snapshots, cost-aware batch planning, ranking/competitor analytics and explicit-threshold URL-overlap clustering with bridge-risk diagnostics.
 
 ## Phase 6 — Cross-service workflows
 

@@ -8,7 +8,7 @@ Status reflects what this repository actually ships, not upstream availability.
 | Yandex Metrika | 1 | **available** | 1.0.0 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 1.0.0 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports | bundled API helpers; optional MCP/app backend |
 | Yandex Wordstat | 1 | **available** | 1.0.0 | demand, frequency, semantics, dynamics, regions, trends | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
-| Yandex Search | 1 | planned | — | SERP/search workflows | Yandex Cloud Search API / official MCP where applicable |
+| Yandex Search | 1 | **available** | 1.0.0 | web SERP, batch, rankings, competitors, URL-overlap clustering | bundled Search API v2 helpers; optional MCP/app backend |
 | Yandex Tracker | 2 | planned | — | issues, queues, permissions, worklogs, boards | official API; YaAll MCP reference |
 | Yandex 360 | 2 | planned | — | mail, calendar, disk, organization | official APIs; YaAll MCP reference |
 | Yandex Maps | 2 | planned | — | geocoding, places, routes | official APIs; YaAll MCP reference |
