@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "prompt": "Проведи общий аудит счетчика Метрики",
+      "skill": "yandex-metrika-audit",
+      "write": false
+    },
+    {
+      "prompt": "Сравни источники трафика за август и июль",
+      "skill": "yandex-metrika-reporting",
+      "write": false
+    },
+    {
+      "prompt": "Почему упала конверсия в заявку?",
+      "skill": "yandex-metrika-conversions",
+      "write": false
+    },
+    {
+      "prompt": "Проанализируй выручку и средний чек ecommerce",
+      "skill": "yandex-metrika-ecommerce",
+      "write": false
+    },
+    {
+      "prompt": "Какую модель атрибуции использовать для оценки рекламы?",
+      "skill": "yandex-metrika-attribution",
+      "write": false
+    },
+    {
+      "prompt": "Создай цель на отправку формы",
+      "skill": "yandex-metrika-goals",
+      "write": "approval-required"
+    },
+    {
+      "prompt": "Выгрузи сырые визиты через Logs API",
+      "skill": "yandex-metrika-logs",
+      "write": "preview-first"
+    },
+    {
+      "prompt": "Загрузи офлайн-конверсии из CSV",
+      "skill": "yandex-metrika-imports",
+      "write": "approval-required"
+    },
+    {
+      "prompt": "Собери raw запрос к Management API Метрики",
+      "skill": "yandex-metrika-api",
+      "write": "preview-first"
+    },
+    {
+      "prompt": "Помоги понять, какой модуль Метрики нужен для этой задачи",
+      "skill": "yandex-metrika",
+      "write": false
+    }
+  ]
+}
