@@ -1,8 +1,10 @@
 import unittest
 
 from scripts.seo_context import (
+    classify_device_alignment,
     classify_geo_alignment,
     classify_period_alignment,
+    classify_search_alignment,
     normalize_query,
     normalize_url,
 )
@@ -65,6 +67,70 @@ class ContextTests(unittest.TestCase):
             "MISMATCHED",
         )
         self.assertEqual(classify_geo_alignment([{}]), "UNKNOWN")
+
+    def test_geo_alignment_understands_source_specific_fields(self):
+        self.assertEqual(
+            classify_geo_alignment([
+                {"search_region_id": 213},
+                {"search_region_id": 213},
+            ]),
+            "EXACT",
+        )
+        self.assertEqual(
+            classify_geo_alignment([
+                {"search_region_id": 213},
+                {"metrika_visitor_region": 213},
+            ]),
+            "MISMATCHED",
+        )
+        self.assertNotEqual(
+            classify_geo_alignment([
+                {"metrika_visitor_region": 213},
+                {"search_region_id": None},
+            ]),
+            "EXACT",
+        )
+
+    def test_search_context_alignment(self):
+        self.assertEqual(
+            classify_search_alignment([
+                {"search_type": "SEARCH_TYPE_RU"},
+                {"search_type": "SEARCH_TYPE_RU"},
+            ]),
+            "EXACT",
+        )
+        self.assertEqual(
+            classify_search_alignment([
+                {"search_type": "SEARCH_TYPE_RU"},
+                {"search_type": "SEARCH_TYPE_COM"},
+            ]),
+            "MISMATCHED",
+        )
+        self.assertEqual(classify_search_alignment([{}]), "UNKNOWN")
+
+    def test_device_context_alignment(self):
+        self.assertEqual(
+            classify_device_alignment([
+                {"device": "desktop"},
+                {"device": "desktop"},
+            ]),
+            "EXACT",
+        )
+        self.assertEqual(
+            classify_device_alignment([
+                {"devices": ["desktop", "mobile"]},
+                {"devices": ["mobile", "desktop"]},
+            ]),
+            "EXACT",
+        )
+        self.assertEqual(
+            classify_device_alignment([
+                {"device": "desktop"},
+                {"device": "mobile"},
+            ]),
+            "MISMATCHED",
+        )
+        self.assertEqual(classify_device_alignment([{}]), "UNKNOWN")
 
 
 if __name__ == "__main__":
