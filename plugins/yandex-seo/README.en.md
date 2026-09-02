@@ -6,6 +6,8 @@ Version `1.0.1`. Read-only cross-service orchestration over structured Wordstat,
 
 > `DOCS 1.0.0` changes documentation only.
 
+Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that SEO owns a credential surface.
+
 ## Orchestration
 
 ```mermaid

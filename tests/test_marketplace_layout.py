@@ -66,6 +66,10 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn("metrika:", content)
         self.assertIn("plugins/yandex-metrika", content)
 
+    def test_service_matrix_marks_metrika_available(self):
+        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
+        self.assertIn("| Yandex Metrika | 1 | **available** | 1.0.2 |", content)
+
     def test_ci_has_webmaster_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("webmaster:", content)
@@ -74,7 +78,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_webmaster_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.2 |", content)
+        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.3 |", content)
 
     def test_ci_has_wordstat_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -168,6 +172,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertTrue((ROOT/'docs/REVIEW_FIRST_RELEASE.md').is_file())
         changelog=(ROOT/'CHANGELOG.md').read_text(encoding='utf-8')
         review=(ROOT/'docs/REVIEW_FIRST_RELEASE.md').read_text(encoding='utf-8')
+        self.assertIn('## [OPUS 1.1.1] — 2026-09-02', changelog)
         self.assertIn('## [OPUS 1.1.0] — 2026-09-02', changelog)
         self.assertIn('## [1.0.0] — 2026-09-02',changelog)
         self.assertIn('First Release Independent Review Guide',review)

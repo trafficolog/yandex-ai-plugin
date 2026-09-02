@@ -1,0 +1,125 @@
+name: Publish OPUS 1.1.1 releases
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish verified OPUS 1.1.1 releases
+    if: >-
+      github.repository == 'trafficolog/yandex-ai-plugins-skills' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify exact release target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          grep -F '"version": "1.0.2"' plugins/yandex-metrika/.codex-plugin/plugin.json
+          grep -F '"version": "1.0.3"' plugins/yandex-webmaster/.codex-plugin/plugin.json
+          grep -F '## [OPUS 1.1.1] — 2026-09-02' CHANGELOG.md
+          python scripts/validate_repo.py
+          python -m unittest discover -s tests -v
+          python scripts/check_reference_freshness.py
+
+      - name: Publish repository and plugin releases
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          publish_release() {
+            local tag="$1"
+            local title="$2"
+            local notes_file="$3"
+
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              existing_sha="$(git rev-list -n 1 "$tag")"
+              if [[ "$existing_sha" != "$TARGET_SHA" ]]; then
+                echo "Existing release $tag points to $existing_sha, expected $TARGET_SHA" >&2
+                exit 1
+              fi
+              echo "Release $tag already exists at the expected commit."
+              return 0
+            fi
+
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              existing_sha="$(git rev-list -n 1 "$tag")"
+              if [[ "$existing_sha" != "$TARGET_SHA" ]]; then
+                echo "Existing tag $tag points to $existing_sha, expected $TARGET_SHA" >&2
+                exit 1
+              fi
+              gh release create "$tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --verify-tag \
+                --title "$title" \
+                --notes-file "$notes_file"
+            else
+              gh release create "$tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --target "$TARGET_SHA" \
+                --title "$title" \
+                --notes-file "$notes_file"
+            fi
+          }
+
+          cat > /tmp/opus.md <<'EOF'
+          OPUS 1.1.1 is the final Opus 5 review follow-up fix release.
+
+          Published plugin matrix:
+          - Yandex Direct 1.0.1 (unchanged)
+          - Yandex Metrika 1.0.2
+          - Yandex Webmaster 1.0.3
+          - Yandex Wordstat 1.0.2 (unchanged)
+          - Yandex Search 1.0.2 (unchanged)
+          - Yandex SEO 1.0.1 (unchanged)
+          - Yandex Marketing 1.1.0 (unchanged)
+
+          Highlights:
+          - diff-aware API-reference freshness enforcement for PR/push plus a weekly strict freshness issue workflow;
+          - explicit high-risk blocker traceability with the matrix documented as an index rather than semantic proof;
+          - stronger two-layer Metrika Direct-expense duplication protection for human source labels and CSV UTM evidence;
+          - verified Webmaster indexing archive `state` lifecycle contract from official Yandex documentation;
+          - explicit transport-free `ON_USE` deferred-auth semantics for SEO/Marketing marketplace entries;
+          - Marketing design taxonomy reconciled with the nine executable local finding types and explicit deferred set.
+          EOF
+
+          cat > /tmp/metrika.md <<'EOF'
+          Yandex Metrika 1.0.2 hardens the Direct-expense duplication guard:
+          - human source labels are tokenized conservatively, covering labels such as `Yandex Direct RU`, `direct_ads`, and `Яндекс Директ агентство`;
+          - substring-only labels such as `MyDirect` are not treated as proven Direct provenance;
+          - CSV UTM source/medium inspection remains an independent second risk layer;
+          - the guard is pinned in the repository contract traceability matrix and bilingual documentation.
+          EOF
+
+          cat > /tmp/webmaster.md <<'EOF'
+          Yandex Webmaster 1.0.3 pins the official indexing archive lifecycle contract:
+          - archive status is read from documented field `state`;
+          - documented states are `IN_PROGRESS`, `DONE`, and `FAILED`;
+          - `download_url` is required for a completed downloadable archive;
+          - regression coverage rejects unverified `status`-only payload assumptions;
+          - no runtime change was made where the existing implementation was already correct.
+          EOF
+
+          publish_release "opus-1.1.1" "OPUS 1.1.1 — Final Review Follow-up" /tmp/opus.md
+          publish_release "yandex-metrika-v1.0.2" "Yandex Metrika 1.0.2" /tmp/metrika.md
+          publish_release "yandex-webmaster-v1.0.3" "Yandex Webmaster 1.0.3" /tmp/webmaster.md

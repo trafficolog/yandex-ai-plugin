@@ -1,9 +1,12 @@
 # Yandex Marketing Cross-Service Plugin Design
 
-**Status:** approved in-chat design, pending written-spec review  
+**Status:** approved Phase 6B design; post-implementation contract amended by OPUS 1.1.1 review  
 **Date:** 2026-09-02  
-**Target version:** `yandex-marketing` 1.0.0  
+**Original target version:** `yandex-marketing` 1.0.0  
+**Current executable contract:** `yandex-marketing` 1.1.0  
 **Stacking base:** `phase-6-yandex-seo`
+
+> **OPUS 1.1.1 normative amendment:** the broad finding vocabulary in this design describes intended analytical concepts, but it is not automatically an executable taxonomy. For the current plugin, `IMPLEMENTED_FINDING_TYPES` is the authoritative local producer set and contains exactly nine classes; `DEFERRED_FINDING_TYPES` contains recognized but non-produced classes. `GOAL_ALIGNMENT_RISK` is additionally accepted as a narrowly approved external finding for goal-change delegation. Where older wording below says a workflow “may derive” a broad class, Section 20 governs whether that class is currently executable, deferred, external-only, or historical vocabulary.
 
 ## 1. Purpose
 
@@ -19,7 +22,7 @@ The plugin must answer questions such as:
 - whether apparent performance differences are caused by KPI, attribution, maturity, or measurement context mismatches;
 - how to prioritize paid-acquisition actions transparently from available evidence.
 
-`yandex-marketing` 1.0.0 is read/analyze/recommend/preview only. It never changes campaigns, budgets, bids, keywords, negatives, strategies, goals, or other live settings itself.
+`yandex-marketing` is read/analyze/recommend/preview only. It never changes campaigns, budgets, bids, keywords, negatives, strategies, goals, or other live settings itself.
 
 ## 2. Scope and boundaries
 
@@ -37,7 +40,7 @@ The plugin must answer questions such as:
 - transparent findings and prioritization;
 - delegated action previews pointing to the owning service plugin.
 
-### Out of scope for 1.0.0
+### Out of scope
 
 - direct calls to Yandex APIs;
 - credentials, OAuth, API keys, or HTTP clients;
@@ -100,7 +103,7 @@ Search is optional enrichment and must never be required for ordinary paid-perfo
 
 ## 5. Skills
 
-`yandex-marketing` 1.0.0 contains eleven discoverable skills:
+`yandex-marketing` contains eleven discoverable skills:
 
 1. `yandex-marketing` — router, source coverage, capability-mode detection;
 2. `yandex-marketing-audit` — end-to-end paid-acquisition audit;
@@ -359,12 +362,12 @@ The query workflow combines:
 - Wordstat demand/trend/association evidence;
 - optional Search intent/SERP context.
 
-Allowed finding classes include:
+The design vocabulary includes search-query expansion, exclusion review, coverage-gap, and intent-review concepts. The current executable contract is narrower:
 
-- `SEARCH_TERM_EXPANSION_CANDIDATE`;
-- `SEARCH_TERM_EXCLUSION_REVIEW`;
-- `QUERY_COVERAGE_GAP`;
-- `QUERY_INTENT_REVIEW`.
+- `SEARCH_TERM_EXPANSION_CANDIDATE` — implemented;
+- `SEARCH_TERM_EXCLUSION_REVIEW` — implemented;
+- `QUERY_COVERAGE_GAP` — deferred;
+- `QUERY_INTENT_REVIEW` — historical design vocabulary only and not an accepted executable finding type in 1.1.0.
 
 The plugin must not recommend a negative keyword solely because an arbitrary click count produced zero conversions. Business goal, conversion delay, spend context, and evidence sufficiency must be considered.
 
@@ -372,12 +375,12 @@ The plugin must not recommend a negative keyword solely because an arbitrary cli
 
 Landing workflows join Direct query/ad/criterion evidence with Metrika landing and outcome evidence.
 
-Possible classifications include:
+The broad design vocabulary includes:
 
-- `LANDING_MISMATCH_HYPOTHESIS`;
-- `QUERY_MISMATCH_HYPOTHESIS`;
-- `TRAFFIC_QUALITY_HYPOTHESIS`;
-- `MEASUREMENT_RISK`.
+- `LANDING_MISMATCH_HYPOTHESIS` — implemented;
+- `QUERY_MISMATCH_HYPOTHESIS` — deferred;
+- `TRAFFIC_QUALITY_HYPOTHESIS` — deferred;
+- `MEASUREMENT_RISK` — implemented.
 
 The cross-service plugin must not claim causal certainty from observational data alone.
 
@@ -399,11 +402,11 @@ A discrepancy is not automatically a tracking defect.
 
 ## 19. Budget analysis
 
-`yandex-marketing-budget` may derive candidates such as:
+The budget design vocabulary contains:
 
-- `BUDGET_CONSTRAINT_CANDIDATE`;
-- `BUDGET_REALLOCATION_CANDIDATE`;
-- `SPEND_EFFICIENCY_REVIEW`.
+- `BUDGET_CONSTRAINT_CANDIDATE` — implemented;
+- `BUDGET_REALLOCATION_CANDIDATE` — implemented;
+- `SPEND_EFFICIENCY_REVIEW` — deferred.
 
 A budget finding must state:
 
@@ -418,42 +421,45 @@ No universal budget reallocation rule or “winner/loser” cutoff is allowed.
 
 ## 20. Opportunity taxonomy
 
-Phase 6B uses explicit finding classes rather than a magic score.
+Phase 6B uses explicit finding classes rather than a magic score. The current executable contract is intentionally smaller than the original broad design vocabulary.
 
-Core classes:
+### Implemented local producer set
 
-### Measurement/context
+`IMPLEMENTED_FINDING_TYPES` contains exactly these nine classes:
 
 - `MEASUREMENT_RISK`
-- `GOAL_ALIGNMENT_RISK`
-- `ATTRIBUTION_MISMATCH`
 - `KPI_CONTEXT_MISMATCH`
-- `MATURITY_RISK`
-
-### Demand/query
-
-- `DEMAND_EXPANSION_CANDIDATE`
-- `QUERY_COVERAGE_GAP`
-- `SEARCH_TERM_EXPANSION_CANDIDATE`
-- `SEARCH_TERM_EXCLUSION_REVIEW`
-- `SEASONALITY_ALERT`
-
-### Budget/performance
-
+- `ATTRIBUTION_MISMATCH`
 - `BUDGET_CONSTRAINT_CANDIDATE`
 - `BUDGET_REALLOCATION_CANDIDATE`
-- `SPEND_EFFICIENCY_REVIEW`
-
-### Landing/traffic
-
+- `DEMAND_EXPANSION_CANDIDATE`
+- `SEARCH_TERM_EXPANSION_CANDIDATE`
+- `SEARCH_TERM_EXCLUSION_REVIEW`
 - `LANDING_MISMATCH_HYPOTHESIS`
+
+Only these classes are claimed as locally produced deterministic finding types by the current helpers.
+
+### Deferred recognized set
+
+`DEFERRED_FINDING_TYPES` contains recognized design vocabulary that is not currently produced locally:
+
+- `GOAL_ALIGNMENT_RISK`
+- `MATURITY_RISK`
+- `SPEND_EFFICIENCY_REVIEW`
+- `QUERY_COVERAGE_GAP`
+- `SEASONALITY_ALERT`
 - `QUERY_MISMATCH_HYPOTHESIS`
 - `TRAFFIC_QUALITY_HYPOTHESIS`
-
-### Optional Search context
-
 - `COMPETITIVE_CONTEXT`
 - `SERP_INTENT_CONTEXT`
+
+Deferred or otherwise unknown types sort after implemented findings under the default prioritizer and receive `UNKNOWN_OR_DEFERRED_TYPE`.
+
+### Approved external exception
+
+`GOAL_ALIGNMENT_RISK` is also present in `APPROVED_EXTERNAL_FINDING_TYPES`. It may be accepted from a trusted upstream/external evidence producer and delegated to `yandex-metrika-goals` only when `recommended_action == "goal_change"`; this does not make it a locally produced type.
+
+`QUERY_INTENT_REVIEW` is not part of the implemented, deferred, or approved-external contract and must not be emitted as a current finding type. `NEW_CAMPAIGN_CANDIDATE` is likewise not an active finding/delegation route.
 
 Every finding includes evidence, confidence, limitations, and a recommended next step.
 
@@ -529,7 +535,7 @@ The owning plugin must perform its own preview, explicit approval, mutation, and
 
 ## 25. Helpers
 
-`yandex-marketing` 1.0.0 uses eight Python standard-library pure-data helpers:
+`yandex-marketing` uses eight Python standard-library pure-data helpers:
 
 ```text
 scripts/
@@ -610,7 +616,7 @@ Direct + Metrika + Wordstat [+ Search]
 → paid acquisition / demand / performance
 ```
 
-Neither plugin imports or owns the other plugin's bundle contract in 1.0.0.
+Neither plugin imports or owns the other plugin's bundle contract.
 
 A future higher-level `yandex-growth` workflow may compose both, but it is out of scope for Phase 6B.
 
@@ -645,7 +651,7 @@ Offline tests must cover at minimum:
 - optional Search enrichment;
 - no network in tests.
 
-Agent evals must cover all eleven skills and include both read-only and preview-first delegated-action scenarios.
+Agent evals must cover all eleven skills and include both read-only and preview-first delegated-action scenarios. Repository validation currently checks eval fixture structure/expectation fields; it does not execute those prompts against a model, so fixture presence is not evidence that agent behavior has been semantically evaluated.
 
 ## 30. Repository integration
 
@@ -677,7 +683,7 @@ After preceding PRs merge, retarget stacked PRs appropriately; do not merge them
 
 ## 32. Definition of Done
 
-`yandex-marketing` 1.0.0 is complete when:
+The Phase 6B design is implemented when:
 
 - 11 production skills are discoverable;
 - 8 pure-data standard-library helpers exist;
@@ -689,10 +695,10 @@ After preceding PRs merge, retarget stacked PRs appropriately; do not merge them
 - demand planning and query intelligence use Wordstat without equating demand to available paid inventory;
 - Search is optional context only;
 - query/landing joins are conservative;
-- performance, landing, budget, measurement, attribution, and demand findings are evidence-classified;
+- the executable finding taxonomy matches Section 20 and current helper constants;
 - no universal performance thresholds or hidden Marketing Score exist;
 - delegated writes remain previews owned by Direct/Metrika skills;
 - no Yandex credentials, endpoints, or HTTP clients exist in the plugin;
-- offline tests/evals pass;
+- offline tests/evals fixtures and repository structural validators pass;
 - root validator and path-aware CI are updated;
-- existing plugin functional trees remain unchanged.
+- existing plugin functional trees remain unchanged except separately approved compatibility/fix changes.
