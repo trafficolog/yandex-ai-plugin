@@ -8,7 +8,7 @@
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** функциональный контур Phase 1–6B выпущен. Fix-release `OPUS 1.1.1` обновляет Metrika до `1.0.2` и Webmaster до `1.0.3`; Direct и SEO остаются `1.0.1`, Wordstat и Search — `1.0.2`, Marketing — `1.1.0`.
+> **Статус:** функциональный контур Phase 1–6B выпущен. Fix-release `OPUS 1.1.1` обновляет Metrika до `1.0.2` и Webmaster до `1.0.3`; Direct и SEO остаются `1.0.1`, Wordstat и Search — `1.0.2`, Marketing — `1.1.0`. Phase 7 Topical Architecture реализуется в отдельном release cycle.
 
 ## Быстрый обзор
 
@@ -17,9 +17,9 @@
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | спрос, семантика, динамика, регионы | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence и orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition и reconciliation | delegated preview only |
 
 Подробности: [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) · [English](docs/SERVICE_MATRIX.en.md).
@@ -67,6 +67,30 @@ flowchart LR
 ```
 
 Смысл схемы: SEO-композиция анализирует evidence, но transport и live mutations остаются у сервисных плагинов. Подробнее: [`plugins/yandex-seo/README.md`](plugins/yandex-seo/README.md).
+
+### Phase 7: Semantic Cocoons / Topical Architecture / Internal Linking
+
+Phase 7 не превращает Wordstat в «комбайн SEO-структуры». Ownership разделён по доказуемым данным:
+
+```mermaid
+flowchart LR
+  W[Wordstat Topic Map<br/>candidate demand/topics] --> S[Search SERP Clustering<br/>real overlap / Jaccard]
+  S --> A[SEO Topical Architecture]
+  WM[Webmaster<br/>existing URLs / visibility] --> A
+  M[Metrika<br/>landings / conversions] --> A
+  A --> T[structural_tree]
+  A --> G[semantic_graph]
+  T --> L[Internal Linking]
+  G --> L
+  L --> P[preview-only plan / audit]
+```
+
+- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, только candidate topics/relations; Wordstat не доказывает финальные page boundaries.
+- `yandex-search-clustering` остаётся владельцем реального SERP overlap; альтернативный fuzzy-text clusterer не вводится.
+- `yandex-seo-topical-architecture` → `seo-topical-architecture/v1`, `GREENFIELD|EXISTING_SITE`, page decisions + отдельные `structural_tree` и `semantic_graph`.
+- `yandex-seo-internal-linking` → preview-only link plan/audit без CMS writes.
+- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` не смешиваются; semantic-cocoon/TGA/QBST methodology не объявляется подтверждённым ranking mechanism.
+- Без Search evidence обязательно `SERP_VALIDATION_MISSING`; границы страниц остаются гипотезами.
 
 ## Оркестрация Marketing
 
@@ -163,4 +187,4 @@ plugins/yandex-<service>/
 
 ## Лицензия и источники
 
-Код и собственная документация проекта распространяются по MIT. Official Yandex documentation является источником истины для API behavior; donor repositories используются как источники идей и workflow patterns и атрибутируются в `THIRD_PARTY_NOTICES.md`.
+Код и собственная документация проекта распространяются по MIT. Official Yandex documentation является источником истины для API behavior; donor repositories и внешние SEO-материалы используются как источники идей/methodology/workflow patterns, а не как замена authoritative API/ranking evidence.
