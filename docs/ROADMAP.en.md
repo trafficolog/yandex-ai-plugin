@@ -2,7 +2,7 @@
 
 [Русский](ROADMAP.md) · [**English**](ROADMAP.en.md)
 
-The first-release scope is frozen after Phase 6B. The phases below are shipped architectural milestones; backlog items are not delivery-date or next-release promises.
+The first-release scope is frozen after Phase 6B. The phases below are shipped architectural milestones and post-first-release releases; backlog items are not delivery-date or next-release promises.
 
 ## First release — completed
 
@@ -32,6 +32,19 @@ Review-driven maintenance strengthened safety/API semantics; OPUS added Wordstat
 
 ### DOCS 1.0.0
 RU-primary / EN-mirror documentation layer, hero assets and orchestration diagrams. Plugin SemVer is unchanged.
+
+## Post-first-release — shipped
+
+### Phase 7 — Topical Architecture
+
+Shipped as repository release `phase-7-topical-architecture-1.0.0`: Wordstat `1.1.0`, SEO `1.1.0`, with Search remaining `1.0.2` and no Search runtime change.
+
+- `yandex-wordstat-topic-map` produces candidate-only `wordstat-topic-map/v1` with provenance, separate demand observations, and limitation propagation.
+- `yandex-search-clustering` retains ownership of real SERP-overlap/Jaccard clustering; no competing fuzzy-text clusterer is introduced.
+- `yandex-seo-topical-architecture` produces `seo-topical-architecture/v1` with `GREENFIELD|EXISTING_SITE`, page decisions, `structural_tree`, and `semantic_graph`.
+- `yandex-seo-internal-linking` produces preview-only link plans and deterministic audits with no CMS writes.
+- `OBSERVED`, `DERIVED`, `HYPOTHESIS`, and `METHODOLOGY` remain separate; semantic-cocoon/TGA/QBST methodology is not represented as a verified ranking mechanism.
+- When Search evidence is unavailable, `SERP_VALIDATION_MISSING` is mandatory and page boundaries remain hypotheses.
 
 ---
 
