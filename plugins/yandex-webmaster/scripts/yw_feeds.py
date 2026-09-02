@@ -46,7 +46,12 @@ def batch_add_request(user_id: int | str, host_id: str, *, host_url: str, feeds:
     validate_host_https(host_url)
     if not feeds or len(feeds) > 50:
         raise ValueError("feeds must contain between 1 and 50 items")
-    return {"method": "POST", "version": "v4", "path": _host_path(user_id, host_id, "feeds/batch/add"), "body": feeds}
+    return {
+        "method": "POST",
+        "version": "v4",
+        "path": _host_path(user_id, host_id, "feeds/batch/add"),
+        "body": {"feeds": list(feeds)},
+    }
 
 
 def delete_request(user_id: int | str, host_id: str, *, host_url: str, urls: list[str]) -> dict[str, Any]:
