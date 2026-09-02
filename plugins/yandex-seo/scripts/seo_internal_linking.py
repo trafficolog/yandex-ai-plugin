@@ -11,6 +11,10 @@ from .seo_topical_architecture import (
 )
 
 
+NON_EMPIRICAL_REASON_CODES = {"METHODOLOGY_HEURISTIC", "SEMANTIC_HYPOTHESIS"}
+EMPIRICAL_CLAIM_CLASSES = {"OBSERVED", "DERIVED"}
+
+
 def _require_architecture(architecture: dict[str, Any]) -> tuple[list[dict[str, Any]], set[str]]:
     if not isinstance(architecture, dict) or architecture.get("schema") != ARCHITECTURE_SCHEMA:
         raise ValueError(f"architecture must use schema {ARCHITECTURE_SCHEMA}")
@@ -54,6 +58,11 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
     claim_class = raw.get("claim_class")
     if claim_class not in CLAIM_CLASSES:
         raise ValueError(f"claim_class must be one of {sorted(CLAIM_CLASSES)}")
+    if (
+        set(normalized_reason_codes).issubset(NON_EMPIRICAL_REASON_CODES)
+        and claim_class in EMPIRICAL_CLAIM_CLASSES
+    ):
+        raise ValueError("methodology/hypothesis-only link reasons cannot use an empirical claim_class")
     if raw.get("exact_match_required") is True:
         raise ValueError("forced exact-match anchor requirements are not supported")
 
