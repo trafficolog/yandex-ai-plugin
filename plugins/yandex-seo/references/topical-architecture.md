@@ -54,7 +54,9 @@ When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. 
 
 Page decisions are normalized as `status: PREVIEW`. Caller-supplied execution/write metadata is not propagated into the architecture artifact, so destructive or migration-oriented recommendations cannot be represented as already executed by this transport-free plugin.
 
-When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. `MERGE` and `REDIRECT` targets must differ from the source `page_id`, so self-merge and self-redirect previews are rejected. When a decision supplies `target_url`, that value must be a non-empty string. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
+When `reason_codes` are supplied on a page decision, every code is validated against the same finite v1 vocabulary used by semantic edges and link-plan records. A decision justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC` cannot use empirical `OBSERVED` or `DERIVED` claim classes. Omitting `reason_codes` on a page decision remains allowed where the decision contract relies on other explicit evidence fields; supplied codes are never accepted as arbitrary labels.
+
+When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. `MERGE` and `REDIRECT` targets must differ from the source `page_id`, so self-merge and self-redirect previews are rejected. When a decision supplies `target_url`, that value must be a non-empty string; for `MERGE` or `REDIRECT`, it must also differ from the source page's known `url` or `proposed_url`. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
 
 ## Mutable facts / SSoT
 
