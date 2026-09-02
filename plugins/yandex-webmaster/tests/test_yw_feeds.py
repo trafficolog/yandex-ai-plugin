@@ -19,6 +19,17 @@ class TestFeeds(unittest.TestCase):
         self.assertTrue(status["path"].endswith("/feeds/add/info"))
         self.assertEqual(status["params"]["requestId"], "req-1")
 
+    def test_batch_add_wraps_feeds_key_and_limits_batch_size(self):
+        feed = {"url": "https://example.com/feed.yml", "type": "GOODS"}
+        req = yw_feeds.batch_add_request(1, "h", host_url="https://example.com", feeds=[feed])
+        self.assertEqual(req["body"], {"feeds": [feed]})
+        req50 = yw_feeds.batch_add_request(1, "h", host_url="https://example.com", feeds=[feed] * 50)
+        self.assertEqual(len(req50["body"]["feeds"]), 50)
+        with self.assertRaises(ValueError):
+            yw_feeds.batch_add_request(1, "h", host_url="https://example.com", feeds=[])
+        with self.assertRaises(ValueError):
+            yw_feeds.batch_add_request(1, "h", host_url="https://example.com", feeds=[feed] * 51)
+
     def test_delete_is_batch_remove_and_destructive(self):
         req = yw_feeds.delete_request(1, "h", host_url="https://example.com", urls=["https://example.com/feed.yml"])
         self.assertEqual(req["method"], "DELETE")
