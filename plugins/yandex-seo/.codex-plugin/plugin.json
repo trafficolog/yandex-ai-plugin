@@ -1,0 +1,17 @@
+{
+  "name": "yandex-seo",
+  "description": "Cross-service Yandex SEO evidence analysis over Wordstat, Search, Webmaster and Metrika outputs.",
+  "version": "1.0.0",
+  "author": {"name": "Trafficolog"},
+  "license": "MIT",
+  "keywords": ["yandex", "seo", "wordstat", "search", "webmaster", "metrika"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Yandex SEO",
+    "shortDescription": "Cross-service SEO evidence and prioritization.",
+    "longDescription": "Read-only orchestration that combines demand, SERP, Webmaster visibility and Metrika performance evidence into reproducible SEO findings and delegated action previews.",
+    "developerName": "Trafficolog",
+    "category": "SEO",
+    "capabilities": ["SEO", "Research", "Analysis", "Orchestration"]
+  }
+}
