@@ -41,6 +41,64 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
         self.assertIn("SERP_VALIDATION_MISSING", result["limitations"])
         self.assertEqual(result["page_decisions"][0]["claim_class"], "HYPOTHESIS")
 
+    def test_missing_search_rejects_strong_boundary_change_claim(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="GREENFIELD",
+                coverage={**COVERAGE_WITH_SEARCH, "search": "MISSING"},
+                clusters=[],
+                page_decisions=[{
+                    "page_id": "p1",
+                    "decision": "CREATE",
+                    "cluster_ids": [],
+                    "evidence": ["WORDSTAT_ASSOCIATION"],
+                    "confidence": "HIGH",
+                    "claim_class": "DERIVED",
+                }],
+                structural_nodes=[{
+                    "page_id": "p1",
+                    "proposed_url": "/new/",
+                    "canonical_parent_id": None,
+                    "breadcrumbs": [],
+                    "cluster_ids": [],
+                    "evidence": ["WORDSTAT_ASSOCIATION"],
+                    "confidence": "HIGH",
+                }],
+                semantic_edges=[],
+            )
+
+    def test_missing_search_allows_observed_preserve_existing_page(self):
+        result = seo_topical_architecture.build_topical_architecture(
+            mode="EXISTING_SITE",
+            coverage={
+                **COVERAGE_WITH_SEARCH,
+                "search": "MISSING",
+                "webmaster": "COMPLETE",
+                "site_inventory": "COMPLETE",
+            },
+            clusters=[],
+            page_decisions=[{
+                "page_id": "p1",
+                "decision": "PRESERVE",
+                "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "HIGH",
+                "claim_class": "OBSERVED",
+            }],
+            structural_nodes=[{
+                "page_id": "p1",
+                "url": "/existing/",
+                "canonical_parent_id": None,
+                "breadcrumbs": [],
+                "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "HIGH",
+            }],
+            semantic_edges=[],
+        )
+        self.assertEqual(result["page_decisions"][0]["claim_class"], "OBSERVED")
+        self.assertIn("SERP_VALIDATION_MISSING", result["limitations"])
+
     def test_duplicate_proposed_urls_are_rejected(self):
         with self.assertRaises(ValueError):
             seo_topical_architecture.build_topical_architecture(
