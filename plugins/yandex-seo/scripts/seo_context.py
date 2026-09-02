@@ -21,6 +21,7 @@ SEARCH_CONTEXT_FIELDS = (
     "group_mode",
     "docs_in_group",
 )
+TRACKING_QUERY_KEYS = {"yclid", "_openstat"}
 
 
 def normalize_query(text: str) -> str:
@@ -28,7 +29,7 @@ def normalize_query(text: str) -> str:
     return " ".join(text.casefold().split())
 
 
-def normalize_url(url: str) -> str:
+def _url_parts(url: str):
     parts = urlsplit(url)
     scheme = parts.scheme.lower()
     host = (parts.hostname or "").lower()
@@ -38,8 +39,32 @@ def normalize_url(url: str) -> str:
     else:
         netloc = host
     path = parts.path or "/"
+    return parts, scheme, netloc, path
+
+
+def normalize_url(url: str) -> str:
+    parts, scheme, netloc, path = _url_parts(url)
     query = urlencode(sorted(parse_qsl(parts.query, keep_blank_values=True)), doseq=True)
     return urlunsplit((scheme, netloc, path, query, ""))
+
+
+def _is_tracking_query_key(key: str) -> bool:
+    normalized = key.casefold()
+    return normalized.startswith("utm_") or normalized in TRACKING_QUERY_KEYS
+
+
+def normalize_url_identity(url: str) -> tuple[str, dict[str, list[str]]]:
+    """Return a canonical page key while preserving stripped tracking parameters."""
+    parts, scheme, netloc, path = _url_parts(url)
+    functional: list[tuple[str, str]] = []
+    tracking: dict[str, list[str]] = {}
+    for key, value in parse_qsl(parts.query, keep_blank_values=True):
+        if _is_tracking_query_key(key):
+            tracking.setdefault(key, []).append(value)
+        else:
+            functional.append((key, value))
+    query = urlencode(sorted(functional), doseq=True)
+    return urlunsplit((scheme, netloc, path, query, "")), tracking
 
 
 def classify_period_alignment(items: list[dict]) -> str:
