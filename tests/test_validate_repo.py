@@ -30,6 +30,7 @@ class ValidateRepositoryTests(unittest.TestCase):
             'name': plugin_name,
             'version': '1.0.0',
             'source': {'source': 'local', 'path': f'./plugins/{plugin_dir}'},
+            'policy': {'installation': 'AVAILABLE', 'authentication': 'ON_INSTALL'},
         }
         (root / '.agents/plugins/marketplace.json').write_text(json.dumps({
             'name': 'test-marketplace',
@@ -176,8 +177,23 @@ class ValidateRepositoryTests(unittest.TestCase):
     def test_cross_service_transport_is_rejected(self):
         tmp, root, plugin = self.make_repo(plugin_dir='yandex-seo', plugin_name='yandex-seo')
         self.addCleanup(tmp.cleanup)
+        marketplace_path = root / '.agents/plugins/marketplace.json'
+        data = json.loads(marketplace_path.read_text())
+        data['plugins'][0]['policy']['authentication'] = 'ON_USE'
+        marketplace_path.write_text(json.dumps(data))
         (plugin / 'scripts/seo_join.py').write_text('import urllib.request\n')
         self.assertTrue(any('cross-service transport' in error for error in validate_repository(root)))
+
+    def test_cross_service_authentication_policy_must_be_on_use(self):
+        tmp, root, _ = self.make_repo(plugin_dir='yandex-seo', plugin_name='yandex-seo')
+        self.addCleanup(tmp.cleanup)
+        marketplace_path = root / '.agents/plugins/marketplace.json'
+        errors = validate_repository(root)
+        self.assertTrue(any('authentication policy must be ON_USE' in error for error in errors))
+        data = json.loads(marketplace_path.read_text())
+        data['plugins'][0]['policy']['authentication'] = 'ON_USE'
+        marketplace_path.write_text(json.dumps(data))
+        self.assertFalse(any('authentication policy' in error for error in validate_repository(root)))
 
     def test_evals_require_verifiable_expectations(self):
         tmp, root, plugin = self.make_repo()
