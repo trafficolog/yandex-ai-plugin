@@ -66,6 +66,20 @@ class TestSeoDecisionTargets(unittest.TestCase):
         })
         self.assertEqual(result["page_decisions"][0]["target_page_id"], "target")
 
+    def test_destructive_decision_cannot_target_its_source_page(self):
+        for decision in ("MERGE", "REDIRECT"):
+            with self.subTest(decision=decision):
+                with self.assertRaises(ValueError):
+                    build_with({
+                        "page_id": "legacy",
+                        "decision": decision,
+                        "target_page_id": "legacy",
+                        "cluster_ids": [],
+                        "evidence": ["WEBMASTER_EXISTING_URL"],
+                        "confidence": "MEDIUM",
+                        "claim_class": "DERIVED",
+                    })
+
     def test_target_url_must_be_nonempty_string_when_supplied(self):
         for invalid in ({"url": "/target/"}, "", "   "):
             with self.subTest(invalid=invalid):
