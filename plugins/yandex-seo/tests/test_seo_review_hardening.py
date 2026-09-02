@@ -1,6 +1,6 @@
 import unittest
 
-from scripts import seo_topical_architecture
+from scripts import seo_internal_linking, seo_topical_architecture
 
 
 COVERAGE = {
@@ -44,6 +44,30 @@ class TestSeoReviewHardening(unittest.TestCase):
         self.assertEqual(decision["status"], "PREVIEW")
         self.assertNotIn("write", decision)
         self.assertNotIn("execution_id", decision)
+
+    def test_audit_reports_observed_link_without_structural_or_semantic_justification(self):
+        architecture = {
+            "schema": "seo-topical-architecture/v1",
+            "structural_tree": {
+                "nodes": [
+                    {"page_id": "a", "canonical_parent_id": None},
+                    {"page_id": "b", "canonical_parent_id": None},
+                ],
+                "edges": [],
+            },
+            "semantic_graph": {
+                "nodes": [{"page_id": "a"}, {"page_id": "b"}],
+                "edges": [],
+            },
+        }
+        audit = seo_internal_linking.audit_link_inventory(
+            architecture=architecture,
+            existing_links=[{"from_page_id": "a", "to_page_id": "b"}],
+        )
+        findings = [item for item in audit["findings"] if item["type"] == "UNJUSTIFIED_LINK"]
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["from_page_id"], "a")
+        self.assertEqual(findings[0]["to_page_id"], "b")
 
 
 if __name__ == "__main__":
