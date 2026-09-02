@@ -69,6 +69,44 @@ class TestSeoReviewHardening(unittest.TestCase):
         self.assertEqual(findings[0]["from_page_id"], "a")
         self.assertEqual(findings[0]["to_page_id"], "b")
 
+    def test_proposed_parentless_page_requires_root_or_bridge_role(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="GREENFIELD",
+                coverage=COVERAGE,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=[{
+                    "page_id": "orphan",
+                    "proposed_url": "/orphan/",
+                    "canonical_parent_id": None,
+                    "breadcrumbs": [],
+                    "cluster_ids": [],
+                    "evidence": [],
+                    "confidence": "LOW",
+                }],
+                semantic_edges=[],
+            )
+
+        result = seo_topical_architecture.build_topical_architecture(
+            mode="GREENFIELD",
+            coverage=COVERAGE,
+            clusters=[],
+            page_decisions=[],
+            structural_nodes=[{
+                "page_id": "root",
+                "proposed_url": "/",
+                "page_role": "ROOT",
+                "canonical_parent_id": None,
+                "breadcrumbs": [],
+                "cluster_ids": [],
+                "evidence": ["USER_BUSINESS_CONSTRAINT"],
+                "confidence": "MEDIUM",
+            }],
+            semantic_edges=[],
+        )
+        self.assertEqual(result["structural_tree"]["nodes"][0]["page_role"], "ROOT")
+
 
 if __name__ == "__main__":
     unittest.main()
