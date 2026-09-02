@@ -88,7 +88,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_wordstat_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.2 |", content)
+        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.1.0 |", content)
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
@@ -125,13 +125,21 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_seo_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex SEO | X | **available** | 1.0.1 |',content)
+        self.assertIn('| Yandex SEO | X | **available** | 1.1.0 |',content)
+        self.assertIn('`yandex-seo`: **available 1.1.0**',content)
 
     def test_roadmap_marks_phase6a_and_phase6b(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
         self.assertIn('### Phase 6A — Yandex SEO',content)
         self.assertIn('Implemented as plugin `1.0.0`',content)
         self.assertIn('### Phase 6B — Yandex Marketing',content)
+
+    def test_roadmap_marks_phase7_shipped(self):
+        content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
+        self.assertIn('### Phase 7 — Topical Architecture', content)
+        self.assertIn('Wordstat `1.1.0`', content)
+        self.assertIn('SEO `1.1.0`', content)
+        self.assertIn('Search `1.0.2`', content)
 
     def test_marketplace_exposes_yandex_marketing(self):
         data=json.loads((ROOT/'.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
@@ -167,11 +175,12 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('marketing_prioritize.py',content)
         self.assertIn('yandex-marketing     1.1.0', content)
 
-    def test_first_release_review_and_changelog_exist(self):
+    def test_release_changelog_tracks_phase7_and_prior_releases(self):
         self.assertTrue((ROOT/'CHANGELOG.md').is_file())
         self.assertTrue((ROOT/'docs/REVIEW_FIRST_RELEASE.md').is_file())
         changelog=(ROOT/'CHANGELOG.md').read_text(encoding='utf-8')
         review=(ROOT/'docs/REVIEW_FIRST_RELEASE.md').read_text(encoding='utf-8')
+        self.assertIn('## [PHASE 7 1.0.0] — 2026-09-02', changelog)
         self.assertIn('## [OPUS 1.1.1] — 2026-09-02', changelog)
         self.assertIn('## [OPUS 1.1.0] — 2026-09-02', changelog)
         self.assertIn('## [1.0.0] — 2026-09-02',changelog)

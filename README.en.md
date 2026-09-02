@@ -2,13 +2,13 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-OPUS%201.1.1-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-PHASE%207%201.0.0-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** the Phase 1–6B functional scope is shipped. Fix release `OPUS 1.1.1` updates Metrika to `1.0.2` and Webmaster to `1.0.3`; Direct and SEO remain `1.0.1`, Wordstat and Search remain `1.0.2`, and Marketing remains `1.1.0`.
+> **Status:** Phases 1–7 are implemented. Release `PHASE 7 1.0.0` adds candidate Topic Map capability to Wordstat `1.1.0` and Topical Architecture + Internal Linking to SEO `1.1.0`; Search remains `1.0.2` and retains ownership of SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
 
 ## Quick overview
 
@@ -17,9 +17,9 @@ A marketplace monorepo of independent AI plugins for working with Yandex service
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | campaigns, reports, audit, keywords, budgets | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | analytics, goals, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | demand, semantics, dynamics, regions | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.0 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence and orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.1.0 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition and reconciliation | delegated preview only |
 
 Details: [`docs/SERVICE_MATRIX.en.md`](docs/SERVICE_MATRIX.en.md) · [Русский](docs/SERVICE_MATRIX.md).
@@ -67,6 +67,30 @@ flowchart LR
 ```
 
 See [`plugins/yandex-seo/README.en.md`](plugins/yandex-seo/README.en.md).
+
+### Phase 7: Semantic Cocoons / Topical Architecture / Internal Linking
+
+Phase 7 does not turn Wordstat into a monolithic SEO-architecture tool. Ownership follows the evidence boundary:
+
+```mermaid
+flowchart LR
+  W[Wordstat Topic Map<br/>candidate demand/topics] --> S[Search SERP Clustering<br/>real overlap / Jaccard]
+  S --> A[SEO Topical Architecture]
+  WM[Webmaster<br/>existing URLs / visibility] --> A
+  M[Metrika<br/>landings / conversions] --> A
+  A --> T[structural_tree]
+  A --> G[semantic_graph]
+  T --> L[Internal Linking]
+  G --> L
+  L --> P[preview-only plan / audit]
+```
+
+- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, candidate topics/relations only; Wordstat does not prove final page boundaries.
+- `yandex-search-clustering` remains the owner of real SERP overlap; no competing fuzzy-text clusterer is added.
+- `yandex-seo-topical-architecture` → `seo-topical-architecture/v1`, `GREENFIELD|EXISTING_SITE`, page decisions plus separate `structural_tree` and `semantic_graph`.
+- `yandex-seo-internal-linking` → preview-only link plan/audit with no CMS writes.
+- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` stay distinct; semantic-cocoon/TGA/QBST methodology is not represented as a verified ranking mechanism.
+- Without Search evidence, `SERP_VALIDATION_MISSING` is mandatory and page boundaries remain hypotheses.
 
 ## Marketing orchestration
 
@@ -118,13 +142,13 @@ python scripts/check_reference_freshness.py
 yandex-direct        1.0.1
 yandex-metrika       1.0.2
 yandex-webmaster     1.0.3
-yandex-wordstat      1.0.2
+yandex-wordstat      1.1.0
 yandex-search        1.0.2
-yandex-seo           1.0.1
+yandex-seo           1.1.0
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`) do not imply synchronized plugin bumps.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`) do not imply synchronized plugin bumps.
 
 ## Documentation
 
@@ -137,4 +161,4 @@ Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0
 
 ## License and sources
 
-Project code and original documentation are MIT licensed. Official Yandex documentation is canonical for API behavior; donor repositories are methodology/workflow references and are attributed in `THIRD_PARTY_NOTICES.md`.
+Project code and original documentation are MIT licensed. Official Yandex documentation is canonical for API behavior; donor repositories and external SEO material are methodology/workflow references, not substitutes for authoritative API/ranking evidence.

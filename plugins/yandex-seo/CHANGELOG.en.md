@@ -2,7 +2,15 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
-> `DOCS 1.0.0` added a bilingual README with an orchestration diagram; plugin SemVer is unchanged.
+## [1.1.0] — 2026-09-02
+
+- Added `yandex-seo-topical-architecture` and schema `seo-topical-architecture/v1` for `GREENFIELD` / `EXISTING_SITE` architecture workflows.
+- Separated `structural_tree` from `semantic_graph`: the canonical structural parent stays singular while semantic relations may be many-to-many.
+- Added page decisions `PRESERVE|CREATE|EXPAND|MERGE|SPLIT|REDIRECT|SECTION_ONLY|BRIDGE|NO_PAGE|MANUAL_REVIEW`.
+- Explicitly validates evidence classes `OBSERVED|DERIVED|HYPOTHESIS|METHODOLOGY` and confidence `LOW|MEDIUM|HIGH`; methodology is never promoted to a ranking fact.
+- Adds `SERP_VALIDATION_MISSING` when Search evidence is unavailable; Search remains the owner of SERP-overlap clustering.
+- Added `yandex-seo-internal-linking` for preview-only link plans and deterministic audit findings (`ORPHAN_PAGE`, `STRUCTURAL_PARENT_LINK_MISSING`, `MISSING_JUSTIFIED_LINK`, `UNKNOWN_LINK_ENDPOINT`).
+- SEO remains transport-free/read-only and performs no CMS writes.
 
 ## [1.0.1] — 2026-09-02
 
