@@ -10,6 +10,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 REPORTS_URL = "https://api.direct.yandex.com/json/v501/reports"
@@ -75,6 +76,41 @@ def build_report_body(
             raise ValueError("goals must contain between 1 and 10 IDs")
         params["Goals"] = goal_values
     return {"params": params}
+
+
+def build_report_metadata(preset: str, body: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a serializable provenance sidecar for downstream KPI reconciliation."""
+    if preset not in PRESETS:
+        raise ValueError(f"Unknown preset: {preset}")
+    params = body.get("params")
+    if not isinstance(params, Mapping):
+        raise ValueError("report body must contain params")
+    selection = params.get("SelectionCriteria")
+    if not isinstance(selection, Mapping):
+        raise ValueError("report body must contain SelectionCriteria")
+    date_from = selection.get("DateFrom")
+    date_to = selection.get("DateTo")
+    if not date_from or not date_to:
+        raise ValueError("report body must contain DateFrom and DateTo")
+
+    include_vat = params.get("IncludeVAT")
+    if include_vat not in {"YES", "NO"}:
+        raise ValueError("report body must contain a valid IncludeVAT value")
+
+    return {
+        "schema_version": 1,
+        "source": "yandex-direct",
+        "artifact_type": "reports-v501-tsv",
+        "preset": preset,
+        "report_name": params.get("ReportName"),
+        "report_type": params.get("ReportType"),
+        "period": {"from": str(date_from), "to": str(date_to)},
+        "goal_ids": list(params.get("Goals") or []),
+        "attribution_models": list(params.get("AttributionModels") or []),
+        "vat_basis": "included" if include_vat == "YES" else "excluded",
+        "currency": None,
+        "currency_source": "not_returned_by_reports_helper",
+    }
 
 
 def parse_retry_in(headers: Mapping[str, str], default: int = 5) -> int:
@@ -183,8 +219,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     text = fetch_report(args.token, body, client_login=args.client_login)
     if args.output:
-        with open(args.output, "w", encoding="utf-8", newline="") as fh:
-            fh.write(text)
+        output_path = Path(args.output)
+        output_path.write_text(text, encoding="utf-8", newline="")
+        metadata_path = Path(str(output_path) + ".metadata.json")
+        metadata_path.write_text(
+            json.dumps(build_report_metadata(args.preset, body), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     else:
         sys.stdout.write(text)
     return 0
