@@ -37,6 +37,19 @@ def _two_page_nodes():
     ]
 
 
+def _semantic_edge(source: str, target: str) -> dict:
+    return {
+        "from_page_id": source,
+        "to_page_id": target,
+        "relation": "SUPPORT",
+        "user_need": "supporting detail",
+        "reason_codes": ["SEMANTIC_HYPOTHESIS"],
+        "evidence": [],
+        "confidence": "LOW",
+        "claim_class": "HYPOTHESIS",
+    }
+
+
 class TestSeoFinalReviewHardening(unittest.TestCase):
     def test_page_decision_evidence_must_be_a_list(self):
         for malformed in ("WEBMASTER_EXISTING_URL", {"source": "webmaster"}):
@@ -164,6 +177,30 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
 
         self.assertEqual(plan[0]["reason_codes"], ["WORDSTAT_ASSOCIATION"])
         self.assertEqual(plan[0]["status"], "PREVIEW")
+
+    def test_semantic_self_edge_is_rejected_but_multi_page_cycle_is_allowed(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="EXISTING_SITE",
+                coverage=COVERAGE_WITH_SEARCH,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=_two_page_nodes(),
+                semantic_edges=[_semantic_edge("existing", "existing")],
+            )
+
+        architecture = seo_topical_architecture.build_topical_architecture(
+            mode="EXISTING_SITE",
+            coverage=COVERAGE_WITH_SEARCH,
+            clusters=[],
+            page_decisions=[],
+            structural_nodes=_two_page_nodes(),
+            semantic_edges=[
+                _semantic_edge("existing", "support"),
+                _semantic_edge("support", "existing"),
+            ],
+        )
+        self.assertEqual(len(architecture["semantic_graph"]["edges"]), 2)
 
 
 if __name__ == "__main__":
