@@ -15,6 +15,8 @@ Every proposed link records:
 
 `METHODOLOGY` edges remain methodology. An anchor concept is optional guidance, not a mandatory exact-match phrase.
 
+Reason-code provenance and claim class must remain compatible. If every reason code is only `METHODOLOGY_HEURISTIC` and/or `SEMANTIC_HYPOTHESIS`, the link cannot be labeled `OBSERVED` or `DERIVED`. A mixed reason set that also contains empirical repository evidence is not automatically downgraded; its claim class still has to be supportable by the supplied evidence.
+
 ## Audit findings
 
 The deterministic audit may emit:
