@@ -37,6 +37,20 @@ def _two_page_nodes():
     ]
 
 
+def _three_page_nodes():
+    return [
+        *_two_page_nodes(),
+        {
+            "page_id": "third",
+            "url": "/third/",
+            "canonical_parent_id": "existing",
+            "cluster_ids": [],
+            "evidence": [],
+            "confidence": "LOW",
+        },
+    ]
+
+
 def _semantic_edge(source: str, target: str) -> dict:
     return {
         "from_page_id": source,
@@ -47,6 +61,18 @@ def _semantic_edge(source: str, target: str) -> dict:
         "evidence": [],
         "confidence": "LOW",
         "claim_class": "HYPOTHESIS",
+    }
+
+
+def _page_decision(page_id: str, decision: str, **targets) -> dict:
+    return {
+        "page_id": page_id,
+        "decision": decision,
+        "cluster_ids": [],
+        "evidence": [],
+        "confidence": "LOW",
+        "claim_class": "HYPOTHESIS",
+        **targets,
     }
 
 
@@ -201,6 +227,36 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
             ],
         )
         self.assertEqual(len(architecture["semantic_graph"]["edges"]), 2)
+
+    def test_destructive_decision_graph_rejects_cycles_but_allows_chain(self):
+        nodes = _three_page_nodes()
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="EXISTING_SITE",
+                coverage=COVERAGE_WITH_SEARCH,
+                clusters=[],
+                page_decisions=[
+                    _page_decision("existing", "REDIRECT", target_page_id="support"),
+                    _page_decision("support", "MERGE", target_url="/third/"),
+                    _page_decision("third", "REDIRECT", target_page_id="existing"),
+                ],
+                structural_nodes=nodes,
+                semantic_edges=[],
+            )
+
+        architecture = seo_topical_architecture.build_topical_architecture(
+            mode="EXISTING_SITE",
+            coverage=COVERAGE_WITH_SEARCH,
+            clusters=[],
+            page_decisions=[
+                _page_decision("existing", "REDIRECT", target_page_id="support"),
+                _page_decision("support", "MERGE", target_url="/third/"),
+                _page_decision("third", "PRESERVE"),
+            ],
+            structural_nodes=nodes,
+            semantic_edges=[],
+        )
+        self.assertEqual(len(architecture["page_decisions"]), 3)
 
 
 if __name__ == "__main__":
