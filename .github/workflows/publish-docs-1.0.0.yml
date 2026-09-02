@@ -1,0 +1,51 @@
+name: Publish DOCS 1.0.0 release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'README.en.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG.en.md'
+      - 'docs/**'
+      - 'plugins/*/README.md'
+      - 'plugins/*/README.en.md'
+      - 'plugins/*/CHANGELOG.md'
+      - 'plugins/*/CHANGELOG.en.md'
+      - '.github/workflows/publish-docs-1.0.0.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish documentation release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish DOCS 1.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: docs-1.0.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "$RELEASE_TAG already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" \
+            --target "$GITHUB_SHA" \
+            --title "DOCS 1.0.0 — Bilingual Documentation" \
+            --notes-file - <<'EOF'
+          DOCS 1.0.0 introduces the bilingual documentation layer for Yandex AI Plugins.
+
+          - Russian is canonical in README.md / CHANGELOG.md and key repository docs.
+          - English mirrors use the .en.md suffix.
+          - All seven shipped plugins have RU/EN README and CHANGELOG pairs.
+          - Root README includes local RU/EN SVG hero banners.
+          - Yandex SEO and Yandex Marketing READMEs include explicit orchestration diagrams.
+          - Repository validation enforces language pairs, reciprocal links and changelog release-marker parity.
+          - Plugin SemVer is unchanged: Direct 1.0.1, Metrika 1.0.1, Webmaster 1.0.2, Wordstat 1.0.2, Search 1.0.2, SEO 1.0.1, Marketing 1.1.0.
+          EOF
