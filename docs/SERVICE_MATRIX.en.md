@@ -1,8 +1,8 @@
-# Матрица сервисов
+# Service Matrix
 
-[**Русский**](SERVICE_MATRIX.md) · [English](SERVICE_MATRIX.en.md)
+[Русский](SERVICE_MATRIX.md) · [**English**](SERVICE_MATRIX.en.md)
 
-Статус отражает то, что реально поставляется этим репозиторием, а не всю доступность продуктов Яндекса. Production plugins используют independent SemVer.
+Status reflects what this repository actually ships, not upstream product availability. Production plugins use independent SemVer.
 
 | Service plugin | Tier | Status | Version | Primary scope | Execution sources to evaluate |
 |---|---:|---|---|---|---|
@@ -23,11 +23,11 @@
 ## Cross-service workflows
 
 - `yandex-seo`: **available 1.0.1** — Wordstat + Search + Webmaster + Metrika; no own transport, delegated previews only.
-- `yandex-marketing`: **available 1.1.0** — Direct + Metrika + Wordstat, Search optional; `canonical` / `reconciliation_only` / `enrichment` roles explicit.
+- `yandex-marketing`: **available 1.1.0** — Direct + Metrika + Wordstat, Search optional; `canonical` / `reconciliation_only` / `enrichment` roles are explicit.
 - `yandex-ecommerce`, `yandex-mobile-growth`, `yandex-growth`: backlog ideas only.
 
 ## Repository controls
 
-High-risk contracts привязаны к реальным skills/helpers/tests в [`CONTRACT_MATRIX.json`](CONTRACT_MATRIX.json). API references проходят deterministic 90-day freshness gate без сетевых вызовов из CI.
+High-risk contracts map to concrete skills/helpers/tests in [`CONTRACT_MATRIX.json`](CONTRACT_MATRIX.json). API references pass a deterministic 90-day freshness gate without CI network calls.
 
-См. [`ROADMAP.md`](ROADMAP.md) · [English](ROADMAP.en.md).
+See [`ROADMAP.en.md`](ROADMAP.en.md) · [Русский](ROADMAP.md).

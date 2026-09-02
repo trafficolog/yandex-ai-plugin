@@ -1,8 +1,33 @@
 # Yandex Marketing
 
-Cross-service paid-acquisition analysis over structured outputs from Yandex Direct, Metrika, Wordstat and optional Search. Version `1.1.0` is read/analyze/recommend/preview only and contains no Yandex credentials or HTTP clients.
+[**Русский**](README.md) · [English](README.en.md)
 
-Direct evidence is required for full acquisition analysis; when it is absent the bundle/capability layer returns `routing_required` / `ROUTING_REQUIRED` rather than guessing a substitute source. Metrika and Wordstat are primary enrichments; Search is optional intent/competitive context.
+Версия `1.1.0`. Read/analyze/recommend/preview cross-service plugin для paid acquisition поверх Direct, Metrika, Wordstat и optional Search. Собственных Yandex credentials/HTTP clients нет.
+
+> `DOCS 1.0.0` меняет только documentation layer.
+
+## Оркестрация
+
+```mermaid
+flowchart LR
+  D[Direct<br/>campaign / spend / clicks] --> B[Marketing Evidence Bundle]
+  M[Metrika<br/>goals / attribution / quality] --> B
+  W[Wordstat<br/>external demand] --> B
+  S[Search<br/>optional SERP context] --> B
+  B --> R[Reconciliation Layer]
+  R --> C[canonical]
+  R --> X[reconciliation_only]
+  R --> E[enrichment]
+  C --> O[Marketing Orchestrator]
+  X --> O
+  E --> O
+  O --> F[Findings / opportunities]
+  O --> P[delegated previews]
+  P --> OWN[Direct / Metrika owning skills]
+  OWN --> A[preview → approval → write]
+```
+
+Direct evidence обязателен для full acquisition analysis. Metrika и Wordstat — primary enrichments; Search — optional intent/competitive context. Missing Direct → `routing_required` / `ROUTING_REQUIRED`, а не substitute facts.
 
 ## Capability matrix
 
@@ -14,22 +39,19 @@ Direct evidence is required for full acquisition analysis; when it is absent the
 | Landing/conversion hypotheses | yes | no | via source plugins | no | yes |
 | Budget/query/goal delegated actions | yes | approval in owning plugin | via source plugins | no | yes |
 
-## Evidence contract
+## Evidence contract 1.1.0
 
-Evidence uses stable roles:
+- `canonical` — source-of-truth record по repository policy;
+- `reconciliation_only` — overlapping comparison evidence, не складывается с canonical;
+- `enrichment` — context, не заменяющий canonical metric.
 
-- `canonical` — source-of-truth record for the metric under repository policy;
-- `reconciliation_only` — overlapping comparison evidence that must not be summed with canonical values;
-- `enrichment` — contextual evidence that does not replace the canonical metric.
-
-Roles may be supplied explicitly only when valid or derived deterministically from metric/source ownership. Generic `metric: demand` remains forbidden. Monetary evidence missing currency, VAT basis or period context carries `MONEY_CONTEXT_UNKNOWN` and is not treated as comparable economics.
-
-Capped Wordstat association coverage propagates `WORDSTAT_ASSOCIATIONS_CAPPED`.
+Generic `metric: demand` запрещён. Money evidence без currency/VAT/period получает `MONEY_CONTEXT_UNKNOWN` и остаётся incomparable. Wordstat capped associations → `WORDSTAT_ASSOCIATIONS_CAPPED`.
 
 ## Finding taxonomy
 
-The local executable taxonomy contains only finding types actually produced by deterministic helpers. `IMPLEMENTED_FINDING_TYPES` is authoritative for local production; future/unsupported classes live in `DEFERRED_FINDING_TYPES`. Unknown/deferred external findings sort after implemented findings and carry `UNKNOWN_OR_DEFERRED_TYPE`. Dead `NEW_CAMPAIGN_CANDIDATE` delegation is not executable.
+`IMPLEMENTED_FINDING_TYPES` содержит только девять реально производимых deterministic classes. Future classes находятся в `DEFERRED_FINDING_TYPES`; unknown/deferred сортируются после implemented и получают `UNKNOWN_OR_DEFERRED_TYPE`. Dead `NEW_CAMPAIGN_CANDIDATE` route отсутствует.
 
-## Safety
-
-The plugin never mutates campaigns, budgets, bids, keywords, negatives, strategies, goals, counters, or other live settings. It emits delegated previews that identify the owning plugin and require that plugin's own approval flow before any consequential write.
+```bash
+python -m unittest discover -s tests -v
+python -m py_compile scripts/marketing_prioritize.py
+```

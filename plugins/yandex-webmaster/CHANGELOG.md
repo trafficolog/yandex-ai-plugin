@@ -1,18 +1,21 @@
-# Changelog
+# Журнал изменений — Yandex Webmaster
 
-## 1.0.2 — 2026-09-02
+[**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-- Corrected PRO export `use_pro_tariff` serialization to documented string values and required host-relative paths beginning with `/`.
-- Added deterministic `IN_PROGRESS`/`SUCCESS`/`FAILED` lifecycle normalization, explicit missing/expired download states, and 24-hour URL-age handling without autonomous polling.
-- Added quota planning that distinguishes known remaining quota from unknown usage instead of assuming missing quota metadata is available capacity.
+> `DOCS 1.0.0` добавил bilingual docs; SemVer плагина не изменён.
 
-## 1.0.1 — 2026-09-02
+## [1.0.2] — 2026-09-02
 
-- Corrected feed batch-add request body to the documented `{"feeds": [...]}` shape.
-- Redacted embedded URL credentials in previews while preserving execute payloads.
-- Restricted archive/PRO artifact downloads to absolute HTTPS URLs.
-- Added verifiable eval expectations for destructive/quota-consuming workflows.
+- Исправлена PRO export serialization `use_pro_tariff` и validation host-relative paths.
+- Добавлена deterministic lifecycle normalization, missing/expired states и 24h age handling без autonomous polling.
+- Quota planning различает known remaining quota и unknown usage.
 
-## 1.0.0 — 2026-09-01
+## [1.0.1] — 2026-09-02
 
-- Initial Yandex Webmaster plugin.
+- Исправлен feed batch body `{"feeds": [...]}`.
+- Усилены credential redaction и HTTPS-only artifact downloads.
+- Добавлены verifiable eval expectations для destructive/quota-consuming workflows.
+
+## [1.0.0] — 2026-09-01
+
+- Первый Yandex Webmaster plugin.

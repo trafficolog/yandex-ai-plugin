@@ -9,6 +9,7 @@ import sys
 from typing import Any
 
 try:
+    from .bilingual_docs import validate_bilingual_docs
     from .contract_controls import (
         MAX_REFERENCE_AGE_DAYS,
         parse_verified_date,
@@ -16,6 +17,7 @@ try:
         validate_reference_freshness,
     )
 except ImportError:
+    from bilingual_docs import validate_bilingual_docs
     from contract_controls import (
         MAX_REFERENCE_AGE_DAYS,
         parse_verified_date,
@@ -342,6 +344,8 @@ def validate_repository(root: Path, *, today: date | None = None) -> list[str]:
     extra_claude = set(claude_by_name) - agent_names
     for name in sorted(extra_claude):
         errors.append(f"claude marketplace contains plugin absent from agent marketplace: {name}")
+
+    errors.extend(validate_bilingual_docs(root, known_plugin_dirs))
 
     matrix_path = root / "docs/CONTRACT_MATRIX.json"
     matrix = _load_json(matrix_path, errors)

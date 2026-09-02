@@ -1,6 +1,10 @@
-# Yandex Wordstat 1.0.2
+# Yandex Wordstat
 
-Workflow-first plugin for Yandex Wordstat demand research. The bundled standard-library Python backend targets Yandex Cloud Search API Wordstat v2 and supports GetTop, GetDynamics, GetRegionsDistribution and GetRegionsTree.
+[**Русский**](README.md) · [English](README.en.md)
+
+Версия `1.0.2`. Workflow-first service plugin для demand research через Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree.
+
+> `DOCS 1.0.0` меняет только документацию.
 
 ## Capability matrix
 
@@ -13,17 +17,17 @@ Workflow-first plugin for Yandex Wordstat demand research. The bundled standard-
 | Trend classification | yes | no | optional | yes | yes |
 | Quota / cost planning | yes | no | optional | yes | yes |
 
-Highlights:
+## Interpretation contract
 
-- nine focused skills instead of one monolith;
-- API-Key or IAM auth with redacted previews and secret-safe request artifacts;
-- separate nested results and associations;
-- GetTop association coverage cap of 20 with explicit `associations_truncated` metadata;
-- provenance-aware multi-seed semantics;
-- no fake sum-of-frequency "market size";
-- operator-aware daily/monthly/weekly Dynamics, with monthly/weekly restrictions described as plugin compatibility policy rather than an asserted Yandex prohibition;
-- regional volume/share/affinity analysis;
-- robust trend labels with low-volume and seasonality guards;
-- quota/cost planning before large research batches.
+- `results` (nested/popular) и `associations` (similar relation) не смешиваются;
+- phrase/association counts перекрываются и **не суммируются** в total market demand;
+- seed/operator provenance сохраняется рядом с числами;
+- GetTop associations имеют cap `20`; ровно 20 → `associations_truncated=true` и limitation `WORDSTAT_ASSOCIATIONS_CAPPED` downstream;
+- weekly/monthly operator restriction — repository compatibility policy, не заявленный официальный запрет Яндекса;
+- `PERIOD_DAILY` остаётся supported path для non-`+` operators.
 
-Large research results should be written to JSON/files rather than injected wholesale into agent context. When exactly 20 associations are returned, downstream workflows must surface capped coverage instead of claiming an exhaustive semantic set.
+Большие semantic collections сохраняются в files/artifacts.
+
+```bash
+python -m unittest discover -s tests -v
+```

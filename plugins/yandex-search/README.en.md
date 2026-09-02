@@ -1,10 +1,10 @@
 # Yandex Search
 
-[**Русский**](README.md) · [English](README.en.md)
+[Русский](README.md) · [**English**](README.en.md)
 
-Версия `1.0.2`. SEO-first service plugin для classic web SERP retrieval, snapshots, rankings, competitor presence, URL-overlap clustering и sync/deferred Search API v2 workflows.
+Version `1.0.2`. SEO-first service plugin for classic web SERP retrieval, snapshots, rankings, competitor presence, URL-overlap clustering and sync/deferred Search API v2 workflows.
 
-> `DOCS 1.0.0` меняет только документацию.
+> `DOCS 1.0.0` changes documentation only.
 
 ## Capability matrix
 
@@ -22,9 +22,9 @@
 
 `requested_per_page = groups_on_page * docs_in_group`; `window_start = page * requested_per_page`; `window_end = window_start + requested_per_page`.
 
-Window с `end == 250` допустим. `start >= 250` или `end > 250` отклоняется — helper не полагается на undocumented partial truncation. Snapshot сохраняет `max_supported_results`, `window_start`, `window_end`, `reaches_result_ceiling`; rank >250 невозможен.
+A window ending at 250 is valid. `start >= 250` or `end > 250` is rejected; helpers do not rely on undocumented partial truncation. Snapshots retain `max_supported_results`, `window_start`, `window_end`, `reaches_result_ceiling`; rank >250 is invalid.
 
-SERP presence не называется market share. URL identity остаётся conservative: tracking params могут отделяться, functional params сохраняют различие страниц.
+SERP presence is not market share. URL identity stays conservative: tracking params can be separated while functional params keep pages distinct.
 
 ```bash
 python -m unittest discover -s tests -v
