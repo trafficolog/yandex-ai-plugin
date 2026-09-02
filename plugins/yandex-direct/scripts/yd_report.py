@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Yandex Direct Reports v501 helper with correct offline polling semantics."""
+"""Yandex Direct Reports v501 helper with explicit KPI context."""
 from __future__ import annotations
 
 import argparse
@@ -10,9 +10,10 @@ import time
 import urllib.error
 import urllib.request
 import uuid
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 REPORTS_URL = "https://api.direct.yandex.com/json/v501/reports"
+ATTRIBUTION_MODELS = {"FCCD", "LC", "LSCCD", "AUTO"}
 
 PRESETS: dict[str, tuple[str, list[str]]] = {
     "campaign": (
@@ -34,6 +35,14 @@ PRESETS: dict[str, tuple[str, list[str]]] = {
 }
 
 
+def _normalize_attribution_models(values: Sequence[str] | None) -> list[str]:
+    models = [str(value).strip().upper() for value in (values or ["LC"])]
+    if not models or any(model not in ATTRIBUTION_MODELS for model in models):
+        allowed = ", ".join(sorted(ATTRIBUTION_MODELS))
+        raise ValueError(f"Attribution models must be one of: {allowed}")
+    return models
+
+
 def build_report_body(
     preset: str,
     date_from: str,
@@ -41,23 +50,31 @@ def build_report_body(
     *,
     report_name: str | None = None,
     include_vat: str = "YES",
+    goals: Sequence[int | str] | None = None,
+    attribution_models: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     if preset not in PRESETS:
         raise ValueError(f"Unknown preset: {preset}")
+    if include_vat not in {"YES", "NO"}:
+        raise ValueError("include_vat must be YES or NO")
     report_type, fields = PRESETS[preset]
     name = report_name or f"yd-{preset}-{uuid.uuid4().hex[:12]}"
-    return {
-        "params": {
-            "SelectionCriteria": {"DateFrom": date_from, "DateTo": date_to},
-            "FieldNames": fields,
-            "ReportName": name,
-            "ReportType": report_type,
-            "DateRangeType": "CUSTOM_DATE",
-            "Format": "TSV",
-            "IncludeVAT": include_vat,
-            "IncludeDiscount": "YES",
-        }
+    params: dict[str, Any] = {
+        "SelectionCriteria": {"DateFrom": date_from, "DateTo": date_to},
+        "FieldNames": fields,
+        "ReportName": name,
+        "ReportType": report_type,
+        "DateRangeType": "CUSTOM_DATE",
+        "Format": "TSV",
+        "IncludeVAT": include_vat,
+        "AttributionModels": _normalize_attribution_models(attribution_models),
     }
+    if goals is not None:
+        goal_values = list(goals)
+        if not goal_values or len(goal_values) > 10:
+            raise ValueError("goals must contain between 1 and 10 IDs")
+        params["Goals"] = goal_values
+    return {"params": params}
 
 
 def parse_retry_in(headers: Mapping[str, str], default: int = 5) -> int:
@@ -91,9 +108,8 @@ def fetch_report(
     if client_login:
         headers["Client-Login"] = client_login
 
-    # Important: payload remains byte-identical for every retry. Yandex requires
-    # the same report request while an offline report is being generated.
     payload = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    retried_server_error = False
 
     for attempt in range(1, max_attempts + 1):
         req = urllib.request.Request(REPORTS_URL, data=payload, headers=headers, method="POST")
@@ -116,11 +132,22 @@ def fetch_report(
             continue
         if status == 400:
             raise RuntimeError(f"Bad report request: {text}")
+        if status == 500 and not retried_server_error and attempt < max_attempts:
+            retried_server_error = True
+            time.sleep(parse_retry_in(response_headers))
+            continue
         if status == 500:
             raise RuntimeError(f"Yandex report server error: {text}")
         raise RuntimeError(f"Unexpected HTTP {status}: {text}")
 
     raise RuntimeError("Unreachable")
+
+
+def _parse_csv_values(raw: str | None) -> list[str] | None:
+    if raw is None:
+        return None
+    values = [item.strip() for item in raw.split(",") if item.strip()]
+    return values or None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -132,17 +159,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
     parser.add_argument("--include-vat", choices=["YES", "NO"], default="YES")
+    parser.add_argument("--goals", help="Comma-separated Metrika goal IDs (max 10)")
+    parser.add_argument(
+        "--attribution-models",
+        default="LC",
+        help="Comma-separated attribution models: FCCD, LC, LSCCD, AUTO",
+    )
     parser.add_argument("--output", help="Write TSV to file instead of stdout")
     args = parser.parse_args(argv)
     if not args.token:
         parser.error("Provide --token or YANDEX_DIRECT_TOKEN")
 
+    goals = _parse_csv_values(args.goals)
+    attribution_models = _parse_csv_values(args.attribution_models)
     body = build_report_body(
         args.preset,
         args.date_from,
         args.date_to,
         report_name=args.report_name,
         include_vat=args.include_vat,
+        goals=goals,
+        attribution_models=attribution_models,
     )
     text = fetch_report(args.token, body, client_login=args.client_login)
     if args.output:
