@@ -80,6 +80,18 @@ class TestSeoDecisionTargets(unittest.TestCase):
                         "claim_class": "DERIVED",
                     })
 
+    def test_redirect_cannot_target_its_source_url(self):
+        with self.assertRaises(ValueError):
+            build_with({
+                "page_id": "legacy",
+                "decision": "REDIRECT",
+                "target_url": "/legacy/",
+                "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM",
+                "claim_class": "DERIVED",
+            })
+
     def test_target_url_must_be_nonempty_string_when_supplied(self):
         for invalid in ({"url": "/target/"}, "", "   "):
             with self.subTest(invalid=invalid):
@@ -104,6 +116,46 @@ class TestSeoDecisionTargets(unittest.TestCase):
             "claim_class": "DERIVED",
         })
         self.assertEqual(result["page_decisions"][0]["target_url"], "/target/")
+
+    def test_page_decision_rejects_unknown_reason_code(self):
+        with self.assertRaises(ValueError):
+            build_with({
+                "page_id": "legacy",
+                "decision": "REDIRECT",
+                "target_page_id": "target",
+                "reason_codes": ["SERP_OVELRAP"],
+                "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM",
+                "claim_class": "OBSERVED",
+            })
+
+    def test_methodology_only_page_decision_cannot_claim_empirical_evidence(self):
+        for claim_class in ("OBSERVED", "DERIVED"):
+            with self.subTest(claim_class=claim_class):
+                with self.assertRaises(ValueError):
+                    build_with({
+                        "page_id": "legacy",
+                        "decision": "REDIRECT",
+                        "target_page_id": "target",
+                        "reason_codes": ["METHODOLOGY_HEURISTIC"],
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "MEDIUM",
+                        "claim_class": claim_class,
+                    })
+
+    def test_page_decision_preserves_valid_reason_codes(self):
+        result = build_with({
+            "page_id": "legacy",
+            "decision": "PRESERVE",
+            "reason_codes": ["WEBMASTER_EXISTING_URL"],
+            "cluster_ids": [],
+            "evidence": ["WEBMASTER_EXISTING_URL"],
+            "confidence": "MEDIUM",
+            "claim_class": "OBSERVED",
+        })
+        self.assertEqual(result["page_decisions"][0]["reason_codes"], ["WEBMASTER_EXISTING_URL"])
 
 
 if __name__ == "__main__":
