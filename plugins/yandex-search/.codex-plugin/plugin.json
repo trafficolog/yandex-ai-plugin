@@ -1,7 +1,7 @@
 {
   "name": "yandex-search",
   "description": "SEO-first Yandex Search API v2 workflows for SERP retrieval, analysis and clustering.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "search", "serp", "seo", "rankings", "clustering"],
