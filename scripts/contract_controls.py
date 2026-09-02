@@ -23,7 +23,7 @@ def parse_verified_date(text: str) -> date:
         raise ValueError("verification marker has invalid date") from exc
 
 
-def validate_reference_freshness(text: str, *, today: date | None = None) -> list[str]:
+def validate_reference_freshness(text: str, *, today: date | None = None, enforce_age: bool = True) -> list[str]:
     observed_today = today or date.today()
     try:
         verified = parse_verified_date(text)
@@ -32,12 +32,13 @@ def validate_reference_freshness(text: str, *, today: date | None = None) -> lis
     if verified > observed_today:
         return [f"verification date is in the future: {verified.isoformat()}"]
     age = (observed_today - verified).days
-    if age > MAX_REFERENCE_AGE_DAYS:
-        return [
-            f"reference verification is stale: {verified.isoformat()} is {age} days old "
-            f"(max {MAX_REFERENCE_AGE_DAYS})"
-        ]
+    if enforce_age and age > MAX_REFERENCE_AGE_DAYS:
+        return [f"reference verification is stale: {verified.isoformat()} is {age} days old (max {MAX_REFERENCE_AGE_DAYS})"]
     return []
+
+
+def _normalize_repo_path(raw: str) -> str:
+    return raw.replace("\\", "/").removeprefix("./")
 
 
 def _string_list(contract: dict[str, Any], field: str, contract_id: str, errors: list[str]) -> list[str]:
@@ -61,15 +62,10 @@ def _safe_repo_path(root: Path, raw: str, contract_id: str, field: str, errors: 
     return path
 
 
-def validate_contract_matrix(
-    root: Path,
-    matrix: Any,
-    *,
-    known_plugins: set[str],
-    today: date | None = None,
-) -> list[str]:
+def validate_contract_matrix(root: Path, matrix: Any, *, known_plugins: set[str], today: date | None = None, changed_paths: set[str] | None = None, strict_freshness: bool = False) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
+    normalized_changed = {_normalize_repo_path(path) for path in (changed_paths or set())}
     if not isinstance(matrix, dict) or matrix.get("version") != 1:
         return ["contract matrix version must be 1"]
     contracts = matrix.get("contracts")
@@ -109,9 +105,7 @@ def validate_contract_matrix(
             errors.append(f"implemented contract {contract_id} requires SKILL.md and helper traceability")
 
         resolved: dict[str, Path] = {}
-        for field, values in (
-            ("skills", skills), ("helpers", helpers), ("tests", tests), ("references", references)
-        ):
+        for field, values in (("skills", skills), ("helpers", helpers), ("tests", tests), ("references", references)):
             for raw in values:
                 path = _safe_repo_path(root, raw, contract_id, field, errors)
                 if path is not None:
@@ -122,9 +116,7 @@ def validate_contract_matrix(
         reference_set = set(references)
         for raw in freshness_refs:
             if raw not in reference_set:
-                errors.append(
-                    f"contract {contract_id} freshness-controlled reference must also appear in references: {raw}"
-                )
+                errors.append(f"contract {contract_id} freshness-controlled reference must also appear in references: {raw}")
                 continue
             path = resolved.get(raw)
             if path is None:
@@ -134,7 +126,7 @@ def validate_contract_matrix(
             except UnicodeDecodeError:
                 errors.append(f"contract {contract_id} reference is not UTF-8: {raw}")
                 continue
-            freshness_errors = validate_reference_freshness(text, today=today)
-            for error in freshness_errors:
+            enforce_age = strict_freshness or _normalize_repo_path(raw) in normalized_changed
+            for error in validate_reference_freshness(text, today=today, enforce_age=enforce_age):
                 errors.append(f"contract {contract_id} reference verification error for {raw}: {error}")
     return errors

@@ -1,0 +1,53 @@
+name: API reference freshness
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  freshness:
+    name: Check freshness-controlled references
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - id: check
+        name: Run strict freshness check
+        shell: bash
+        run: |
+          set +e
+          python scripts/check_reference_freshness.py > /tmp/freshness.txt 2>&1
+          code=$?
+          cat /tmp/freshness.txt
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Synchronize freshness issue
+        uses: actions/github-script@v7
+        env:
+          EXIT_CODE: ${{ steps.check.outputs.exit_code }}
+        with:
+          script: |
+            const fs = require('fs');
+            const title = 'API reference freshness requires review';
+            const report = fs.readFileSync('/tmp/freshness.txt', 'utf8').trim();
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {owner, repo, state: 'open', per_page: 100});
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (process.env.EXIT_CODE !== '0') {
+              const body = ['The scheduled strict freshness check found freshness-controlled references requiring review.', '', '```text', report || 'Strict freshness check failed without output.', '```', '', `Workflow: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`].join('\n');
+              if (existing) await github.rest.issues.update({owner, repo, issue_number: existing.number, body});
+              else await github.rest.issues.create({owner, repo, title, body});
+            } else if (existing) {
+              await github.rest.issues.createComment({owner, repo, issue_number: existing.number, body: 'Scheduled strict freshness check is green again; closing this issue.'});
+              await github.rest.issues.update({owner, repo, issue_number: existing.number, state: 'closed'});
+            }
+      - name: Fail when strict freshness is stale
+        if: steps.check.outputs.exit_code != '0'
+        run: exit 1
