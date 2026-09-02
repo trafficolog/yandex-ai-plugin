@@ -11,8 +11,8 @@ Preserve GetTop coverage metadata. Cloud associations are capped at 20; when `co
 
 Never sum overlapping row counts or association counts and label them **total demand**, market size, or unique searches. Keep Yandex `totalCount` per individual seed/expression instead.
 
-Wordstat co-occurrence is candidate generation, not final SEO clustering. Do not claim SERP overlap without a real search-results source.
+Wordstat co-occurrence is candidate generation, not final SEO clustering. Use `yandex-wordstat-topic-map` when those candidates need a structured demand/topic map. Do not claim SERP overlap without a real search-results source; route final overlap clustering to `yandex-search-clustering` and final page architecture to `yandex-seo-topical-architecture`.
 
 For large collections, store JSON/file output with filters, backend, timestamp, relation types, source seeds, and coverage limitations.
 
-References: `references/semantics.md`, `references/api-2026.md`.
+References: `references/semantics.md`, `references/topic-map.md`, `references/api-2026.md`.
