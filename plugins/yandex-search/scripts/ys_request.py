@@ -25,6 +25,7 @@ SORT_MODES = {"SORT_MODE_BY_RELEVANCE", "SORT_MODE_BY_TIME"}
 FIX_TYPO_MODES = {"FIX_TYPO_MODE_ON", "FIX_TYPO_MODE_OFF"}
 RESPONSE_FORMATS = {"FORMAT_XML", "FORMAT_HTML"}
 GROUP_MODES = {"GROUP_MODE_FLAT", "GROUP_MODE_DEEP"}
+MAX_RESULTS = 250
 
 
 def build_search_request(
@@ -70,6 +71,16 @@ def build_search_request(
         raise ValueError("unsupported group_mode")
     if page < 0 or not 1 <= groups_on_page <= 100 or not 1 <= docs_in_group <= 3:
         raise ValueError("invalid pagination/grouping")
+
+    requested_per_page = groups_on_page * docs_in_group
+    window_start = page * requested_per_page
+    window_end = window_start + requested_per_page
+    if requested_per_page > MAX_RESULTS:
+        raise ValueError(f"requested result page exceeds {MAX_RESULTS}-result API ceiling")
+    if window_start >= MAX_RESULTS:
+        raise ValueError(f"requested page starts outside the {MAX_RESULTS}-result API ceiling")
+    if window_end > MAX_RESULTS:
+        raise ValueError(f"requested result window crosses the {MAX_RESULTS}-result API ceiling")
 
     body: dict[str, Any] = {
         "query": {
