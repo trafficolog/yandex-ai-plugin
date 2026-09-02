@@ -112,7 +112,7 @@ def propagate_limitations(source_records: list[dict]) -> list[dict]:
 
 def capability_mode(coverage: dict) -> str:
     if not coverage.get("direct"):
-        raise ValueError("Direct evidence is required for yandex-marketing analysis")
+        return "ROUTING_REQUIRED"
     metrika = bool(coverage.get("metrika"))
     wordstat = bool(coverage.get("wordstat"))
     search = bool(coverage.get("search"))
