@@ -44,7 +44,7 @@ Semantic relationships are independent from structural parenthood. Allowed initi
 
 `PARENT_CONTEXT`, `CHILD_DETAIL`, `SIBLING`, `SUPPORT`, `DEFINITION`, `COMPARISON`, `ALTERNATIVE`, `EVIDENCE`, `USE_CASE`, `NEXT_STEP`, `TRANSACTIONAL_PATH`, `BRIDGE`, `COMPLIANCE`.
 
-These are repository information-architecture labels, not asserted search-engine internal edge types. Semantic-edge `reason_codes` must use the approved v1 vocabulary. If an edge is justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC`, it cannot use empirical `OBSERVED` or `DERIVED` claim classes.
+These are repository information-architecture labels, not asserted search-engine internal edge types. Every semantic edge must carry at least one validated `reason_code` from the approved v1 vocabulary. If an edge is justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC`, it cannot use empirical `OBSERVED` or `DERIVED` claim classes.
 
 ## Missing SERP validation
 
@@ -54,7 +54,7 @@ When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. 
 
 Page decisions are normalized as `status: PREVIEW`. Caller-supplied execution/write metadata is not propagated into the architecture artifact, so destructive or migration-oriented recommendations cannot be represented as already executed by this transport-free plugin.
 
-When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. When it supplies `target_url`, that value must be a non-empty string. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
+When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. `MERGE` and `REDIRECT` targets must differ from the source `page_id`, so self-merge and self-redirect previews are rejected. When a decision supplies `target_url`, that value must be a non-empty string. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
 
 ## Mutable facts / SSoT
 
