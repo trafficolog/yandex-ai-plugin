@@ -66,6 +66,22 @@ class TestSeoInternalLinking(unittest.TestCase):
         self.assertNotIn("execute", plan[0])
         self.assertNotIn("write", plan[0])
 
+    def test_link_plan_requires_at_least_one_reason_code(self):
+        with self.assertRaises(ValueError):
+            seo_internal_linking.build_link_plan(
+                architecture=ARCHITECTURE,
+                candidate_links=[{
+                    "from_page_id": "root",
+                    "to_page_id": "support",
+                    "relation": "SUPPORT",
+                    "user_need": "learn details",
+                    "reason_codes": [],
+                    "evidence": ["cluster:c1"],
+                    "confidence": "MEDIUM",
+                    "claim_class": "DERIVED",
+                }],
+            )
+
     def test_unknown_endpoint_and_forced_exact_match_are_rejected(self):
         with self.assertRaises(ValueError):
             seo_internal_linking.build_link_plan(
