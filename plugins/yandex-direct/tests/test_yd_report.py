@@ -1,5 +1,26 @@
+import io
 import unittest
-from scripts.yd_report import build_report_body, parse_retry_in
+import urllib.error
+from unittest.mock import patch
+
+from scripts import yd_report
+from scripts.yd_report import build_report_body, fetch_report, parse_retry_in
+
+
+class _Response:
+    def __init__(self, status: int, body: bytes, headers=None):
+        self.status = status
+        self._body = body
+        self.headers = headers or {}
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
 
 
 class TestReportHelpers(unittest.TestCase):
@@ -41,6 +62,22 @@ class TestReportHelpers(unittest.TestCase):
     def test_obsolete_include_discount_is_not_sent(self):
         body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
         self.assertNotIn("IncludeDiscount", body["params"])
+
+    def test_first_http_500_is_retried_once(self):
+        first = urllib.error.HTTPError(
+            yd_report.REPORTS_URL,
+            500,
+            "server error",
+            {"retryIn": "1"},
+            io.BytesIO(b"temporary"),
+        )
+        second = _Response(200, b"Date\tClicks\n2026-08-01\t1\n")
+        body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="retry-500")
+        with patch.object(yd_report.urllib.request, "urlopen", side_effect=[first, second]) as opener:
+            with patch.object(yd_report.time, "sleep"):
+                text = fetch_report("token", body, max_attempts=3)
+        self.assertIn("2026-08-01", text)
+        self.assertEqual(opener.call_count, 2)
 
 
 if __name__ == "__main__":
