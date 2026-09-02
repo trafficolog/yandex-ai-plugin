@@ -71,8 +71,7 @@ class MarketingQualityTests(unittest.TestCase):
         self.assertEqual(capability_mode({'direct':True,'wordstat':True,'workflow':'queries'}), 'QUERY_INTELLIGENCE')
         self.assertEqual(capability_mode({'direct':True,'metrika':True,'wordstat':True}), 'FULL_ACQUISITION')
         self.assertEqual(capability_mode({'direct':True,'search':True}), 'COMPETITIVE_CONTEXT')
-        with self.assertRaises(ValueError):
-            capability_mode({'direct':False,'metrika':True})
+        self.assertEqual(capability_mode({'direct':False,'metrika':True}), 'ROUTING_REQUIRED')
 
 
 if __name__ == '__main__':
