@@ -2,9 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.2`. Service plugin for hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports and raw API workflows.
-
-> `DOCS 1.0.0` changes documentation only.
+Version `1.0.3`. Service plugin for hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports and raw API workflows.
 
 ## Capability matrix
 
@@ -23,9 +21,11 @@ Version `1.0.2`. Service plugin for hosts, diagnostics, search queries, indexing
 - top-N/popular queries are not complete query coverage;
 - recrawl/sitemap submission does not guarantee indexing/ranking;
 - feed batch add uses `{"feeds": [...]}`;
+- the 1.0.3 indexing archive contract pins the official `state` field with `IN_PROGRESS`, `DONE`, and `FAILED`; `download_url` is used only for `DONE` and passes the HTTPS guard;
+- a generic `status` field is not used as an undocumented fallback;
 - destructive/quota-consuming operations require exact preview + approval.
 
-## PRO export 1.0.2
+## PRO export
 
 - request paths are non-empty host-relative paths beginning with `/`;
 - `use_pro_tariff` serializes as `"true"` / `"false"`;
