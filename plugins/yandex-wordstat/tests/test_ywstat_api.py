@@ -38,7 +38,8 @@ class TestWordstatApi(unittest.TestCase):
         )
         self.assertEqual(req["url"], "https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests")
         self.assertEqual(req["body"]["folderId"], "folder")
-        self.assertEqual(req["preview"]["headers"]["Authorization"], "Api-Key ***")
+        self.assertEqual(req["headers"]["Authorization"], "Api-Key ***")
+        self.assertNotIn("secret", repr(req))
         for method, endpoint in {
             "dynamics": "dynamics",
             "regions": "regions",
@@ -48,15 +49,16 @@ class TestWordstatApi(unittest.TestCase):
         with self.assertRaises(ValueError):
             ywstat_api.build_request("unknown", {}, api_key="x")
 
-    def test_execute_uses_transport(self):
+    def test_execute_uses_credentials_supplied_at_execution_time(self):
         calls = []
         def transport(method, url, headers, body):
             calls.append((method, url, headers, body))
             return {"ok": True}
         req = ywstat_api.build_request("regions_tree", {}, api_key="x")
-        result = ywstat_api.execute_request(req, transport=transport)
+        result = ywstat_api.execute_request(req, api_key="x", transport=transport)
         self.assertEqual(result, {"ok": True})
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][2]["Authorization"], "Api-Key x")
+        self.assertNotIn("Api-Key x", repr(req))
 
     def test_cost_estimate(self):
         result = ywstat_api.estimate_cost({"top": 20, "dynamics": 10, "regions": 4, "regions_tree": 3})
