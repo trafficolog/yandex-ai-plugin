@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt":"Проведи paid-acquisition анализ; Direct недоступен, но есть Metrika.","skill":"yandex-marketing","write":false},
+    {"prompt":"Проведи cross-service аудит Direct, Metrika и Wordstat с проверкой KPI context.","skill":"yandex-marketing-audit","write":false},
+    {"prompt":"Сравни CPA и ROAS кампаний только если цели, валюта, VAT и maturity совместимы.","skill":"yandex-marketing-performance","write":false},
+    {"prompt":"Найди спрос Wordstat с слабым Direct coverage, не называя его гарантированным трафиком.","skill":"yandex-marketing-demand","write":false},
+    {"prompt":"Найди search-query expansion/exclusion review candidates без универсального zero-conversion правила.","skill":"yandex-marketing-queries","write":false},
+    {"prompt":"Свяжи запросы и объявления Direct с landing behavior Metrika и сформулируй только гипотезы.","skill":"yandex-marketing-landings","write":false},
+    {"prompt":"Сверь Direct и Metrika conversions, но не складывай их.","skill":"yandex-marketing-conversions","write":false},
+    {"prompt":"Проверь KPI/attribution comparability и пометь несовместимые периоды как incomparable.","skill":"yandex-marketing-attribution","write":false},
+    {"prompt":"Подготовь preview перераспределения бюджета, ничего не изменяй.","skill":"yandex-marketing-budget","write":"preview-first"},
+    {"prompt":"Собери opportunity taxonomy из measurement, demand, query, budget и landing evidence.","skill":"yandex-marketing-opportunities","write":false},
+    {"prompt":"Приоритизируй findings без Marketing Score и покажи delegated action previews.","skill":"yandex-marketing-prioritize","write":"preview-first"}
+  ]
+}
