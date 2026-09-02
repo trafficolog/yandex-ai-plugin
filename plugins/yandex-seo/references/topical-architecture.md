@@ -32,6 +32,8 @@ Confidence is `LOW|MEDIUM|HIGH` evidence quality, not a probability.
 
 Each page has a unique `page_id` and at most one `canonical_parent_id`. The deterministic validator rejects unknown parents, cycles and duplicate URL/proposed-URL locations. No universal maximum depth is imposed.
 
+The normalized page-role vocabulary is `ROOT`, `HUB`, `SUPPORT`, `DETAIL`, `COMPARISON`, `TRANSACTIONAL`, `DEFINITION`, `EVIDENCE`, `BRIDGE`, `UTILITY`, `OTHER`. A **proposed** page with no `canonical_parent_id` must explicitly declare `page_role: ROOT` or `page_role: BRIDGE`; this prevents accidental orphan proposed roots. Existing-site observed URL roots are not retroactively forced to supply a proposed-page role.
+
 ## Semantic graph
 
 Semantic relationships are independent from structural parenthood. Allowed initial relations:
@@ -42,7 +44,11 @@ These are repository information-architecture labels, not asserted search-engine
 
 ## Missing SERP validation
 
-When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. Wordstat demand or semantic similarity alone does not prove that two query groups belong on one page.
+When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. Boundary-changing decisions such as `CREATE`, `MERGE`, `SPLIT`, `REDIRECT`, `SECTION_ONLY`, `BRIDGE` or `NO_PAGE` must remain `HYPOTHESIS` while Search evidence is missing. An observed `PRESERVE` decision for an existing page may remain `OBSERVED` when supported by existing-site evidence.
+
+## Recommendation state
+
+Page decisions are normalized as `status: PREVIEW`. Caller-supplied execution/write metadata is not propagated into the architecture artifact, so destructive or migration-oriented recommendations cannot be represented as already executed by this transport-free plugin.
 
 ## Mutable facts / SSoT
 
