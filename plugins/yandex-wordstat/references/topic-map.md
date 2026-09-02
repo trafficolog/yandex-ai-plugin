@@ -12,12 +12,13 @@ The deterministic helper emits `wordstat-topic-map/v1` with:
 
 - original seeds and their filters/operators/coverage;
 - normalized queries with all source seeds and Wordstat relation types;
+- the first canonical `query_id` plus ordered `query_ids` containing every distinct identifier that collapsed into the normalized query;
 - separate demand observations rather than summed overlapping demand;
 - candidate topics with `status: CANDIDATE`;
 - candidate topic relations with `status: HYPOTHESIS`;
 - explicit limitations.
 
-`query_id` is a provenance identifier. Reusing one `query_id` is allowed only when all occurrences resolve to the same normalized query text; the helper rejects one identifier that points to different normalized queries. Different identifiers may still collapse into one normalized query while preserving their alias/provenance relationship.
+`query_id` is a provenance identifier. Reusing one `query_id` is allowed only when all occurrences resolve to the same normalized query text; the helper rejects one identifier that points to different normalized queries. Different identifiers may still collapse into one normalized query, but the complete ordered alias set is serialized in `query_ids` so downstream joins do not lose provenance.
 
 Allowed topic relation labels are `RELATED`, `NARROWER`, `BROADER`, and `COMPLEMENTARY`. These are information-organization hypotheses, not Yandex ranking or page-boundary contracts.
 
