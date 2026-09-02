@@ -1,10 +1,13 @@
 import io
+import json
+from pathlib import Path
+import tempfile
 import unittest
 import urllib.error
 from unittest.mock import patch
 
 from scripts import yd_report
-from scripts.yd_report import build_report_body, fetch_report, parse_retry_in
+from scripts.yd_report import build_report_body, build_report_metadata, fetch_report, parse_retry_in
 
 
 class _Response:
@@ -58,6 +61,40 @@ class TestReportHelpers(unittest.TestCase):
         )
         self.assertEqual(body["params"]["Goals"], [123, 456])
         self.assertEqual(body["params"]["AttributionModels"], ["LSCCD"])
+
+    def test_report_metadata_preserves_kpi_context_without_inventing_currency(self):
+        body = build_report_body(
+            "campaign",
+            "2026-08-01",
+            "2026-08-31",
+            report_name="campaign",
+            include_vat="NO",
+            goals=[123],
+            attribution_models=["AUTO"],
+        )
+        metadata = build_report_metadata("campaign", body)
+        self.assertEqual(metadata["period"], {"from": "2026-08-01", "to": "2026-08-31"})
+        self.assertEqual(metadata["goal_ids"], [123])
+        self.assertEqual(metadata["attribution_models"], ["AUTO"])
+        self.assertEqual(metadata["vat_basis"], "excluded")
+        self.assertIsNone(metadata["currency"])
+        self.assertEqual(metadata["currency_source"], "not_returned_by_reports_helper")
+
+    def test_output_writes_metadata_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.tsv"
+            with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n2026-08-01\t1\n"):
+                rc = yd_report.main([
+                    "campaign", "2026-08-01", "2026-08-31",
+                    "--token", "token", "--output", str(output),
+                    "--goals", "123", "--attribution-models", "AUTO",
+                ])
+            self.assertEqual(rc, 0)
+            sidecar = Path(str(output) + ".metadata.json")
+            self.assertTrue(sidecar.is_file())
+            metadata = json.loads(sidecar.read_text(encoding="utf-8"))
+            self.assertEqual(metadata["goal_ids"], ["123"])
+            self.assertEqual(metadata["attribution_models"], ["AUTO"])
 
     def test_obsolete_include_discount_is_not_sent(self):
         body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
