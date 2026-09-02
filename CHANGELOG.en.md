@@ -4,6 +4,29 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [PHASE 7 1.0.0] — 2026-09-02
+
+Evidence-first Topical Architecture / Semantic Cocoons release.
+
+### Architecture
+
+- Yandex Wordstat `1.1.0` adds `yandex-wordstat-topic-map` and `wordstat-topic-map/v1`: candidate-only topic maps, provenance-preserving query deduplication, separate demand observations, and explicit limitation propagation.
+- Yandex Search remains `1.0.2` and the sole owner of real SERP-overlap/Jaccard clustering; Phase 7 adds no competing fuzzy-text clusterer and makes no Search runtime change.
+- Yandex SEO `1.1.0` adds `yandex-seo-topical-architecture` and `seo-topical-architecture/v1` for `GREENFIELD|EXISTING_SITE`, page decisions, and separate `structural_tree` / `semantic_graph` layers.
+- Yandex SEO `1.1.0` adds `yandex-seo-internal-linking`: preview-only link planning and deterministic audit with no CMS writes.
+
+### Evidence and safety contracts
+
+- `OBSERVED`, `DERIVED`, `HYPOTHESIS`, and `METHODOLOGY` remain distinct; semantic-cocoon/TGA/QBST methodology is not represented as a verified ranking mechanism.
+- Without Search evidence, `SERP_VALIDATION_MISSING` is mandatory and page boundaries remain hypotheses.
+- Wordstat associations/co-occurrence are not represented as final page boundaries and are never aggregated into fictitious total demand.
+- SEO remains transport-free: no new Yandex HTTP clients, credentials, or live mutations.
+- `CONTRACT_MATRIX.json` pins `wordstat.topic-map-candidate-boundary`, `seo.topical-architecture-structural-tree`, `seo.topical-architecture-evidence-classes`, and `seo.internal-linking-preview-only`.
+
+### Published plugin matrix
+
+Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Wordstat `1.1.0`, Search `1.0.2`, SEO `1.1.0`, Marketing `1.1.0`.
+
 ## [OPUS 1.1.1] — 2026-09-02
 
 Follow-up fix release from the final Opus 5 review.
