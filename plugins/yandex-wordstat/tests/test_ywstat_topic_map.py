@@ -52,6 +52,29 @@ class TestWordstatTopicMap(unittest.TestCase):
         self.assertNotIn("canonical_parent", result["candidate_topics"][0])
         self.assertNotIn("internal_link", result["candidate_topics"][0])
 
+    def test_duplicate_query_id_must_resolve_to_same_normalized_query(self):
+        seeds = [{"seed": "seo", "operators": "", "filters": {}, "coverage": {}}]
+        with self.assertRaises(ValueError):
+            ywstat_topic_map.build_topic_map(
+                seeds=seeds,
+                phrase_records=[
+                    {"query_id": "q1", "text": "seo", "source_seed": "seo", "relation": "nested", "demand": None},
+                    {"query_id": "q1", "text": "seo аудит", "source_seed": "seo", "relation": "association", "demand": None},
+                ],
+                candidate_topics=[],
+            )
+
+        result = ywstat_topic_map.build_topic_map(
+            seeds=seeds,
+            phrase_records=[
+                {"query_id": "q1", "text": "SEO аудит", "source_seed": "seo", "relation": "nested", "demand": None},
+                {"query_id": "q1", "text": " seo   аудит ", "source_seed": "seo", "relation": "association", "demand": None},
+            ],
+            candidate_topics=[],
+        )
+        self.assertEqual(len(result["queries"]), 1)
+        self.assertEqual(result["queries"][0]["query_id"], "q1")
+
     def test_unknown_query_reference_is_rejected(self):
         with self.assertRaises(ValueError):
             ywstat_topic_map.build_topic_map(
