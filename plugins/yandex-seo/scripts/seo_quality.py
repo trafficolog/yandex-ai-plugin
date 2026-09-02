@@ -20,7 +20,7 @@ def propagate_limitations(source_records: list[dict]) -> list[dict]:
         source = record.get("source")
         if source == "yandex-metrika":
             if "quality" not in record or not isinstance(record.get("quality"), dict):
-                limitations.append({"kind": "METRIKA_QUALITY_UNKNOWN", "source": source})
+                limitations.append({"kind": "QUALITY_METADATA_MISSING", "source": source})
             else:
                 quality = record["quality"]
                 if quality.get("sampled"):
