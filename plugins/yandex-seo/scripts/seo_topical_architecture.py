@@ -278,6 +278,8 @@ def _normalize_page_decisions(
             )
             if target_page_id not in known_pages:
                 raise ValueError(f"page decision references unknown target page: {target_page_id}")
+            if decision in {"MERGE", "REDIRECT"} and target_page_id == page_id:
+                raise ValueError(f"{decision} target_page_id must differ from page_id")
             item["target_page_id"] = target_page_id
 
         if "target_url" in raw:
@@ -314,11 +316,13 @@ def _normalize_semantic_edges(
         item["user_need"] = _require_nonempty_string(raw.get("user_need"), "user_need")
         item["confidence"] = _validate_confidence(raw.get("confidence"))
         item["claim_class"] = _validate_claim_class(raw.get("claim_class"))
-        item["reason_codes"] = _normalize_reason_codes(raw.get("reason_codes", []))
+        reason_codes = _normalize_reason_codes(raw.get("reason_codes"))
+        if not reason_codes:
+            raise ValueError("semantic edge requires at least one reason code")
+        item["reason_codes"] = reason_codes
         item.setdefault("evidence", [])
         if (
-            item["reason_codes"]
-            and set(item["reason_codes"]).issubset(NON_EMPIRICAL_REASON_CODES)
+            set(item["reason_codes"]).issubset(NON_EMPIRICAL_REASON_CODES)
             and item["claim_class"] in EMPIRICAL_CLAIM_CLASSES
         ):
             raise ValueError("methodology/hypothesis-only semantic reasons cannot use an empirical claim_class")
