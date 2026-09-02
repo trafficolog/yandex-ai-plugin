@@ -8,6 +8,7 @@ except ImportError:  # CLI execution
     from ywstat_api import validate_folder_id
 
 ALLOWED_DEVICES = {"DEVICE_ALL", "DEVICE_DESKTOP", "DEVICE_PHONE", "DEVICE_TABLET"}
+MAX_ASSOCIATIONS = 20
 
 
 def _validate_phrase(phrase: str) -> str:
@@ -105,10 +106,16 @@ def normalize_top_response(
         relation="association",
         operator_expression=operator_expression,
     )
+    associations_count = len(associations)
     return {
         "seed": seed,
         "total_count": _count(response.get("totalCount", 0)),
         "results": nested,
         "associations": associations,
         "records": nested + associations,
+        "coverage": {
+            "associations_cap": MAX_ASSOCIATIONS,
+            "associations_count": associations_count,
+            "associations_truncated": associations_count >= MAX_ASSOCIATIONS,
+        },
     }
