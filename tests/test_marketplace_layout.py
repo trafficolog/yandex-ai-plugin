@@ -85,9 +85,9 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
-        self.assertIn("## Phase 4 — Yandex Wordstat", content)
+        self.assertIn("### Phase 4 — Yandex Wordstat", content)
         self.assertIn("Implemented as plugin `1.0.0`", content)
-        self.assertIn("## Phase 5 — Yandex Search", content)
+        self.assertIn("### Phase 5 — Yandex Search", content)
 
     def test_ci_has_search_plugin_job(self):
         content=(ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
@@ -101,8 +101,8 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_roadmap_marks_phase5_implemented_and_phase6_next(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
-        self.assertIn('## Phase 5 — Yandex Search',content)
-        self.assertIn('## Phase 6A — Yandex SEO',content)
+        self.assertIn('### Phase 5 — Yandex Search',content)
+        self.assertIn('### Phase 6A — Yandex SEO',content)
         self.assertIn('Implemented as plugin `1.0.0`',content)
 
     def test_marketplace_exposes_yandex_seo(self):
@@ -122,9 +122,9 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_roadmap_marks_phase6a_and_phase6b(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
-        self.assertIn('## Phase 6A — Yandex SEO',content)
+        self.assertIn('### Phase 6A — Yandex SEO',content)
         self.assertIn('Implemented as plugin `1.0.0`',content)
-        self.assertIn('## Phase 6B — Yandex Marketing',content)
+        self.assertIn('### Phase 6B — Yandex Marketing',content)
 
     def test_marketplace_exposes_yandex_marketing(self):
         data=json.loads((ROOT/'.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
@@ -146,16 +146,35 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_roadmap_marks_phase6b_implemented(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
-        marker='## Phase 6B — Yandex Marketing'
+        marker='### Phase 6B — Yandex Marketing'
         self.assertIn(marker,content)
-        phase=content.split(marker,1)[1].split('## Phase 7',1)[0]
+        phase=content.split(marker,1)[1].split('# Future release backlog',1)[0]
         self.assertIn('Implemented as plugin `1.0.0`',phase)
         self.assertIn('no Yandex API clients',phase)
 
-    def test_readme_lists_marketing_plugin(self):
+    def test_readme_lists_marketing_plugin_and_regression_command(self):
         content=(ROOT/'README.md').read_text(encoding='utf-8')
         self.assertIn('[`yandex-marketing`](plugins/yandex-marketing/)',content)
-        self.assertIn('Yandex Marketing regression checks',content)
+        self.assertIn('cd plugins/yandex-marketing',content)
+        self.assertIn('marketing_prioritize.py',content)
+
+    def test_first_release_review_and_changelog_exist(self):
+        self.assertTrue((ROOT/'CHANGELOG.md').is_file())
+        self.assertTrue((ROOT/'docs/REVIEW_FIRST_RELEASE.md').is_file())
+        changelog=(ROOT/'CHANGELOG.md').read_text(encoding='utf-8')
+        review=(ROOT/'docs/REVIEW_FIRST_RELEASE.md').read_text(encoding='utf-8')
+        self.assertIn('## [1.0.0] — 2026-09-02',changelog)
+        self.assertIn('First Release Independent Review Guide',review)
+
+    def test_operations_ai_mobile_are_backlog_not_first_release(self):
+        roadmap=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
+        matrix=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
+        self.assertIn('# Future release backlog',roadmap)
+        self.assertNotIn('## Phase 7 — Operations, AI, mobile',roadmap)
+        for service in ['Yandex Tracker','Yandex 360','Yandex Maps','AppMetrica','YandexGPT','SpeechKit']:
+            self.assertIn(service,roadmap)
+        self.assertIn('| Yandex Tracker | 2 | backlog |',matrix)
+        self.assertIn('| SpeechKit | 3 | backlog |',matrix)
 
 
 if __name__ == "__main__":
