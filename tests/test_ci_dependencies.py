@@ -14,10 +14,12 @@ def changed_files_condition(content: str, output_name: str) -> str:
 
 
 class CIDependencyTests(unittest.TestCase):
-    def test_shared_changes_include_ci_and_approved_specs(self):
+    def test_shared_changes_include_workflows_contract_controls_and_specs(self):
         content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
-        self.assertIn('\\.github/workflows/ci\\.yml$', content)
-        self.assertIn('docs/superpowers/specs/', content)
+        self.assertIn('\\.github/workflows/', content)
+        self.assertIn('contract_controls', content)
+        self.assertIn('check_reference_freshness', content)
+        self.assertIn('docs/superpowers/(specs|plans)/', content)
 
     def test_service_changes_trigger_seo_regressions(self):
         content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')

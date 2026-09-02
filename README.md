@@ -2,21 +2,21 @@
 
 <p align="center"><strong>Русский</strong> · <a href="README.en.md">English</a></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="docs release" src="https://img.shields.io/badge/docs-DOCS%201.0.0-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-OPUS%201.1.1-3155ff"></p>
 
 # Yandex AI Plugins
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** функциональный контур Phase 1–6B выпущен. Текущий набор версий намеренно смешанный: Direct, Metrika и SEO — `1.0.1`; Webmaster, Wordstat и Search — `1.0.2`; Marketing — `1.1.0`. `DOCS 1.0.0` меняет только документационный слой и **не повышает SemVer плагинов**.
+> **Статус:** функциональный контур Phase 1–6B выпущен. Fix-release `OPUS 1.1.1` обновляет Metrika до `1.0.2` и Webmaster до `1.0.3`; Direct и SEO остаются `1.0.1`, Wordstat и Search — `1.0.2`, Marketing — `1.1.0`.
 
 ## Быстрый обзор
 
 | Plugin | Version | Type | Основная зона ответственности | Live writes? |
 |---|---:|---|---|---|
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.1 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
-| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.2 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | спрос, семантика, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
 | [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence и orchestration | delegated preview only |
@@ -40,6 +40,8 @@ yandex-webmaster ─────────────▶ yandex-seo
 ```
 
 `yandex-seo` и `yandex-marketing` не имеют собственных Yandex HTTP/API клиентов и credentials. Они принимают структурированные evidence/artifacts от сервисных плагинов, сохраняют provenance/limitations, строят findings и передают consequential действия обратно владельцу как delegated preview.
+
+В `.agents` marketplace для этих transport-free cross-service plugins используется `authentication: ON_USE` как schema-compatible deferred-auth metadata; это не означает собственную credential surface.
 
 ### Общий safety lifecycle
 
@@ -113,26 +115,32 @@ python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
+Strict freshness отдельно:
+
+```bash
+python scripts/check_reference_freshness.py
+```
+
 ## Версии
 
 ```text
 yandex-direct        1.0.1
-yandex-metrika       1.0.1
-yandex-webmaster     1.0.2
+yandex-metrika       1.0.2
+yandex-webmaster     1.0.3
 yandex-wordstat      1.0.2
 yandex-search        1.0.2
 yandex-seo           1.0.1
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
 
 ## Документация
 
 - [`docs/PLUGIN_STANDARD.md`](docs/PLUGIN_STANDARD.md) — стандарт production plugin ([EN](docs/PLUGIN_STANDARD.en.md));
 - [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) — фактически доступные сервисы ([EN](docs/SERVICE_MATRIX.en.md));
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — выпущенные фазы и backlog ([EN](docs/ROADMAP.en.md));
-- [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json) — high-risk SKILL → helper → regression-test traceability;
+- [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json) — high-risk SKILL → helper → regression-test traceability index, не semantic proof;
 - [`docs/REVIEW_FIRST_RELEASE.md`](docs/REVIEW_FIRST_RELEASE.md) — независимый review guide ([EN](docs/REVIEW_FIRST_RELEASE.en.md));
 - [`CHANGELOG.md`](CHANGELOG.md) · [English changelog](CHANGELOG.en.md).
 

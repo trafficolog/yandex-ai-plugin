@@ -2,9 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `1.0.2`. Service plugin для technical/search visibility: hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports и raw API workflows.
-
-> `DOCS 1.0.0` меняет только documentation layer.
+Версия `1.0.3`. Service plugin для technical/search visibility: hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports и raw API workflows.
 
 ## Capability matrix
 
@@ -23,9 +21,11 @@
 - top-N/popular queries не являются полной query universe;
 - recrawl/sitemap submission не гарантируют indexing/ranking;
 - feed batch add использует `{"feeds": [...]}`;
+- indexing archive status contract 1.0.3 закрепляет официальное поле `state` со значениями `IN_PROGRESS`, `DONE`, `FAILED`; `download_url` используется только при `DONE` и проходит HTTPS guard;
+- generic `status` не используется как недокументированный fallback;
 - destructive/quota-consuming operations требуют exact preview + approval.
 
-## PRO export 1.0.2
+## PRO export
 
 - request paths host-relative, non-empty и начинаются с `/`;
 - `use_pro_tariff` сериализуется как `"true"` / `"false"`;

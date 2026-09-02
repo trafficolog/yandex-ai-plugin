@@ -4,6 +4,24 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [OPUS 1.1.1] — 2026-09-02
+
+Follow-up fix-release по финальному Opus 5 review.
+
+### Repository controls
+
+- 90-day freshness gate больше не является time-bomb для несвязанных PR: age hard-fail применяется к изменённому freshness-controlled reference, а scheduled strict workflow проверяет весь набор и синхронизирует отдельный GitHub issue.
+- `CONTRACT_MATRIX.json` расширен контрактами Metrika Direct-expense duplication guard, Webmaster indexing archive lifecycle, SEO unknown Webmaster impressions и Marketing quality metadata shape.
+- `PLUGIN_STANDARD` прямо определяет contract matrix как traceability index, а не semantic proof, и фиксирует, что eval fixtures пока структурно валидируются, но не исполняются против модели.
+- Cross-service `authentication: ON_USE` документирован как schema-compatible deferred-auth metadata без собственной credential/transport surface.
+- Marketing taxonomy согласована с фактической девяткой executable finding types и explicit deferred set через normative spec amendment.
+
+### Plugin releases
+
+- Yandex Metrika `1.0.2`: source-label guard для Direct expenses распознаёт tokenized labels и сохраняет независимый CSV UTM risk layer.
+- Yandex Webmaster `1.0.3`: официально перепроверено поле indexing archive `state` (`IN_PROGRESS` / `DONE` / `FAILED`) и закреплено regression/traceability contract.
+- Direct `1.0.1`, Wordstat `1.0.2`, Search `1.0.2`, SEO `1.0.1`, Marketing `1.1.0` не менялись.
+
 ## [DOCS 1.0.0] — 2026-09-02
 
 ### Изменено

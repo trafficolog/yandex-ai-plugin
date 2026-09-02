@@ -110,11 +110,11 @@ class BilingualDocumentationTests(unittest.TestCase):
             for role in ["canonical", "reconciliation_only", "enrichment"]:
                 self.assertIn(role, content)
 
-    def test_docs_release_does_not_change_plugin_semver(self):
+    def test_current_plugin_semver_matrix(self):
         expected = {
             "yandex-direct": "1.0.1",
-            "yandex-metrika": "1.0.1",
-            "yandex-webmaster": "1.0.2",
+            "yandex-metrika": "1.0.2",
+            "yandex-webmaster": "1.0.3",
             "yandex-wordstat": "1.0.2",
             "yandex-search": "1.0.2",
             "yandex-seo": "1.0.1",

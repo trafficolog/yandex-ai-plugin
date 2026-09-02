@@ -49,11 +49,17 @@ class TestMetrikaImport(unittest.TestCase):
             "ЯндексДирект",
             "direct_yandex",
             "ya.direct",
+            "Yandex Direct RU",
+            "direct_ads",
+            "Яндекс Директ агентство",
         ]
         for source in aliases:
             with self.subTest(source=source):
                 with self.assertRaises(ValueError):
                     guard_expense_source(source)
+
+    def test_arbitrary_concatenated_direct_word_is_not_proven_source(self):
+        guard_expense_source("MyDirect")
 
     def test_direct_like_utm_expense_csv_requires_explicit_override(self):
         content = "Date,UTMSource,UTMMedium,Expenses\n2026-08-01,yandex,cpc,100\n"

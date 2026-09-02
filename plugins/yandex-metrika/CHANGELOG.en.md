@@ -2,7 +2,12 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
-> `DOCS 1.0.0` added bilingual docs; the plugin version is unchanged.
+## [1.0.2] — 2026-09-02
+
+- Hardened the Direct expense duplication guard: explicit tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`) are rejected in addition to exact aliases.
+- The CSV-content `UTMSource` / `UTMMedium` guard remains an independent second layer with the explicit `--allow-direct-risk` override.
+- Arbitrary substrings such as `MyDirect` are not declared Direct provenance without additional evidence.
+- Added the guard to the repository contract matrix as a high-risk traceability contract.
 
 ## [1.0.1] — 2026-09-02
 

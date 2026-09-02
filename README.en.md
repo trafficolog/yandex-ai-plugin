@@ -2,21 +2,21 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="docs release" src="https://img.shields.io/badge/docs-DOCS%201.0.0-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-OPUS%201.1.1-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** the Phase 1–6B functional scope is shipped. The current version set is intentionally mixed: Direct, Metrika and SEO are `1.0.1`; Webmaster, Wordstat and Search are `1.0.2`; Marketing is `1.1.0`. `DOCS 1.0.0` changes documentation only and **does not bump plugin SemVer**.
+> **Status:** the Phase 1–6B functional scope is shipped. Fix release `OPUS 1.1.1` updates Metrika to `1.0.2` and Webmaster to `1.0.3`; Direct and SEO remain `1.0.1`, Wordstat and Search remain `1.0.2`, and Marketing remains `1.1.0`.
 
 ## Quick overview
 
 | Plugin | Version | Type | Primary scope | Live writes? |
 |---|---:|---|---|---|
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | campaigns, reports, audit, keywords, budgets | preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.1 | service | analytics, goals, attribution, Logs, imports | guarded writes |
-| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.2 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | analytics, goals, attribution, Logs, imports | guarded writes |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | demand, semantics, dynamics, regions | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
 | [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence and orchestration | delegated preview only |
@@ -40,6 +40,8 @@ yandex-webmaster ─────────────▶ yandex-seo
 ```
 
 `yandex-seo` and `yandex-marketing` have no Yandex HTTP/API client or credential surface. They consume structured evidence/artifacts from service plugins, preserve provenance and limitations, derive findings, and delegate consequential action previews back to the owning service plugin.
+
+Their `.agents` marketplace entries use `authentication: ON_USE` as schema-compatible deferred-auth metadata; this does not mean those transport-free plugins own credentials.
 
 ### Common safety lifecycle
 
@@ -104,26 +106,32 @@ python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
+Strict freshness is separate:
+
+```bash
+python scripts/check_reference_freshness.py
+```
+
 ## Versions
 
 ```text
 yandex-direct        1.0.1
-yandex-metrika       1.0.1
-yandex-webmaster     1.0.2
+yandex-metrika       1.0.2
+yandex-webmaster     1.0.3
 yandex-wordstat      1.0.2
 yandex-search        1.0.2
 yandex-seo           1.0.1
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`) do not imply synchronized plugin bumps.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`) do not imply synchronized plugin bumps.
 
 ## Documentation
 
 - [`docs/PLUGIN_STANDARD.en.md`](docs/PLUGIN_STANDARD.en.md) · [RU](docs/PLUGIN_STANDARD.md)
 - [`docs/SERVICE_MATRIX.en.md`](docs/SERVICE_MATRIX.en.md) · [RU](docs/SERVICE_MATRIX.md)
 - [`docs/ROADMAP.en.md`](docs/ROADMAP.en.md) · [RU](docs/ROADMAP.md)
-- [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json)
+- [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json) — high-risk traceability index, not semantic proof
 - [`docs/REVIEW_FIRST_RELEASE.en.md`](docs/REVIEW_FIRST_RELEASE.en.md) · [RU](docs/REVIEW_FIRST_RELEASE.md)
 - [`CHANGELOG.en.md`](CHANGELOG.en.md) · [RU](CHANGELOG.md)
 

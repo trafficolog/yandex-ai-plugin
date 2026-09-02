@@ -15,11 +15,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Compute validation change scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > /tmp/changed-files.txt
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            base="${{ github.event.before }}"
+          else
+            exit 0
+          fi
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            git ls-files > /tmp/changed-files.txt
+          else
+            git diff --name-only "$base" "${{ github.sha }}" > /tmp/changed-files.txt
+          fi
+          cat /tmp/changed-files.txt
       - name: Validate repository contracts
-        run: python scripts/validate_repo.py
+        run: python scripts/validate_repo.py --changed-files-file /tmp/changed-files.txt
       - name: Run repository tests
         run: python -m unittest discover -s tests -v
 
@@ -68,7 +88,7 @@ jobs:
           fi
 
           printf '%s\n' "$changed_files"
-          shared='^(\.agents/|\.claude-plugin/|\.github/workflows/ci\.yml$|scripts/validate_repo\.py$|docs/PLUGIN_STANDARD\.md$|docs/superpowers/specs/|tests/)'
+          shared='^(\.agents/|\.claude-plugin/|\.github/workflows/|scripts/(validate_repo|contract_controls|check_reference_freshness)\.py$|docs/(PLUGIN_STANDARD(\.en)?\.md|CONTRACT_MATRIX\.json)$|docs/superpowers/(specs|plans)/|tests/)'
 
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-direct/)|$shared"; then
             echo "direct=true" >> "$GITHUB_OUTPUT"

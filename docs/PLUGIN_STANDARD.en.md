@@ -40,7 +40,9 @@ A recommendation is not permission. Draft creation is distinct from activation/p
 
 ## 4. Execution abstraction
 
-Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning and safety semantics remain backend-independent. Cross-service plugins may prepare delegated previews but own no service transport or credentials.
+Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning and safety semantics remain backend-independent.
+
+Cross-service plugins may prepare delegated previews but own no service transport or credentials. In the `.agents` marketplace they use `policy.authentication: ON_USE` because the marketplace schema requires an authentication policy from the supported `ON_INSTALL` / `ON_USE` values. For transport-free orchestration this is **schema-compatible deferred-auth metadata**, not a claim that the plugin owns credentials: repository validation separately rejects `.env.example` and service transport inside `yandex-seo` / `yandex-marketing`.
 
 ## 5. Skill conventions
 
@@ -55,7 +57,7 @@ Descriptions start with `Use when`; references contain long/volatile API facts.
 
 ## 6. API freshness
 
-Official Yandex documentation is canonical. Platform facts in freshness-controlled references carry a verification marker and pass the deterministic 90-day gate.
+Official Yandex documentation is canonical. Platform facts in freshness-controlled references carry a verification marker. Ordinary PR/push validation makes the 90-day age rule a hard error only for a changed freshness-controlled reference; malformed/missing/future verification markers remain errors. A separate scheduled strict check evaluates the complete controlled set and creates or updates an issue when references become stale. This preserves re-verification pressure without making unrelated PRs fail because time passed.
 
 ## 7. Capability matrix
 
@@ -75,10 +77,18 @@ Plugins version independently with SemVer. Structural/documentation repository c
 
 Executable helpers have unit tests. `evals/scenarios.json` includes machine-verifiable `expect` fields: `must_route_to`, `must_refuse`, `must_mention`, `must_not_claim`; allowed write values are `false`, `preview-first`, and `approval-required`.
 
-## 10. Shared code rule
+Important: the current repository validator checks **eval fixture structure and consistency**, but it does not execute scenarios against a model. The `expect` contract makes scenarios formal and suitable for a future eval runner; green CI does not mean a model has automatically passed those scenarios.
+
+## 10. Contract matrix: traceability, not semantic proof
+
+`docs/CONTRACT_MATRIX.json` is a traceability index for high-risk contracts. It links `SKILL.md` → helper → regression-test file → reference/freshness metadata.
+
+Validation checks matrix structure, unique IDs, supported statuses, referenced path existence, presence of a declared regression-test file for `implemented` contracts, and selected reference freshness metadata. It **does not inspect the semantic content of the test code** and therefore cannot prove that a listed test assertion actually enforces the stated invariant. A green matrix gate proves traceability metadata is consistent; it does not replace semantic test review or external API verification.
+
+## 11. Shared code rule
 
 Do not promote code into `packages/` merely because it looks similar. Shared packages require repeated responsibility and a stable interface.
 
-## 11. CI contract
+## 12. CI contract
 
-Validation covers both marketplace formats, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, the cross-service no-transport boundary, bilingual documentation pairs, and changelog release-marker parity. Path-aware CI models producer → consumer dependencies.
+Validation covers both marketplace formats, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, the cross-service no-transport boundary, bilingual documentation pairs, and changelog release-marker parity. Path-aware CI models producer → consumer dependencies. Freshness age is scoped to changed controlled references on PR/push; the scheduled workflow performs the strict whole-repository freshness check.

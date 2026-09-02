@@ -2,9 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `1.0.1`. Service plugin для аналитики Яндекс Метрики: reporting, conversions, ecommerce, attribution, goals, Logs API, imports и low-level Management API.
-
-> `DOCS 1.0.0` меняет только документацию.
+Версия `1.0.2`. Service plugin для аналитики Яндекс Метрики: reporting, conversions, ecommerce, attribution, goals, Logs API, imports и low-level Management API.
 
 ## Capability matrix
 
@@ -22,6 +20,8 @@
 - sampling, sample share, data lag и другие quality fields являются частью результата;
 - Logs lifecycle explicit: evaluate → create → status → download → clean;
 - imports защищены от duplicate-risk для native Yandex Direct expenses;
+- expense guard 1.0.2 блокирует exact aliases и tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`) и независимо анализирует `UTMSource`/`UTMMedium` в CSV;
+- arbitrary substring вроде `MyDirect` сам по себе не считается доказанным Direct source;
 - goal mutations preview-first;
 - cross-service consumers должны сохранять quality limitations.
 

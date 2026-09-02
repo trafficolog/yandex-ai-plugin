@@ -1,5 +1,5 @@
 import json
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 import tempfile
 import unittest
@@ -50,7 +50,7 @@ class FreshnessContractTests(unittest.TestCase):
 
 
 class ContractMatrixTests(unittest.TestCase):
-    def make_tree(self):
+    def make_tree(self, *, verified="2026-09-02"):
         tmp = tempfile.TemporaryDirectory()
         root = Path(tmp.name)
         skill = root / "plugins/yandex-direct/skills/router/SKILL.md"
@@ -62,7 +62,7 @@ class ContractMatrixTests(unittest.TestCase):
         skill.write_text("---\nname: router\ndescription: Use when routing.\n---\n", encoding="utf-8")
         helper.write_text("VALUE = 1\n", encoding="utf-8")
         test.write_text("def test_value(): assert True\n", encoding="utf-8")
-        reference.write_text("Verified: 2026-09-02\n", encoding="utf-8")
+        reference.write_text(f"Verified: {verified}\n", encoding="utf-8")
         matrix = {
             "version": 1,
             "contracts": [{
@@ -124,6 +124,43 @@ class ContractMatrixTests(unittest.TestCase):
         (root / "plugins/yandex-direct/references/api.md").write_text("No verification marker\n", encoding="utf-8")
         errors = validate_contract_matrix(root, matrix, known_plugins={"yandex-direct"}, today=date(2026, 9, 2))
         self.assertTrue(any("verification" in error.lower() for error in errors))
+
+    def test_stale_unchanged_reference_does_not_break_scoped_validation(self):
+        tmp, root, matrix = self.make_tree(verified="2026-09-01")
+        self.addCleanup(tmp.cleanup)
+        errors = validate_contract_matrix(
+            root,
+            matrix,
+            known_plugins={"yandex-direct"},
+            today=date(2027, 3, 20),
+            changed_paths=set(),
+        )
+        self.assertFalse(any("stale" in error.lower() for error in errors), errors)
+
+    def test_stale_changed_reference_is_a_hard_error(self):
+        tmp, root, matrix = self.make_tree(verified="2026-09-01")
+        self.addCleanup(tmp.cleanup)
+        errors = validate_contract_matrix(
+            root,
+            matrix,
+            known_plugins={"yandex-direct"},
+            today=date(2027, 3, 20),
+            changed_paths={"plugins/yandex-direct/references/api.md"},
+        )
+        self.assertTrue(any("stale" in error.lower() for error in errors), errors)
+
+    def test_strict_freshness_reports_unchanged_stale_reference(self):
+        tmp, root, matrix = self.make_tree(verified="2026-09-01")
+        self.addCleanup(tmp.cleanup)
+        errors = validate_contract_matrix(
+            root,
+            matrix,
+            known_plugins={"yandex-direct"},
+            today=date(2027, 3, 20),
+            changed_paths=set(),
+            strict_freshness=True,
+        )
+        self.assertTrue(any("stale" in error.lower() for error in errors), errors)
 
 
 if __name__ == "__main__":
