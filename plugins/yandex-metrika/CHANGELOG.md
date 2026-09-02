@@ -2,7 +2,12 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-> `DOCS 1.0.0` добавил bilingual docs; версия плагина не изменена.
+## [1.0.2] — 2026-09-02
+
+- Усилен Direct expense duplication guard: помимо exact aliases блокируются явные tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`).
+- CSV-content guard по `UTMSource` / `UTMMedium` остаётся независимым вторым слоем и сохраняет explicit `--allow-direct-risk` override.
+- Arbitrary substring вроде `MyDirect` не объявляется Direct provenance без дополнительного evidence.
+- Guard добавлен в repository contract matrix как high-risk traceability contract.
 
 ## [1.0.1] — 2026-09-02
 
