@@ -9,7 +9,7 @@ Every proposed link records:
 - source and target page IDs;
 - semantic relation;
 - explicit user need/context;
-- reason codes and evidence;
+- at least one non-empty reason code plus evidence/context when available;
 - confidence class `LOW|MEDIUM|HIGH`;
 - claim class `OBSERVED|DERIVED|HYPOTHESIS|METHODOLOGY`.
 
@@ -22,9 +22,10 @@ The deterministic audit may emit:
 - `ORPHAN_PAGE` — a non-root architecture page has no observed valid internal links;
 - `STRUCTURAL_PARENT_LINK_MISSING` — canonical parent → child navigation/supporting link is absent from supplied inventory;
 - `MISSING_JUSTIFIED_LINK` — an approved semantic edge has no matching observed directed link;
+- `UNJUSTIFIED_LINK` — an observed known-endpoint link matches neither a canonical structural parent→child relation nor an approved semantic edge;
 - `UNKNOWN_LINK_ENDPOINT` — supplied inventory references a page outside the architecture.
 
-These findings describe the supplied architecture/inventory contract. They do not prove ranking impact.
+These findings describe the supplied architecture/inventory contract. They do not prove ranking impact. `UNJUSTIFIED_LINK` means “not justified by the supplied architecture artifact,” not “harmful for rankings.”
 
 ## Cycles
 
