@@ -52,6 +52,13 @@ def build_topic_map(
     if not isinstance(candidate_topics, list):
         raise ValueError("candidate_topics must be a list")
 
+    declared_seeds: set[str] = set()
+    for seed_record in seeds:
+        seed_name = seed_record.get("seed")
+        if not isinstance(seed_name, str) or not seed_name:
+            raise ValueError("every seed requires a non-empty seed name")
+        declared_seeds.add(seed_name)
+
     normalized_queries: dict[str, dict[str, Any]] = {}
     query_aliases: dict[str, str] = {}
     query_id_keys: dict[str, str] = {}
@@ -65,6 +72,8 @@ def build_topic_map(
             raise ValueError("every phrase record requires query_id")
         if not isinstance(source_seed, str) or not source_seed:
             raise ValueError("every phrase record requires source_seed")
+        if source_seed not in declared_seeds:
+            raise ValueError(f"phrase record references undeclared source_seed: {source_seed}")
         if not isinstance(relation, str) or not relation:
             raise ValueError("every phrase record requires relation")
 
