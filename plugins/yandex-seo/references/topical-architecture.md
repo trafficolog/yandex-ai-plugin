@@ -46,9 +46,11 @@ Semantic relationships are independent from structural parenthood. Allowed initi
 
 These are repository information-architecture labels, not asserted search-engine internal edge types. Every semantic edge must carry at least one validated `reason_code` from the approved v1 vocabulary. If an edge is justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC`, it cannot use empirical `OBSERVED` or `DERIVED` claim classes.
 
+A semantic edge must connect two distinct pages, so self-referential `p1 -> p1` edges are rejected. Directed cycles across two or more distinct pages remain valid semantic-graph structures; the repository does not impose a universal acyclic semantic-graph rule.
+
 ## Missing SERP validation
 
-When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. Search-owned cluster records are not valid in that state, and Search-owned reason codes `SERP_OVERLAP` / `SERP_BRIDGE_RISK` cannot be used on page decisions or semantic edges while Search coverage is missing. Wordstat, Webmaster, Metrika, inventory, user and methodology provenance remain independently usable where their own contracts allow it.
+When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. Search-owned cluster records are not valid in that state, and Search-owned reason codes `SERP_OVERLAP` / `SERP_BRIDGE_RISK` cannot be used on page decisions, semantic edges, or preview internal-link candidates while Search coverage is missing. Wordstat, Webmaster, Metrika, inventory, user and methodology provenance remain independently usable where their own contracts allow it.
 
 Boundary-changing decisions such as `CREATE`, `MERGE`, `SPLIT`, `REDIRECT`, `SECTION_ONLY`, `BRIDGE` or `NO_PAGE` must remain `HYPOTHESIS` while Search evidence is missing. An observed `PRESERVE` decision for an existing page may remain `OBSERVED` when supported by existing-site evidence.
 
@@ -59,6 +61,8 @@ Page decisions are normalized as `status: PREVIEW`. Caller-supplied execution/wr
 When `reason_codes` are supplied on a page decision, every code is validated against the same finite v1 vocabulary used by semantic edges and link-plan records. A decision justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC` cannot use empirical `OBSERVED` or `DERIVED` claim classes. Empirical `OBSERVED` or `DERIVED` decisions must carry at least one provenance source through validated `reason_codes` or a non-empty `evidence` list; a provenance-free empirical decision is rejected. The `evidence` field itself is list-typed: scalar strings or objects are rejected rather than treated as truthy provenance.
 
 When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. `MERGE` and `REDIRECT` targets must differ from the source `page_id`, so self-merge and self-redirect previews are rejected. When a decision supplies `target_url`, that value must be a non-empty string; for `MERGE` or `REDIRECT`, it must also differ from the source page's known `url` or `proposed_url`. If both `target_page_id` and a `target_url` that belongs to a known architecture node are supplied, both target representations must resolve to the same page. Unknown/external target URLs are not rejected merely because they have no in-bundle owner. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
+
+For `MERGE` and `REDIRECT`, known in-bundle targets form a migration graph. That destructive target graph must be acyclic: mixed redirect/merge loops of any length are rejected. A known `target_url` participates in this check by resolving to its architecture page; external or otherwise unknown target URLs are not fabricated into graph nodes. This destructive migration constraint is separate from the semantic graph, where multi-page cycles remain legal.
 
 ## Mutable facts / SSoT
 
