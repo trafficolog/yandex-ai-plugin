@@ -2,9 +2,9 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.1`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
+Version `1.1.0`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
 
-> Phase 7 implementation adds Topical Architecture and Internal Linking; the release version will be updated separately after the complete contract/documentation gate.
+> Phase 7 `1.1.0` adds Topical Architecture and Internal Linking while keeping Search the owner of SERP-overlap clustering and SEO transport-free.
 
 Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that SEO owns a credential surface.
 
