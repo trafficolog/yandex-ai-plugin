@@ -41,6 +41,7 @@ class TestWordstatTopicMap(unittest.TestCase):
         self.assertEqual(result["schema"], "wordstat-topic-map/v1")
         self.assertEqual(len(result["queries"]), 1)
         query = result["queries"][0]
+        self.assertEqual(query["query_ids"], ["q1", "q2"])
         self.assertEqual(set(query["source_seeds"]), {"seo", "аудит сайта"})
         self.assertEqual(set(query["relations"]), {"nested", "association"})
         self.assertEqual(len(query["demand_observations"]), 2)
