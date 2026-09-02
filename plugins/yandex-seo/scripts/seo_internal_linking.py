@@ -40,6 +40,14 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
     user_need = raw.get("user_need")
     if not isinstance(user_need, str) or not user_need.strip():
         raise ValueError("candidate link requires a non-empty user_need")
+    reason_codes = raw.get("reason_codes")
+    if (
+        not isinstance(reason_codes, list)
+        or not reason_codes
+        or any(not isinstance(code, str) or not code.strip() for code in reason_codes)
+    ):
+        raise ValueError("candidate link requires at least one non-empty reason_code")
+    normalized_reason_codes = [code.strip() for code in reason_codes]
     confidence = raw.get("confidence")
     if confidence not in CONFIDENCE_LEVELS:
         raise ValueError(f"confidence must be one of {sorted(CONFIDENCE_LEVELS)}")
@@ -54,7 +62,7 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
         "to_page_id": target,
         "relation": relation,
         "user_need": user_need.strip(),
-        "reason_codes": deepcopy(raw.get("reason_codes", [])),
+        "reason_codes": normalized_reason_codes,
         "evidence": deepcopy(raw.get("evidence", [])),
         "confidence": confidence,
         "claim_class": claim_class,
