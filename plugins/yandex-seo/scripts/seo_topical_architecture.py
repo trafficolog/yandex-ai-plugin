@@ -272,7 +272,10 @@ def _normalize_page_decisions(
         if decision not in PAGE_DECISIONS:
             raise ValueError(f"decision must be one of {sorted(PAGE_DECISIONS)}")
         claim_class = _validate_claim_class(raw.get("claim_class"))
-        evidence = deepcopy(raw.get("evidence", []))
+        evidence = raw.get("evidence", [])
+        if not isinstance(evidence, list):
+            raise ValueError("page_decision.evidence must be a list")
+        evidence = deepcopy(evidence)
         reason_codes: list[str] = []
 
         item = {
