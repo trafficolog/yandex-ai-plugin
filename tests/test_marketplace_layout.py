@@ -14,7 +14,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_direct_plugin_preserves_version(self):
         data = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text())
-        self.assertEqual(data["version"], "1.0.0")
+        self.assertEqual(data["version"], "1.0.1")
         self.assertEqual(data["skills"], "./skills/")
 
     def test_direct_router_and_specialized_skills_moved(self):
@@ -71,7 +71,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_webmaster_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.0 |", content)
+        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.1 |", content)
 
     def test_ci_has_wordstat_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -81,7 +81,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_wordstat_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.0 |", content)
+        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.1 |", content)
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
@@ -97,7 +97,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_search_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Search | 1 | **available** | 1.0.0 |',content)
+        self.assertIn('| Yandex Search | 1 | **available** | 1.0.1 |',content)
 
     def test_roadmap_marks_phase5_implemented_and_phase6_next(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -118,7 +118,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_seo_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex SEO | X | **available** | 1.0.0 |',content)
+        self.assertIn('| Yandex SEO | X | **available** | 1.0.1 |',content)
 
     def test_roadmap_marks_phase6a_and_phase6b(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -141,8 +141,8 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_marketing_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Marketing | X | **available** | 1.0.0 |',content)
-        self.assertIn('`yandex-marketing`: **available 1.0.0**',content)
+        self.assertIn('| Yandex Marketing | X | **available** | 1.0.1 |',content)
+        self.assertIn('`yandex-marketing`: **available 1.0.1**',content)
 
     def test_roadmap_marks_phase6b_implemented(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
