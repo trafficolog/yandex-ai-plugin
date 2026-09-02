@@ -138,6 +138,33 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
                         }],
                     )
 
+    def test_missing_search_keeps_non_search_link_plan_reasons_available(self):
+        architecture = seo_topical_architecture.build_topical_architecture(
+            mode="EXISTING_SITE",
+            coverage={**COVERAGE_WITH_SEARCH, "search": "MISSING"},
+            clusters=[],
+            page_decisions=[],
+            structural_nodes=_two_page_nodes(),
+            semantic_edges=[],
+        )
+
+        plan = seo_internal_linking.build_link_plan(
+            architecture=architecture,
+            candidate_links=[{
+                "from_page_id": "existing",
+                "to_page_id": "support",
+                "relation": "SUPPORT",
+                "user_need": "supporting detail",
+                "reason_codes": ["WORDSTAT_ASSOCIATION"],
+                "evidence": [],
+                "confidence": "LOW",
+                "claim_class": "HYPOTHESIS",
+            }],
+        )
+
+        self.assertEqual(plan[0]["reason_codes"], ["WORDSTAT_ASSOCIATION"])
+        self.assertEqual(plan[0]["status"], "PREVIEW")
+
 
 if __name__ == "__main__":
     unittest.main()
