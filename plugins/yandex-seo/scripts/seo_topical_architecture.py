@@ -68,6 +68,25 @@ SEMANTIC_RELATIONS = {
     "BRIDGE",
     "COMPLIANCE",
 }
+REASON_CODES = {
+    "SERP_OVERLAP",
+    "SERP_BRIDGE_RISK",
+    "WORDSTAT_NESTED_RELATION",
+    "WORDSTAT_ASSOCIATION",
+    "WORDSTAT_DEMAND_CONTEXT",
+    "WORDSTAT_REGION_CONTEXT",
+    "WORDSTAT_SEASONAL_CONTEXT",
+    "WEBMASTER_QUERY_VISIBILITY",
+    "WEBMASTER_EXISTING_URL",
+    "METRIKA_LANDING_TRAFFIC",
+    "METRIKA_CONVERSION_CONTEXT",
+    "EXISTING_INTERNAL_LINK",
+    "EXISTING_BREADCRUMB",
+    "USER_BUSINESS_CONSTRAINT",
+    "MANUAL_ENTITY_RELATION",
+    "SEMANTIC_HYPOTHESIS",
+    "METHODOLOGY_HEURISTIC",
+}
 NON_EMPIRICAL_REASON_CODES = {"METHODOLOGY_HEURISTIC", "SEMANTIC_HYPOTHESIS"}
 EMPIRICAL_CLAIM_CLASSES = {"OBSERVED", "DERIVED"}
 SERP_VALIDATION_MISSING = "SERP_VALIDATION_MISSING"
@@ -97,6 +116,21 @@ def _validate_claim_class(value: Any) -> str:
     if value not in CLAIM_CLASSES:
         raise ValueError(f"claim_class must be one of {sorted(CLAIM_CLASSES)}")
     return value
+
+
+def _normalize_reason_codes(value: Any, field: str = "reason_codes") -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{field} must be a list")
+    normalized: list[str] = []
+    for raw_code in value:
+        code = _require_nonempty_string(raw_code, f"{field}[]")
+        if code not in REASON_CODES:
+            raise ValueError(f"unknown reason code: {code}")
+        if code not in normalized:
+            normalized.append(code)
+    return normalized
 
 
 def _validate_coverage(coverage: dict[str, Any]) -> dict[str, str]:
@@ -266,7 +300,7 @@ def _normalize_semantic_edges(
         item["user_need"] = _require_nonempty_string(raw.get("user_need"), "user_need")
         item["confidence"] = _validate_confidence(raw.get("confidence"))
         item["claim_class"] = _validate_claim_class(raw.get("claim_class"))
-        item.setdefault("reason_codes", [])
+        item["reason_codes"] = _normalize_reason_codes(raw.get("reason_codes", []))
         item.setdefault("evidence", [])
         if (
             item["reason_codes"]
