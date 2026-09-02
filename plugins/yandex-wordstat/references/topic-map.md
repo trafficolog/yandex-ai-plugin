@@ -17,6 +17,8 @@ The deterministic helper emits `wordstat-topic-map/v1` with:
 - candidate topic relations with `status: HYPOTHESIS`;
 - explicit limitations.
 
+`query_id` is a provenance identifier. Reusing one `query_id` is allowed only when all occurrences resolve to the same normalized query text; the helper rejects one identifier that points to different normalized queries. Different identifiers may still collapse into one normalized query while preserving their alias/provenance relationship.
+
 Allowed topic relation labels are `RELATED`, `NARROWER`, `BROADER`, and `COMPLEMENTARY`. These are information-organization hypotheses, not Yandex ranking or page-boundary contracts.
 
 Confidence values are `LOW`, `MEDIUM`, `HIGH`. They describe evidence quality and must not be presented as calibrated probabilities.
