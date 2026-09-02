@@ -28,6 +28,8 @@ A methodology heuristic is never silently promoted to an observed ranking fact.
 
 Confidence is `LOW|MEDIUM|HIGH` evidence quality, not a probability.
 
+The v1 reason-code vocabulary is finite and validated: `SERP_OVERLAP`, `SERP_BRIDGE_RISK`, `WORDSTAT_NESTED_RELATION`, `WORDSTAT_ASSOCIATION`, `WORDSTAT_DEMAND_CONTEXT`, `WORDSTAT_REGION_CONTEXT`, `WORDSTAT_SEASONAL_CONTEXT`, `WEBMASTER_QUERY_VISIBILITY`, `WEBMASTER_EXISTING_URL`, `METRIKA_LANDING_TRAFFIC`, `METRIKA_CONVERSION_CONTEXT`, `EXISTING_INTERNAL_LINK`, `EXISTING_BREADCRUMB`, `USER_BUSINESS_CONSTRAINT`, `MANUAL_ENTITY_RELATION`, `SEMANTIC_HYPOTHESIS`, `METHODOLOGY_HEURISTIC`. Unknown or misspelled reason codes are rejected rather than treated as new evidence classes.
+
 ## Structural tree
 
 Each page has a unique `page_id` and at most one `canonical_parent_id`. The deterministic validator rejects unknown parents, cycles and duplicate URL/proposed-URL locations. No universal maximum depth is imposed.
@@ -42,7 +44,7 @@ Semantic relationships are independent from structural parenthood. Allowed initi
 
 `PARENT_CONTEXT`, `CHILD_DETAIL`, `SIBLING`, `SUPPORT`, `DEFINITION`, `COMPARISON`, `ALTERNATIVE`, `EVIDENCE`, `USE_CASE`, `NEXT_STEP`, `TRANSACTIONAL_PATH`, `BRIDGE`, `COMPLIANCE`.
 
-These are repository information-architecture labels, not asserted search-engine internal edge types.
+These are repository information-architecture labels, not asserted search-engine internal edge types. Semantic-edge `reason_codes` must use the approved v1 vocabulary. If an edge is justified only by `SEMANTIC_HYPOTHESIS` and/or `METHODOLOGY_HEURISTIC`, it cannot use empirical `OBSERVED` or `DERIVED` claim classes.
 
 ## Missing SERP validation
 
@@ -51,6 +53,8 @@ When `coverage.search=MISSING`, output must disclose `SERP_VALIDATION_MISSING`. 
 ## Recommendation state
 
 Page decisions are normalized as `status: PREVIEW`. Caller-supplied execution/write metadata is not propagated into the architecture artifact, so destructive or migration-oriented recommendations cannot be represented as already executed by this transport-free plugin.
+
+When a page decision supplies `target_page_id`, it must be a non-empty identifier for a page already present in the same architecture bundle. When it supplies `target_url`, that value must be a non-empty string. Target fields remain optional; this validation does not invent a mandatory target for decisions that do not supply one.
 
 ## Mutable facts / SSoT
 
