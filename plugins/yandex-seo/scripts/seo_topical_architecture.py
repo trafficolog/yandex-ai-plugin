@@ -68,6 +68,8 @@ SEMANTIC_RELATIONS = {
     "BRIDGE",
     "COMPLIANCE",
 }
+NON_EMPIRICAL_REASON_CODES = {"METHODOLOGY_HEURISTIC", "SEMANTIC_HYPOTHESIS"}
+EMPIRICAL_CLAIM_CLASSES = {"OBSERVED", "DERIVED"}
 SERP_VALIDATION_MISSING = "SERP_VALIDATION_MISSING"
 
 
@@ -266,6 +268,12 @@ def _normalize_semantic_edges(
         item["claim_class"] = _validate_claim_class(raw.get("claim_class"))
         item.setdefault("reason_codes", [])
         item.setdefault("evidence", [])
+        if (
+            item["reason_codes"]
+            and set(item["reason_codes"]).issubset(NON_EMPIRICAL_REASON_CODES)
+            and item["claim_class"] in EMPIRICAL_CLAIM_CLASSES
+        ):
+            raise ValueError("methodology/hypothesis-only semantic reasons cannot use an empirical claim_class")
         result.append(item)
     return result
 
