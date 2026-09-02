@@ -18,6 +18,7 @@ class ValidateRepositoryTests(unittest.TestCase):
         root = Path(tmp.name)
         (root / '.agents/plugins').mkdir(parents=True)
         (root / '.claude-plugin').mkdir(parents=True)
+        (root / 'docs').mkdir(parents=True)
         plugin = root / f'plugins/{plugin_dir}'
         (plugin / '.codex-plugin').mkdir(parents=True)
         (plugin / '.claude-plugin').mkdir(parents=True)
@@ -25,6 +26,7 @@ class ValidateRepositoryTests(unittest.TestCase):
         (plugin / 'evals').mkdir(parents=True)
         (plugin / 'references').mkdir(parents=True)
         (plugin / 'scripts').mkdir(parents=True)
+        (plugin / 'tests').mkdir(parents=True)
 
         agents_entry = {
             'name': plugin_name,
@@ -55,6 +57,21 @@ class ValidateRepositoryTests(unittest.TestCase):
             '---\nname: router\ndescription: Use when working with the plugin.\n---\n',
             encoding='utf-8',
         )
+        (plugin / 'scripts/helper.py').write_text('VALUE = 1\n', encoding='utf-8')
+        (plugin / 'tests/test_helper.py').write_text('def test_value(): assert True\n', encoding='utf-8')
+        (root / 'docs/CONTRACT_MATRIX.json').write_text(json.dumps({
+            'version': 1,
+            'contracts': [{
+                'id': 'fixture.contract',
+                'plugin': plugin_dir,
+                'status': 'implemented',
+                'skills': [f'plugins/{plugin_dir}/skills/router/SKILL.md'],
+                'helpers': [f'plugins/{plugin_dir}/scripts/helper.py'],
+                'tests': [f'plugins/{plugin_dir}/tests/test_helper.py'],
+                'references': [],
+                'freshness_controlled_references': [],
+            }],
+        }), encoding='utf-8')
         (plugin / 'evals/scenarios.json').write_text(json.dumps({
             'version': 1,
             'scenarios': [{
