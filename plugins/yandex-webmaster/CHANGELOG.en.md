@@ -2,7 +2,11 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
-> `DOCS 1.0.0` added bilingual docs; plugin SemVer is unchanged.
+## [1.0.3] — 2026-09-02
+
+- Re-verified the official indexing archive status contract: the response uses `state` with `IN_PROGRESS`, `DONE`, and `FAILED`, and `download_url` belongs to a completed `DONE` state.
+- Regression tests pin `state` and intentionally do not accept an undocumented `status` fallback.
+- Added the archive lifecycle as a separate high-risk contract in the repository traceability matrix.
 
 ## [1.0.2] — 2026-09-02
 
