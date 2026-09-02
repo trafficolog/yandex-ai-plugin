@@ -31,7 +31,62 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Detect immutable Phase 7 release state
+        id: release_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          tags=(
+            "phase-7-topical-architecture-1.0.0"
+            "yandex-wordstat-v1.1.0"
+            "yandex-seo-v1.1.0"
+          )
+          release_count=0
+          release_shas=()
+
+          for tag in "${tags[@]}"; do
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              release_count=$((release_count + 1))
+              if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+                echo "Release $tag exists but its tag is unavailable after fetch." >&2
+                exit 1
+              fi
+              release_shas+=("$(git rev-list -n 1 "$tag")")
+            fi
+          done
+
+          echo "release_count=$release_count" >> "$GITHUB_OUTPUT"
+          printf 'release_shas=%s\n' "$(IFS=,; echo "${release_shas[*]}")" >> "$GITHUB_OUTPUT"
+
+          if [[ "$release_count" -eq "${#tags[@]}" ]]; then
+            released_sha="${release_shas[0]}"
+            for sha in "${release_shas[@]}"; do
+              if [[ "$sha" != "$released_sha" ]]; then
+                echo "Completed Phase 7 release set points to multiple commits: ${release_shas[*]}" >&2
+                exit 1
+              fi
+            done
+            if ! git merge-base --is-ancestor "$released_sha" "$TARGET_SHA"; then
+              echo "Published Phase 7 commit $released_sha is not an ancestor of current main $TARGET_SHA" >&2
+              exit 1
+            fi
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "released_sha=$released_sha" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report already-published release set
+        if: steps.release_state.outputs.already_published == 'true'
+        shell: bash
+        run: |
+          echo "Phase 7 release set already published; no-op."
+          echo "Published commit: ${{ steps.release_state.outputs.released_sha }}"
+
       - name: Verify exact release target
+        if: steps.release_state.outputs.already_published != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -45,6 +100,7 @@ jobs:
           python scripts/check_reference_freshness.py
 
       - name: Publish repository and plugin releases
+        if: steps.release_state.outputs.already_published != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -109,7 +165,7 @@ jobs:
           cat > /tmp/wordstat.md <<'EOF'
           Yandex Wordstat 1.1.0 adds evidence-first candidate topic mapping:
           - `yandex-wordstat-topic-map` produces `wordstat-topic-map/v1`;
-          - query deduplication preserves all source seeds, relations, and separate demand observations;
+          - query deduplication preserves all source seeds, query-ID aliases, relations, and separate demand observations;
           - capped association coverage propagates `WORDSTAT_ASSOCIATIONS_CAPPED`;
           - topic and relation outputs remain CANDIDATE / HYPOTHESIS artifacts;
           - Wordstat does not claim final page boundaries, internal links, or completed semantic cocoons.
