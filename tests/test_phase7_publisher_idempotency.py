@@ -31,6 +31,18 @@ class Phase7PublisherIdempotencyTests(unittest.TestCase):
         self.assertIn("release_count", text)
         self.assertIn("release_shas", text)
 
+    def test_partial_release_set_resumes_at_existing_common_sha(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        for token in [
+            "partial_release=true",
+            "release_target_sha=$released_sha",
+            "release_target_sha=$TARGET_SHA",
+            "RELEASE_TARGET_SHA: ${{ steps.release_state.outputs.release_target_sha }}",
+            'existing_sha" != "$RELEASE_TARGET_SHA',
+            '--target "$RELEASE_TARGET_SHA"',
+        ]:
+            self.assertIn(token, text)
+
 
 if __name__ == "__main__":
     unittest.main()
