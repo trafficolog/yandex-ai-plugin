@@ -119,6 +119,7 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
     by_id: dict[str, dict[str, Any]] = {}
     seen_locations: dict[str, str] = {}
     normalized: list[dict[str, Any]] = []
+    breadcrumbs_supplied: set[str] = set()
 
     for raw in structural_nodes:
         page_id = _require_nonempty_string(raw.get("page_id"), "page_id")
@@ -129,6 +130,8 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         node["page_id"] = page_id
         node["confidence"] = _validate_confidence(raw.get("confidence"))
         node.setdefault("canonical_parent_id", None)
+        if "breadcrumbs" in raw:
+            breadcrumbs_supplied.add(page_id)
         node.setdefault("breadcrumbs", [])
         node.setdefault("cluster_ids", [])
         node.setdefault("evidence", [])
@@ -183,6 +186,27 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
 
     for page_id in by_id:
         visit(page_id)
+
+    for page_id in breadcrumbs_supplied:
+        breadcrumbs = by_id[page_id].get("breadcrumbs")
+        if not isinstance(breadcrumbs, list):
+            raise ValueError("breadcrumbs must be a list when supplied")
+        normalized_breadcrumbs: list[str] = []
+        for breadcrumb_id in breadcrumbs:
+            normalized_id = _require_nonempty_string(breadcrumb_id, "breadcrumbs[]")
+            if normalized_id not in by_id:
+                raise ValueError(f"unknown breadcrumb page: {normalized_id}")
+            normalized_breadcrumbs.append(normalized_id)
+
+        ancestors: list[str] = []
+        parent = by_id[page_id].get("canonical_parent_id")
+        while parent is not None:
+            ancestors.append(parent)
+            parent = by_id[parent].get("canonical_parent_id")
+        expected = list(reversed(ancestors))
+        if normalized_breadcrumbs != expected:
+            raise ValueError("breadcrumbs must match canonical parent chain")
+        by_id[page_id]["breadcrumbs"] = normalized_breadcrumbs
 
     return normalized, by_id
 
