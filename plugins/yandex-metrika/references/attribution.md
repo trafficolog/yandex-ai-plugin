@@ -11,4 +11,6 @@ Since 2026-06-25, Yandex maps several legacy attribution requests to current ana
 
 Choose the model for the analytical question and state it in the result. A model change can materially change source/campaign conclusions.
 
+If the caller does not provide an attribution model, the bundled Reporting helper must preserve that omission rather than inventing `last` or another model. Result metadata records `attribution_model: null` with `attribution_provenance: omitted`; an explicitly supplied model is recorded with provenance `explicit`.
+
 Official reference: https://yandex.ru/dev/metrika/ru/stat/param
