@@ -1,0 +1,128 @@
+name: Publish Phase 7 Topical Architecture releases
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish verified Phase 7 releases
+    if: >-
+      github.repository == 'trafficolog/yandex-ai-plugins-skills' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify exact release target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          grep -F '"version": "1.1.0"' plugins/yandex-wordstat/.codex-plugin/plugin.json
+          grep -F '"version": "1.1.0"' plugins/yandex-seo/.codex-plugin/plugin.json
+          grep -F '"version": "1.0.2"' plugins/yandex-search/.codex-plugin/plugin.json
+          grep -F '## [PHASE 7 1.0.0] — 2026-09-02' CHANGELOG.md
+          python scripts/validate_repo.py
+          python -m unittest discover -s tests -v
+          python scripts/check_reference_freshness.py
+
+      - name: Publish repository and plugin releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          publish_release() {
+            local tag="$1"
+            local title="$2"
+            local notes_file="$3"
+
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              existing_sha="$(git rev-list -n 1 "$tag")"
+              if [[ "$existing_sha" != "$TARGET_SHA" ]]; then
+                echo "Existing release $tag points to $existing_sha, expected $TARGET_SHA" >&2
+                exit 1
+              fi
+              echo "Release $tag already exists at the expected commit."
+              return 0
+            fi
+
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              existing_sha="$(git rev-list -n 1 "$tag")"
+              if [[ "$existing_sha" != "$TARGET_SHA" ]]; then
+                echo "Existing tag $tag points to $existing_sha, expected $TARGET_SHA" >&2
+                exit 1
+              fi
+              gh release create "$tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --verify-tag \
+                --title "$title" \
+                --notes-file "$notes_file"
+            else
+              gh release create "$tag" \
+                --repo "$GITHUB_REPOSITORY" \
+                --target "$TARGET_SHA" \
+                --title "$title" \
+                --notes-file "$notes_file"
+            fi
+          }
+
+          cat > /tmp/phase7.md <<'EOF'
+          Phase 7 adds evidence-first Topical Architecture / Semantic Cocoons workflows while preserving service ownership boundaries.
+
+          Published plugin matrix:
+          - Yandex Direct 1.0.1 (unchanged)
+          - Yandex Metrika 1.0.2 (unchanged)
+          - Yandex Webmaster 1.0.3 (unchanged)
+          - Yandex Wordstat 1.1.0
+          - Yandex Search 1.0.2 (unchanged)
+          - Yandex SEO 1.1.0
+          - Yandex Marketing 1.1.0 (unchanged)
+
+          Highlights:
+          - Wordstat candidate-only `wordstat-topic-map/v1` with provenance and no fictitious total-demand aggregation;
+          - Search remains the sole owner of real SERP-overlap/Jaccard clustering; no Search runtime change is included;
+          - SEO `seo-topical-architecture/v1` separates `structural_tree` from `semantic_graph` for GREENFIELD and EXISTING_SITE modes;
+          - preview-only internal-link planning and deterministic audit with no CMS writes;
+          - explicit OBSERVED / DERIVED / HYPOTHESIS / METHODOLOGY claim classes and SERP_VALIDATION_MISSING when Search evidence is absent;
+          - no universal ranking, overlap, tree-depth, content-length, anchor-density, or link-count guarantees are introduced.
+          EOF
+
+          cat > /tmp/wordstat.md <<'EOF'
+          Yandex Wordstat 1.1.0 adds evidence-first candidate topic mapping:
+          - `yandex-wordstat-topic-map` produces `wordstat-topic-map/v1`;
+          - query deduplication preserves all source seeds, relations, and separate demand observations;
+          - capped association coverage propagates `WORDSTAT_ASSOCIATIONS_CAPPED`;
+          - topic and relation outputs remain CANDIDATE / HYPOTHESIS artifacts;
+          - Wordstat does not claim final page boundaries, internal links, or completed semantic cocoons.
+          EOF
+
+          cat > /tmp/seo.md <<'EOF'
+          Yandex SEO 1.1.0 adds Topical Architecture and Internal Linking:
+          - `yandex-seo-topical-architecture` produces `seo-topical-architecture/v1` for GREENFIELD and EXISTING_SITE modes;
+          - page decisions are validated against evidence rather than inferred by hidden universal thresholds;
+          - `structural_tree` and `semantic_graph` are separate contracts;
+          - `yandex-seo-internal-linking` produces preview-only link plans and deterministic audits;
+          - Search remains the owner of SERP-overlap clustering and missing Search evidence is disclosed as `SERP_VALIDATION_MISSING`;
+          - the SEO plugin remains transport-free and performs no CMS or Yandex live writes.
+          EOF
+
+          publish_release "phase-7-topical-architecture-1.0.0" "Phase 7 — Topical Architecture 1.0.0" /tmp/phase7.md
+          publish_release "yandex-wordstat-v1.1.0" "Yandex Wordstat 1.1.0" /tmp/wordstat.md
+          publish_release "yandex-seo-v1.1.0" "Yandex SEO 1.1.0" /tmp/seo.md
