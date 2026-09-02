@@ -355,6 +355,8 @@ def _normalize_semantic_edges(
         target = _require_nonempty_string(raw.get("to_page_id"), "to_page_id")
         if source not in known_pages or target not in known_pages:
             raise ValueError("semantic edge references unknown page")
+        if source == target:
+            raise ValueError("semantic edge source and target must differ")
         relation = raw.get("relation")
         if relation not in SEMANTIC_RELATIONS:
             raise ValueError(f"semantic relation must be one of {sorted(SEMANTIC_RELATIONS)}")
