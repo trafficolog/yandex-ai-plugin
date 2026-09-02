@@ -254,11 +254,15 @@ def _normalize_page_decisions(
     if not isinstance(page_decisions, list):
         raise ValueError("page_decisions must be a list")
     known_pages = set(page_index)
+    decided_pages: set[str] = set()
     result: list[dict[str, Any]] = []
     for raw in page_decisions:
         page_id = _require_nonempty_string(raw.get("page_id"), "page_decision.page_id")
         if page_id not in known_pages:
             raise ValueError(f"page decision references unknown page: {page_id}")
+        if page_id in decided_pages:
+            raise ValueError(f"duplicate page decision for page: {page_id}")
+        decided_pages.add(page_id)
         decision = raw.get("decision")
         if decision not in PAGE_DECISIONS:
             raise ValueError(f"decision must be one of {sorted(PAGE_DECISIONS)}")
