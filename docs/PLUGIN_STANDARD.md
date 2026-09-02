@@ -42,7 +42,7 @@ Recommendation не является permission. Draft creation отделено
 
 Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning и safety semantics не должны зависеть от backend.
 
-Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials.
+Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials. В `.agents` marketplace они используют `policy.authentication: ON_USE`, потому что marketplace schema требует authentication policy из поддерживаемых `ON_INSTALL` / `ON_USE`. Для transport-free orchestration это **schema-compatible deferred-auth metadata**, а не заявление о собственной credential surface: validator отдельно запрещает `.env.example` и service transport в `yandex-seo` / `yandex-marketing`.
 
 ## 5. Skill conventions
 
@@ -57,7 +57,7 @@ description: Use when ...
 
 ## 6. API freshness
 
-Official Yandex documentation — canonical source. Platform facts в freshness-controlled references содержат verification marker и проходят deterministic 90-day gate.
+Official Yandex documentation — canonical source. Platform facts в freshness-controlled references содержат verification marker. Обычный PR/push делает 90-day age жёстким только для изменённого freshness-controlled reference; malformed/missing/future marker остаётся ошибкой. Отдельная scheduled strict-проверка регулярно проверяет возраст всего контролируемого набора и заводит/обновляет issue при устаревании. Это сохраняет давление на перепроверку без time-bomb отказа для несвязанных PR.
 
 ## 7. Capability matrix
 
@@ -79,10 +79,18 @@ Recommended service tags: `yandex-direct-v1.1.0`, `yandex-metrika-v1.0.0`. Repos
 
 Executable helpers имеют unit tests. `evals/scenarios.json` содержит machine-verifiable `expect`: `must_route_to`, `must_refuse`, `must_mention`, `must_not_claim`; allowed write values: `false`, `preview-first`, `approval-required`.
 
-## 10. Shared code rule
+Важно: текущий repository validator проверяет **структуру и согласованность eval fixture**, но не запускает scenario против модели. Наличие `expect` делает контракт формализованным и пригодным для будущего eval runner, но зелёный CI не означает, что модель уже автоматически прошла эти сценарии.
+
+## 10. Contract matrix: traceability, не semantic proof
+
+`docs/CONTRACT_MATRIX.json` — индекс прослеживаемости high-risk contracts: он связывает `SKILL.md` → helper → regression-test file → reference/freshness metadata.
+
+Validator проверяет структуру matrix, уникальность ID, допустимые статусы, существование путей, наличие объявленного regression-test file для `implemented` contracts и freshness metadata выбранных references. Он **не анализирует смысл тестового кода** и не доказывает, что указанная функция теста действительно утверждает заявленный invariant. Поэтому зелёная matrix validation — это доказательство корректной traceability metadata, но не замена review тестовой семантики и не доказательство поведения внешнего API.
+
+## 11. Shared code rule
 
 Не выносить код в `packages/` только из-за сходства. Shared package появляется, когда одинаковая responsibility реализована минимум в двух plugins и interface стабилен.
 
-## 11. CI contract
+## 12. CI contract
 
-Validator проверяет оба marketplace format, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, cross-service no-transport boundary, bilingual documentation pairs и changelog release-marker parity. Path-aware CI моделирует producer → consumer dependencies.
+Validator проверяет оба marketplace format, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, cross-service no-transport boundary, bilingual documentation pairs и changelog release-marker parity. Path-aware CI моделирует producer → consumer dependencies. Freshness age в PR/push scoped к изменённым controlled references; scheduled workflow выполняет strict whole-repository freshness check.
