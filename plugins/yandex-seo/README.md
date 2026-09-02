@@ -2,9 +2,9 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `1.0.1`. Read-only cross-service orchestration над structured outputs Wordstat, Search, Webmaster и Metrika. Плагин **не содержит Yandex API client/credentials и не выполняет live writes**.
+Версия `1.1.0`. Read-only cross-service orchestration над structured outputs Wordstat, Search, Webmaster и Metrika. Плагин **не содержит Yandex API client/credentials и не выполняет live writes**.
 
-> Phase 7 implementation добавляет Topical Architecture и Internal Linking; release version будет обновлена отдельно после полного contract/doc gate.
+> Phase 7 `1.1.0` добавляет Topical Architecture и Internal Linking, сохраняя Search владельцем SERP-overlap clustering и SEO transport-free.
 
 Marketplace policy: `.agents` entry использует `authentication: ON_USE` как schema-compatible deferred-auth metadata. Для этого transport-free плагина это означает отложенную авторизацию в сервисных плагинах-владельцах, а не собственную credential surface.
 
