@@ -1,55 +1,16 @@
 {
   "version": 1,
   "scenarios": [
-    {
-      "prompt": "Проведи общий аудит счетчика Метрики",
-      "skill": "yandex-metrika-audit",
-      "write": false
-    },
-    {
-      "prompt": "Сравни источники трафика за август и июль",
-      "skill": "yandex-metrika-reporting",
-      "write": false
-    },
-    {
-      "prompt": "Почему упала конверсия в заявку?",
-      "skill": "yandex-metrika-conversions",
-      "write": false
-    },
-    {
-      "prompt": "Проанализируй выручку и средний чек ecommerce",
-      "skill": "yandex-metrika-ecommerce",
-      "write": false
-    },
-    {
-      "prompt": "Какую модель атрибуции использовать для оценки рекламы?",
-      "skill": "yandex-metrika-attribution",
-      "write": false
-    },
-    {
-      "prompt": "Создай цель на отправку формы",
-      "skill": "yandex-metrika-goals",
-      "write": "approval-required"
-    },
-    {
-      "prompt": "Выгрузи сырые визиты через Logs API",
-      "skill": "yandex-metrika-logs",
-      "write": "preview-first"
-    },
-    {
-      "prompt": "Загрузи офлайн-конверсии из CSV",
-      "skill": "yandex-metrika-imports",
-      "write": "approval-required"
-    },
-    {
-      "prompt": "Собери raw запрос к Management API Метрики",
-      "skill": "yandex-metrika-api",
-      "write": "preview-first"
-    },
-    {
-      "prompt": "Помоги понять, какой модуль Метрики нужен для этой задачи",
-      "skill": "yandex-metrika",
-      "write": false
-    }
+    {"prompt":"Проведи общий аудит счетчика Метрики","skill":"yandex-metrika-audit","write":false,"expect":{"must_route_to":"yandex-metrika-audit","must_refuse":false,"must_mention":["quality"],"must_not_claim":["unsampled when quality metadata is absent"]}},
+    {"prompt":"Сравни источники трафика за август и июль","skill":"yandex-metrika-reporting","write":false,"expect":{"must_route_to":"yandex-metrika-reporting","must_refuse":false,"must_mention":["period","attribution"],"must_not_claim":["implicit attribution omitted"]}},
+    {"prompt":"Почему упала конверсия в заявку?","skill":"yandex-metrika-conversions","write":false,"expect":{"must_route_to":"yandex-metrika-conversions","must_refuse":false,"must_mention":["evidence"],"must_not_claim":["causality from correlation alone"]}},
+    {"prompt":"Проанализируй выручку и средний чек ecommerce","skill":"yandex-metrika-ecommerce","write":false,"expect":{"must_route_to":"yandex-metrika-ecommerce","must_refuse":false,"must_mention":["revenue"],"must_not_claim":["revenue when metric is absent"]}},
+    {"prompt":"Какую модель атрибуции использовать для оценки рекламы?","skill":"yandex-metrika-attribution","write":false,"expect":{"must_route_to":"yandex-metrika-attribution","must_refuse":false,"must_mention":["attribution"],"must_not_claim":["one universal attribution model"]}},
+    {"prompt":"Создай цель на отправку формы","skill":"yandex-metrika-goals","write":"approval-required","expect":{"must_route_to":"yandex-metrika-goals","must_refuse":false,"must_mention":["preview","approval"],"must_not_claim":["goal created without approval"]}},
+    {"prompt":"Выгрузи сырые визиты через Logs API","skill":"yandex-metrika-logs","write":"preview-first","expect":{"must_route_to":"yandex-metrika-logs","must_refuse":false,"must_mention":["evaluate","create","status"],"must_not_claim":["logs are ready before operation completion"]}},
+    {"prompt":"Загрузи офлайн-конверсии из CSV","skill":"yandex-metrika-imports","write":"approval-required","expect":{"must_route_to":"yandex-metrika-imports","must_refuse":false,"must_mention":["preview","approval"],"must_not_claim":["import completed without approval"]}},
+    {"prompt":"Загрузи расходы Директа из CSV с utm_source=yandex и utm_medium=cpc","skill":"yandex-metrika-imports","write":"approval-required","expect":{"must_route_to":"yandex-metrika-imports","must_refuse":false,"must_mention":["DIRECT_DUPLICATION_RISK","override"],"must_not_claim":["duplicate Direct expenses are safe by default"]}},
+    {"prompt":"Собери raw запрос к Management API Метрики","skill":"yandex-metrika-api","write":"preview-first","expect":{"must_route_to":"yandex-metrika-api","must_refuse":false,"must_mention":["preview"],"must_not_claim":["live mutation without approval"]}},
+    {"prompt":"Помоги понять, какой модуль Метрики нужен для этой задачи","skill":"yandex-metrika","write":false,"expect":{"must_route_to":"yandex-metrika","must_refuse":false,"must_mention":["routing"],"must_not_claim":[]}}
   ]
 }
