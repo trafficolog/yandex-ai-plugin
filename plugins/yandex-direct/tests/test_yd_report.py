@@ -22,6 +22,26 @@ class TestReportHelpers(unittest.TestCase):
         self.assertEqual(parse_retry_in({"Retryin": "11"}), 11)
         self.assertEqual(parse_retry_in({}), 5)
 
+    def test_conversion_reports_make_default_attribution_explicit(self):
+        body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
+        self.assertEqual(body["params"]["AttributionModels"], ["LC"])
+
+    def test_report_can_scope_goals_and_attribution(self):
+        body = build_report_body(
+            "campaign",
+            "2026-08-01",
+            "2026-08-31",
+            report_name="campaign",
+            goals=[123, 456],
+            attribution_models=["LSCCD"],
+        )
+        self.assertEqual(body["params"]["Goals"], [123, 456])
+        self.assertEqual(body["params"]["AttributionModels"], ["LSCCD"])
+
+    def test_obsolete_include_discount_is_not_sent(self):
+        body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
+        self.assertNotIn("IncludeDiscount", body["params"])
+
 
 if __name__ == "__main__":
     unittest.main()
