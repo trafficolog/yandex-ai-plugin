@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 from datetime import date
 import json
 from pathlib import Path
@@ -291,7 +292,13 @@ def _validate_plugin(
             errors.append(f"root README version {codex_version} missing for {plugin_name}")
 
 
-def validate_repository(root: Path, *, today: date | None = None) -> list[str]:
+def validate_repository(
+    root: Path,
+    *,
+    today: date | None = None,
+    changed_paths: set[str] | None = None,
+    strict_reference_freshness: bool = False,
+) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
     agent_marketplace_path = root / ".agents/plugins/marketplace.json"
@@ -356,15 +363,36 @@ def validate_repository(root: Path, *, today: date | None = None) -> list[str]:
                 matrix,
                 known_plugins=known_plugin_dirs,
                 today=today,
+                changed_paths=changed_paths,
+                strict_freshness=strict_reference_freshness,
             )
         )
 
     return errors
 
 
+def _read_changed_paths(path: Path | None) -> set[str] | None:
+    if path is None:
+        return None
+    return {
+        line.strip().replace("\\", "/").removeprefix("./")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate repository contracts")
+    parser.add_argument("--changed-files-file", type=Path)
+    parser.add_argument("--strict-reference-freshness", action="store_true")
+    args = parser.parse_args()
+
     root = Path(__file__).resolve().parents[1]
-    errors = validate_repository(root)
+    errors = validate_repository(
+        root,
+        changed_paths=_read_changed_paths(args.changed_files_file),
+        strict_reference_freshness=args.strict_reference_freshness,
+    )
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
