@@ -249,10 +249,11 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
 
 def _normalize_page_decisions(
     page_decisions: list[dict[str, Any]],
-    known_pages: set[str],
+    page_index: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     if not isinstance(page_decisions, list):
         raise ValueError("page_decisions must be a list")
+    known_pages = set(page_index)
     result: list[dict[str, Any]] = []
     for raw in page_decisions:
         page_id = _require_nonempty_string(raw.get("page_id"), "page_decision.page_id")
@@ -261,6 +262,7 @@ def _normalize_page_decisions(
         decision = raw.get("decision")
         if decision not in PAGE_DECISIONS:
             raise ValueError(f"decision must be one of {sorted(PAGE_DECISIONS)}")
+        claim_class = _validate_claim_class(raw.get("claim_class"))
 
         item = {
             "page_id": page_id,
@@ -268,9 +270,23 @@ def _normalize_page_decisions(
             "cluster_ids": deepcopy(raw.get("cluster_ids", [])),
             "evidence": deepcopy(raw.get("evidence", [])),
             "confidence": _validate_confidence(raw.get("confidence")),
-            "claim_class": _validate_claim_class(raw.get("claim_class")),
+            "claim_class": claim_class,
             "status": "PREVIEW",
         }
+
+        if "reason_codes" in raw:
+            reason_codes = _normalize_reason_codes(
+                raw.get("reason_codes"), "page_decision.reason_codes"
+            )
+            if (
+                reason_codes
+                and set(reason_codes).issubset(NON_EMPIRICAL_REASON_CODES)
+                and claim_class in EMPIRICAL_CLAIM_CLASSES
+            ):
+                raise ValueError(
+                    "methodology/hypothesis-only page decision reasons cannot use an empirical claim_class"
+                )
+            item["reason_codes"] = reason_codes
 
         if "target_page_id" in raw:
             target_page_id = _require_nonempty_string(
@@ -283,11 +299,20 @@ def _normalize_page_decisions(
             item["target_page_id"] = target_page_id
 
         if "target_url" in raw:
-            item["target_url"] = _require_nonempty_string(
+            target_url = _require_nonempty_string(
                 raw.get("target_url"), "page_decision.target_url"
             )
+            source_node = page_index[page_id]
+            source_locations = {
+                location
+                for location in (source_node.get("url"), source_node.get("proposed_url"))
+                if location is not None
+            }
+            if decision in {"MERGE", "REDIRECT"} and target_url in source_locations:
+                raise ValueError(f"{decision} target_url must differ from the source page location")
+            item["target_url"] = target_url
 
-        for field in PAGE_DECISION_OPTIONAL_FIELDS - {"target_page_id", "target_url"}:
+        for field in PAGE_DECISION_OPTIONAL_FIELDS - {"reason_codes", "target_page_id", "target_url"}:
             if field in raw:
                 item[field] = deepcopy(raw[field])
         result.append(item)
@@ -382,7 +407,7 @@ def build_topical_architecture(
     normalized_coverage = _validate_coverage(coverage)
     nodes, node_index = _validate_structural_nodes(structural_nodes)
     known_pages = set(node_index)
-    decisions = _normalize_page_decisions(page_decisions, known_pages)
+    decisions = _normalize_page_decisions(page_decisions, node_index)
     edges = _normalize_semantic_edges(semantic_edges, known_pages)
     mutable_fact_sets = _normalize_fact_sets(fact_sets, known_pages)
 
