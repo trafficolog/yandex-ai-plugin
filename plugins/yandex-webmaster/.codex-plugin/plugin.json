@@ -1,7 +1,7 @@
 {
   "name": "yandex-webmaster",
   "description": "Skills for auditing and safely managing Yandex Webmaster using current 2026 API behavior.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "webmaster", "seo", "indexing", "search queries", "sitemaps", "recrawl"],
