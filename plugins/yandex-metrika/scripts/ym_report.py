@@ -25,7 +25,6 @@ CURRENT_ATTRIBUTION_MODELS = {
     "cross_device_last_significant",
     "automatic",
 }
-DEFAULT_ATTRIBUTION_MODEL = "last"
 QUALITY_FIELDS = (
     "sampled",
     "sample_share",
@@ -55,9 +54,11 @@ def _normalize_params(params: dict[str, Any]) -> dict[str, Any]:
             normalized[key] = ",".join(str(item) for item in value)
         else:
             normalized[key] = value
-    attribution = str(normalized.get("attribution") or DEFAULT_ATTRIBUTION_MODEL)
-    validate_attribution_model(attribution)
-    normalized["attribution"] = attribution
+    attribution = normalized.get("attribution")
+    if attribution is not None:
+        attribution = str(attribution)
+        validate_attribution_model(attribution)
+        normalized["attribution"] = attribution
     return normalized
 
 
@@ -85,8 +86,10 @@ def fetch_report(mode: str, params: dict[str, Any], token: str) -> dict[str, Any
     _, payload = request_json("GET", url, token)
     if not isinstance(payload, dict):
         raise RuntimeError("Unexpected Yandex Metrika Reporting API response")
+    attribution = normalized.get("attribution")
     metadata = {
-        "attribution_model": normalized["attribution"],
+        "attribution_model": attribution,
+        "attribution_provenance": "explicit" if attribution is not None else "omitted",
         "date1": normalized.get("date1"),
         "date2": normalized.get("date2"),
         "ids": normalized.get("ids"),
@@ -108,11 +111,7 @@ def main() -> int:
     parser.add_argument("--date2")
     parser.add_argument("--filters")
     parser.add_argument("--accuracy")
-    parser.add_argument(
-        "--attribution",
-        choices=sorted(CURRENT_ATTRIBUTION_MODELS),
-        default=DEFAULT_ATTRIBUTION_MODEL,
-    )
+    parser.add_argument("--attribution", choices=sorted(CURRENT_ATTRIBUTION_MODELS))
     parser.add_argument("--limit", type=int)
     parser.add_argument("--offset", type=int)
     args = parser.parse_args()
