@@ -1,17 +1,10 @@
 {
   "name": "yandex-marketing",
   "description": "Cross-service paid acquisition analysis over Yandex Direct, Metrika, Wordstat and optional Search outputs.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "marketing", "direct", "metrika", "wordstat", "paid-acquisition"],
   "skills": "./skills/",
-  "interface": {
-    "displayName": "Yandex Marketing",
-    "shortDescription": "Cross-service paid acquisition evidence and prioritization.",
-    "longDescription": "Read-only orchestration that reconciles Direct, Metrika, Wordstat and optional Search evidence into reproducible marketing findings and delegated action previews.",
-    "developerName": "Trafficolog",
-    "category": "Marketing",
-    "capabilities": ["Marketing", "Advertising", "Analysis", "Orchestration"]
-  }
+  "interface": {"displayName":"Yandex Marketing","shortDescription":"Cross-service paid acquisition evidence and prioritization.","longDescription":"Read-only orchestration that reconciles Direct, Metrika, Wordstat and optional Search evidence into reproducible marketing findings and delegated action previews.","developerName":"Trafficolog","category":"Marketing","capabilities":["Marketing","Advertising","Analysis","Orchestration"]}
 }

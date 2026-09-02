@@ -1,7 +1,7 @@
 {
   "name": "yandex-direct-suite",
   "description": "Skills for creating, auditing, reporting on, and safely optimizing Yandex Direct campaigns using current API v501 concepts.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {"name": "Community-derived, maintained for 2026 API behavior"},
   "license": "MIT",
   "keywords": ["yandex", "direct", "ppc", "реклама", "директ", "epc", "епк", "wordstat", "metrika"],
@@ -13,12 +13,7 @@
     "developerName": "Community",
     "category": "Marketing",
     "capabilities": ["Analysis", "Advertising", "Reporting", "Workflow"],
-    "defaultPrompt": [
-      "Проведи аудит рекламных кампаний Яндекс Директа по выгрузке.",
-      "Собери новую ЕПК в Яндекс Директе до состояния черновика.",
-      "Проанализируй поисковые запросы и предложи минус-фразы.",
-      "Сделай отчёт по расходу, CPA и темпу бюджета за последние 30 дней."
-    ],
+    "defaultPrompt": ["Проведи аудит рекламных кампаний Яндекс Директа по выгрузке.","Собери новую ЕПК в Яндекс Директе до состояния черновика.","Проанализируй поисковые запросы и предложи минус-фразы.","Сделай отчёт по расходу, CPA и темпу бюджета за последние 30 дней."],
     "brandColor": "#FFCC00"
   }
 }

@@ -1,7 +1,1 @@
-{
-  "name": "yandex-wordstat",
-  "version": "1.0.0",
-  "description": "Yandex Wordstat demand-research workflow skills for Cloud Search API v2.",
-  "author": {"name": "Trafficolog"},
-  "license": "MIT"
-}
+{"name":"yandex-wordstat","version":"1.0.1","skills":"./skills/"}
