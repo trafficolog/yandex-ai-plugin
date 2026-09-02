@@ -129,6 +129,29 @@ def audit_link_inventory(
         valid_links.add((source, target))
         connected_pages.update((source, target))
 
+    structural_links = {
+        (node["canonical_parent_id"], node["page_id"])
+        for node in nodes
+        if node.get("canonical_parent_id") is not None
+    }
+    semantic_graph = architecture.get("semantic_graph", {})
+    semantic_links = {
+        (edge.get("from_page_id"), edge.get("to_page_id"))
+        for edge in semantic_graph.get("edges", [])
+        if edge.get("from_page_id") in page_ids and edge.get("to_page_id") in page_ids
+    }
+    justified_links = structural_links | semantic_links
+
+    for source, target in sorted(valid_links):
+        if (source, target) not in justified_links:
+            findings.append(
+                {
+                    "type": "UNJUSTIFIED_LINK",
+                    "from_page_id": source,
+                    "to_page_id": target,
+                }
+            )
+
     for node in nodes:
         page_id = node["page_id"]
         if page_id not in connected_pages and node.get("canonical_parent_id") is not None:
@@ -144,7 +167,6 @@ def audit_link_inventory(
                 }
             )
 
-    semantic_graph = architecture.get("semantic_graph", {})
     for edge in semantic_graph.get("edges", []):
         source = edge.get("from_page_id")
         target = edge.get("to_page_id")
