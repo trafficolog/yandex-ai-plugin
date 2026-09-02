@@ -64,6 +64,30 @@ class Phase7ContractTests(unittest.TestCase):
             self.assertIn("Internal Linking", text)
             self.assertIn("SERP", text)
 
+    def test_phase7_release_uses_independent_semver(self):
+        expected = {
+            "yandex-direct-suite": "1.0.1",
+            "yandex-metrika": "1.0.2",
+            "yandex-webmaster": "1.0.3",
+            "yandex-wordstat": "1.1.0",
+            "yandex-search": "1.0.2",
+            "yandex-seo": "1.1.0",
+            "yandex-marketing": "1.1.0",
+        }
+        for rel in [".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"]:
+            data = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+            versions = {item["name"]: item["version"] for item in data["plugins"]}
+            self.assertEqual(versions, expected)
+
+    def test_phase7_changelogs_are_bilingual_and_release_facing(self):
+        for rel in ["plugins/yandex-wordstat/CHANGELOG.md", "plugins/yandex-wordstat/CHANGELOG.en.md"]:
+            self.assertIn("## [1.1.0]", (ROOT / rel).read_text(encoding="utf-8"))
+        for rel in ["plugins/yandex-seo/CHANGELOG.md", "plugins/yandex-seo/CHANGELOG.en.md"]:
+            self.assertIn("## [1.1.0]", (ROOT / rel).read_text(encoding="utf-8"))
+        for rel in ["CHANGELOG.md", "CHANGELOG.en.md"]:
+            self.assertIn("Phase 7", (ROOT / rel).read_text(encoding="utf-8"))
+            self.assertIn("phase-7-topical-architecture-1.0.0", (ROOT / rel).read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
