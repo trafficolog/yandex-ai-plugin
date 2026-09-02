@@ -28,6 +28,14 @@ NODES = [
         "evidence": ["WEBMASTER_EXISTING_URL"],
         "confidence": "MEDIUM",
     },
+    {
+        "page_id": "other",
+        "url": "/other/",
+        "canonical_parent_id": None,
+        "cluster_ids": [],
+        "evidence": ["WEBMASTER_EXISTING_URL"],
+        "confidence": "MEDIUM",
+    },
 ]
 
 
@@ -102,6 +110,32 @@ class TestSeoDecisionTargets(unittest.TestCase):
             "claim_class": "OBSERVED",
         })
         self.assertEqual(evidence_only["page_decisions"][0]["evidence"], ["webmaster:page-observed"])
+
+    def test_target_page_id_and_known_target_url_must_resolve_to_same_page(self):
+        with self.assertRaises(ValueError):
+            build_with({
+                "page_id": "legacy",
+                "decision": "REDIRECT",
+                "target_page_id": "target",
+                "target_url": "/other/",
+                "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM",
+                "claim_class": "DERIVED",
+            })
+
+        result = build_with({
+            "page_id": "legacy",
+            "decision": "REDIRECT",
+            "target_page_id": "target",
+            "target_url": "/target/",
+            "cluster_ids": [],
+            "evidence": ["WEBMASTER_EXISTING_URL"],
+            "confidence": "MEDIUM",
+            "claim_class": "DERIVED",
+        })
+        self.assertEqual(result["page_decisions"][0]["target_page_id"], "target")
+        self.assertEqual(result["page_decisions"][0]["target_url"], "/target/")
 
     def test_target_page_id_must_reference_known_architecture_page(self):
         with self.assertRaises(ValueError):
