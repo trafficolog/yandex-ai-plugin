@@ -34,6 +34,8 @@ Each page has a unique `page_id` and at most one `canonical_parent_id`. The dete
 
 The normalized page-role vocabulary is `ROOT`, `HUB`, `SUPPORT`, `DETAIL`, `COMPARISON`, `TRANSACTIONAL`, `DEFINITION`, `EVIDENCE`, `BRIDGE`, `UTILITY`, `OTHER`. A **proposed** page with no `canonical_parent_id` must explicitly declare `page_role: ROOT` or `page_role: BRIDGE`; this prevents accidental orphan proposed roots. Existing-site observed URL roots are not retroactively forced to supply a proposed-page role.
 
+When `breadcrumbs` are supplied, they are treated as a structural assertion: every breadcrumb page must exist and the ordered list must exactly match the canonical ancestor chain from root to the node's parent. Omitting the `breadcrumbs` field remains allowed; the helper does not invent a breadcrumb contract that the caller did not supply.
+
 ## Semantic graph
 
 Semantic relationships are independent from structural parenthood. Allowed initial relations:
