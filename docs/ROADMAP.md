@@ -31,7 +31,7 @@ Implemented as plugin `1.0.0` with a versioned SEO Evidence Bundle, partial/full
 
 ## Phase 6B — Yandex Marketing
 
-Next cross-service plugin: Direct + Metrika + Wordstat, with Search context only where it materially improves competitive analysis.
+Implemented as plugin `1.0.0` with Direct-required paid-acquisition orchestration, a versioned Marketing Evidence Bundle, KPI/attribution/maturity reconciliation, demand and query intelligence, landing/budget findings, transparent prioritization and preview-only delegated actions. The plugin contains no Yandex API clients and performs no live writes.
 
 ## Phase 7 — Operations, AI, mobile
 

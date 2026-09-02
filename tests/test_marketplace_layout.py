@@ -19,14 +19,9 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_direct_router_and_specialized_skills_moved(self):
         expected = {
-            "yandex-direct",
-            "yandex-direct-api",
-            "yandex-direct-audit",
-            "yandex-direct-budget",
-            "yandex-direct-create",
-            "yandex-direct-keywords",
-            "yandex-direct-optimize",
-            "yandex-direct-reporting",
+            "yandex-direct", "yandex-direct-api", "yandex-direct-audit",
+            "yandex-direct-budget", "yandex-direct-create", "yandex-direct-keywords",
+            "yandex-direct-optimize", "yandex-direct-reporting",
         }
         actual = {path.parent.name for path in (PLUGIN / "skills").glob("*/SKILL.md")}
         self.assertEqual(actual, expected)
@@ -40,21 +35,12 @@ class MarketplaceLayoutTests(unittest.TestCase):
             self.assertTrue((PLUGIN / path).is_dir(), path)
 
     def test_repository_foundation_docs_exist(self):
-        for path in [
-            "docs/PLUGIN_STANDARD.md",
-            "docs/SERVICE_MATRIX.md",
-            "docs/ROADMAP.md",
-            "packages/README.md",
-            "workflows/README.md",
-        ]:
+        for path in ["docs/PLUGIN_STANDARD.md", "docs/SERVICE_MATRIX.md", "docs/ROADMAP.md", "packages/README.md", "workflows/README.md"]:
             self.assertTrue((ROOT / path).is_file(), path)
 
     def test_plugin_standard_contains_safety_contract(self):
         standard = (ROOT / "docs/PLUGIN_STANDARD.md").read_text(encoding="utf-8")
-        self.assertIn(
-            "read → analyze → preview → explicit approval → write → verify",
-            standard,
-        )
+        self.assertIn("read → analyze → preview → explicit approval → write → verify", standard)
 
     def test_path_aware_ci_is_present(self):
         workflow = ROOT / ".github/workflows/ci.yml"
@@ -63,10 +49,14 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn("scripts/validate_repo.py", content)
         self.assertIn("plugins/yandex-direct", content)
 
-    def test_marketplace_exposes_direct_and_metrika(self):
+    def test_marketplace_exposes_all_available_plugins(self):
         data = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
         paths = {item["source"]["path"] for item in data["plugins"]}
-        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika", "./plugins/yandex-webmaster", "./plugins/yandex-wordstat", "./plugins/yandex-search", "./plugins/yandex-seo"})
+        self.assertEqual(paths, {
+            "./plugins/yandex-direct", "./plugins/yandex-metrika", "./plugins/yandex-webmaster",
+            "./plugins/yandex-wordstat", "./plugins/yandex-search", "./plugins/yandex-seo",
+            "./plugins/yandex-marketing",
+        })
 
     def test_ci_has_metrika_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -135,6 +125,37 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('## Phase 6A — Yandex SEO',content)
         self.assertIn('Implemented as plugin `1.0.0`',content)
         self.assertIn('## Phase 6B — Yandex Marketing',content)
+
+    def test_marketplace_exposes_yandex_marketing(self):
+        data=json.loads((ROOT/'.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
+        marketing=next(item for item in data['plugins'] if item['name']=='yandex-marketing')
+        self.assertEqual(marketing['source'], {'source':'local','path':'./plugins/yandex-marketing'})
+
+    def test_ci_has_marketing_plugin_job(self):
+        content=(ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
+        self.assertIn('marketing:',content)
+        self.assertIn('plugins/yandex-marketing',content)
+        self.assertIn('steps.detect.outputs.marketing',content)
+        self.assertIn('marketing_context.py',content)
+        self.assertIn('marketing_prioritize.py',content)
+
+    def test_service_matrix_marks_marketing_available(self):
+        content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
+        self.assertIn('| Yandex Marketing | X | **available** | 1.0.0 |',content)
+        self.assertIn('`yandex-marketing`: **available 1.0.0**',content)
+
+    def test_roadmap_marks_phase6b_implemented(self):
+        content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
+        marker='## Phase 6B — Yandex Marketing'
+        self.assertIn(marker,content)
+        phase=content.split(marker,1)[1].split('## Phase 7',1)[0]
+        self.assertIn('Implemented as plugin `1.0.0`',phase)
+        self.assertIn('no Yandex API clients',phase)
+
+    def test_readme_lists_marketing_plugin(self):
+        content=(ROOT/'README.md').read_text(encoding='utf-8')
+        self.assertIn('[`yandex-marketing`](plugins/yandex-marketing/)',content)
+        self.assertIn('Yandex Marketing regression checks',content)
 
 
 if __name__ == "__main__":
