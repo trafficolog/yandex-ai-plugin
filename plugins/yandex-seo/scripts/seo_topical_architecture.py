@@ -254,6 +254,11 @@ def _normalize_page_decisions(
     if not isinstance(page_decisions, list):
         raise ValueError("page_decisions must be a list")
     known_pages = set(page_index)
+    location_owners: dict[str, str] = {}
+    for known_page_id, node in page_index.items():
+        for location in (node.get("url"), node.get("proposed_url")):
+            if location is not None:
+                location_owners[location] = known_page_id
     decided_pages: set[str] = set()
     result: list[dict[str, Any]] = []
     for raw in page_decisions:
@@ -319,6 +324,12 @@ def _normalize_page_decisions(
             }
             if decision in {"MERGE", "REDIRECT"} and target_url in source_locations:
                 raise ValueError(f"{decision} target_url must differ from the source page location")
+            if "target_page_id" in item:
+                target_url_owner = location_owners.get(target_url)
+                if target_url_owner is not None and target_url_owner != item["target_page_id"]:
+                    raise ValueError(
+                        "target_page_id and target_url must resolve to the same known page"
+                    )
             item["target_url"] = target_url
 
         for field in PAGE_DECISION_OPTIONAL_FIELDS - {"reason_codes", "target_page_id", "target_url"}:
