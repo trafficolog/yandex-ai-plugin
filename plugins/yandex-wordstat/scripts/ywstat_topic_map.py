@@ -77,6 +77,7 @@ def build_topic_map(
         if key not in normalized_queries:
             normalized_queries[key] = {
                 "query_id": query_id,
+                "query_ids": [query_id],
                 "text": " ".join(text.split()),
                 "source_seeds": [],
                 "relations": [],
@@ -85,6 +86,7 @@ def build_topic_map(
                 "dynamics": None,
             }
         query = normalized_queries[key]
+        query["query_ids"] = _unique([*query["query_ids"], query_id])
         query_aliases[query_id] = query["query_id"]
         query["source_seeds"] = _unique([*query["source_seeds"], source_seed])
         query["relations"] = _unique([*query["relations"], relation])
