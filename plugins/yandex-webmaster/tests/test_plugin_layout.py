@@ -22,7 +22,7 @@ class TestPluginLayout(unittest.TestCase):
     def test_codex_manifest_contract(self):
         data = json.loads((ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(data["name"], "yandex-webmaster")
-        self.assertEqual(data["version"], "1.0.1")
+        self.assertEqual(data["version"], "1.0.2")
         self.assertEqual(data["skills"], "./skills/")
 
     def test_exact_skill_set_exists(self):
@@ -62,6 +62,8 @@ class TestPluginLayout(unittest.TestCase):
         self.assertIn("10", sitemaps)
         self.assertIn("pro/limits", exports)
         self.assertIn("download", exports.lower())
+        self.assertIn("autonomously poll", exports.lower())
+        self.assertIn("24 hours", exports.lower())
         self.assertIn("exact target", sites.lower())
 
     def test_current_reference_set_exists(self):
