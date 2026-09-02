@@ -86,24 +86,81 @@ class ValidateRepositoryTests(unittest.TestCase):
                 },
             }],
         }), encoding='utf-8')
-        (plugin / 'README.md').write_text(
-            f'# {plugin_name}\n\nVersion 1.0.0\n\n{CAPABILITY_TABLE}',
-            encoding='utf-8',
+
+        plugin_readme_ru = (
+            f'# {plugin_name}\n\n[Русский](README.md) · [English](README.en.md)\n\n'
+            f'Version 1.0.0\n\n{CAPABILITY_TABLE}'
         )
-        (plugin / 'CHANGELOG.md').write_text(
-            '# Changelog\n\n## 1.0.0 — 2026-09-02\n\n- Initial.\n',
-            encoding='utf-8',
+        plugin_readme_en = (
+            f'# {plugin_name}\n\n[Русский](README.md) · [English](README.en.md)\n\n'
+            f'Version 1.0.0\n\n{CAPABILITY_TABLE}'
         )
-        (root / 'README.md').write_text(
-            f'| [`{plugin_dir}`](plugins/{plugin_dir}/) | 1.0.0 | service | test | No |\n',
-            encoding='utf-8',
+        (plugin / 'README.md').write_text(plugin_readme_ru, encoding='utf-8')
+        (plugin / 'README.en.md').write_text(plugin_readme_en, encoding='utf-8')
+        plugin_changelog_ru = (
+            '# Changelog\n\n[Русский](CHANGELOG.md) · [English](CHANGELOG.en.md)\n\n'
+            '## [1.0.0] — 2026-09-02\n\n- Initial.\n'
         )
+        plugin_changelog_en = (
+            '# Changelog\n\n[Русский](CHANGELOG.md) · [English](CHANGELOG.en.md)\n\n'
+            '## [1.0.0] — 2026-09-02\n\n- Initial.\n'
+        )
+        (plugin / 'CHANGELOG.md').write_text(plugin_changelog_ru, encoding='utf-8')
+        (plugin / 'CHANGELOG.en.md').write_text(plugin_changelog_en, encoding='utf-8')
+
+        root_readme = (
+            '[Русский](README.md) · [English](README.en.md)\n\n'
+            f'| [`{plugin_dir}`](plugins/{plugin_dir}/) | 1.0.0 | service | test | No |\n'
+        )
+        (root / 'README.md').write_text(root_readme, encoding='utf-8')
+        (root / 'README.en.md').write_text(root_readme, encoding='utf-8')
+        root_changelog = (
+            '# Changelog\n\n[Русский](CHANGELOG.md) · [English](CHANGELOG.en.md)\n\n'
+            '## [DOCS 1.0.0] — 2026-09-02\n\n- Bilingual docs.\n'
+        )
+        (root / 'CHANGELOG.md').write_text(root_changelog, encoding='utf-8')
+        (root / 'CHANGELOG.en.md').write_text(root_changelog, encoding='utf-8')
+
+        for name in ('SERVICE_MATRIX', 'ROADMAP', 'PLUGIN_STANDARD', 'REVIEW_FIRST_RELEASE'):
+            (root / 'docs' / f'{name}.md').write_text(
+                f'[Русский]({name}.md) · [English]({name}.en.md)\n', encoding='utf-8'
+            )
+            (root / 'docs' / f'{name}.en.md').write_text(
+                f'[Русский]({name}.md) · [English]({name}.en.md)\n', encoding='utf-8'
+            )
         return tmp, root, plugin
 
     def test_valid_repository_has_no_errors(self):
         tmp, root, _ = self.make_repo()
         self.addCleanup(tmp.cleanup)
         self.assertEqual(validate_repository(root), [])
+
+    def test_missing_root_english_readme_is_reported(self):
+        tmp, root, _ = self.make_repo()
+        self.addCleanup(tmp.cleanup)
+        (root / 'README.en.md').unlink()
+        self.assertTrue(any('bilingual' in error.lower() and 'README.en.md' in error for error in validate_repository(root)))
+
+    def test_missing_plugin_english_changelog_is_reported(self):
+        tmp, root, plugin = self.make_repo()
+        self.addCleanup(tmp.cleanup)
+        (plugin / 'CHANGELOG.en.md').unlink()
+        self.assertTrue(any('bilingual' in error.lower() and 'CHANGELOG.en.md' in error for error in validate_repository(root)))
+
+    def test_key_doc_english_mirror_is_reported(self):
+        tmp, root, _ = self.make_repo()
+        self.addCleanup(tmp.cleanup)
+        (root / 'docs/SERVICE_MATRIX.en.md').unlink()
+        self.assertTrue(any('bilingual' in error.lower() and 'SERVICE_MATRIX.en.md' in error for error in validate_repository(root)))
+
+    def test_changelog_release_marker_mismatch_is_reported(self):
+        tmp, root, _ = self.make_repo()
+        self.addCleanup(tmp.cleanup)
+        (root / 'CHANGELOG.en.md').write_text(
+            '# Changelog\n\n[Русский](CHANGELOG.md) · [English](CHANGELOG.en.md)\n\n'
+            '## [DOCS 9.9.9] — 2026-09-02\n', encoding='utf-8'
+        )
+        self.assertTrue(any('release markers' in error.lower() for error in validate_repository(root)))
 
     def test_missing_marketplace_source_path_is_reported(self):
         tmp, root, _ = self.make_repo()
@@ -143,7 +200,7 @@ class ValidateRepositoryTests(unittest.TestCase):
         (root / 'README.md').write_text('| wrong | 9.9.9 |\n')
         self.assertTrue(any('root README version' in error for error in validate_repository(root)))
         (root / 'README.md').write_text('| [`yandex-direct`](plugins/yandex-direct/) | 1.0.0 | service | test | No |\n')
-        (plugin / 'CHANGELOG.md').write_text('# Changelog\n\n## 0.9.0\n')
+        (plugin / 'CHANGELOG.md').write_text('# Changelog\n\n## [0.9.0]\n')
         self.assertTrue(any('CHANGELOG version' in error for error in validate_repository(root)))
 
     def test_missing_skills_target_is_reported(self):
