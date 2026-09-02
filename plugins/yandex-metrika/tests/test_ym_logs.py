@@ -1,8 +1,12 @@
 from datetime import date
+import io
 from pathlib import Path
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from unittest.mock import patch
 
+from scripts import ym_logs
 from scripts.ym_logs import download_part, logs_endpoint, prepare_logs_request, validate_period
 
 
@@ -34,6 +38,28 @@ class TestMetrikaLogs(unittest.TestCase):
             validate_period("2026-08-01", "2026-09-01", today=date(2026, 9, 1))
         with self.assertRaises(ValueError):
             validate_period("2026-08-01", "2026-09-02", today=date(2026, 9, 1))
+
+    def test_evaluate_cli_preserves_attribution(self):
+        captured = {}
+
+        def fake_execute(counter_id, action, *, token, request_id=None, query=None):
+            captured["action"] = action
+            captured["query"] = query
+            return {"ok": True}
+
+        argv = [
+            "ym_logs.py", "evaluate", "123",
+            "--date1", "2026-08-01", "--date2", "2026-08-02",
+            "--fields", "ym:s:visitID", "--source", "visits",
+            "--attribution", "automatic",
+        ]
+        with patch.object(ym_logs.sys, "argv", argv):
+            with patch.object(ym_logs, "execute_json_action", side_effect=fake_execute):
+                with redirect_stdout(io.StringIO()):
+                    rc = ym_logs.main()
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["action"], "evaluate")
+        self.assertEqual(captured["query"]["attribution"], "automatic")
 
     def test_clean_preview_redacts_token(self):
         preview = prepare_logs_request(123, "clean", token="secret", request_id=7)
