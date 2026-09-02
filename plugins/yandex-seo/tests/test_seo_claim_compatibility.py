@@ -24,6 +24,27 @@ COVERAGE = {
 }
 
 
+def existing_nodes():
+    return [
+        {
+            "page_id": "a",
+            "url": "/a/",
+            "canonical_parent_id": None,
+            "cluster_ids": [],
+            "evidence": [],
+            "confidence": "MEDIUM",
+        },
+        {
+            "page_id": "b",
+            "url": "/b/",
+            "canonical_parent_id": None,
+            "cluster_ids": [],
+            "evidence": [],
+            "confidence": "MEDIUM",
+        },
+    ]
+
+
 class TestSeoClaimCompatibility(unittest.TestCase):
     def test_methodology_only_link_cannot_claim_observed_or_derived_evidence(self):
         for claim_class in ("OBSERVED", "DERIVED"):
@@ -66,24 +87,7 @@ class TestSeoClaimCompatibility(unittest.TestCase):
                 coverage=COVERAGE,
                 clusters=[],
                 page_decisions=[],
-                structural_nodes=[
-                    {
-                        "page_id": "a",
-                        "url": "/a/",
-                        "canonical_parent_id": None,
-                        "cluster_ids": [],
-                        "evidence": [],
-                        "confidence": "MEDIUM",
-                    },
-                    {
-                        "page_id": "b",
-                        "url": "/b/",
-                        "canonical_parent_id": None,
-                        "cluster_ids": [],
-                        "evidence": [],
-                        "confidence": "MEDIUM",
-                    },
-                ],
+                structural_nodes=existing_nodes(),
                 semantic_edges=[{
                     "from_page_id": "a",
                     "to_page_id": "b",
@@ -105,6 +109,26 @@ class TestSeoClaimCompatibility(unittest.TestCase):
                     "to_page_id": "b",
                     "relation": "SUPPORT",
                     "user_need": "typo must not create empirical provenance",
+                    "reason_codes": ["METHODOLOGY_HEURISTIC", "SERP_OVELRAP"],
+                    "evidence": [],
+                    "confidence": "HIGH",
+                    "claim_class": "OBSERVED",
+                }],
+            )
+
+    def test_unknown_reason_code_is_rejected_on_semantic_edges(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="EXISTING_SITE",
+                coverage=COVERAGE,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=existing_nodes(),
+                semantic_edges=[{
+                    "from_page_id": "a",
+                    "to_page_id": "b",
+                    "relation": "SUPPORT",
+                    "user_need": "typo must not enter approved semantic graph",
                     "reason_codes": ["METHODOLOGY_HEURISTIC", "SERP_OVELRAP"],
                     "evidence": [],
                     "confidence": "HIGH",
