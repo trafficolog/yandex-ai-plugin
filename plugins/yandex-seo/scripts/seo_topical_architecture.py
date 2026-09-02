@@ -340,6 +340,34 @@ def _normalize_page_decisions(
             if field in raw:
                 item[field] = deepcopy(raw[field])
         result.append(item)
+
+    destructive_targets: dict[str, str] = {}
+    for item in result:
+        if item["decision"] not in {"MERGE", "REDIRECT"}:
+            continue
+        target_page_id = item.get("target_page_id")
+        if target_page_id is None and item.get("target_url") is not None:
+            target_page_id = location_owners.get(item["target_url"])
+        if target_page_id is not None:
+            destructive_targets[item["page_id"]] = target_page_id
+
+    destructive_state: dict[str, int] = {}
+
+    def visit_destructive(page_id: str) -> None:
+        marker = destructive_state.get(page_id, 0)
+        if marker == 1:
+            raise ValueError("destructive page decisions contain a target cycle")
+        if marker == 2:
+            return
+        destructive_state[page_id] = 1
+        target_page_id = destructive_targets.get(page_id)
+        if target_page_id in destructive_targets:
+            visit_destructive(target_page_id)
+        destructive_state[page_id] = 2
+
+    for page_id in destructive_targets:
+        visit_destructive(page_id)
+
     return result
 
 
