@@ -6,6 +6,7 @@ from typing import Any
 from .seo_topical_architecture import (
     CLAIM_CLASSES,
     CONFIDENCE_LEVELS,
+    REASON_CODES,
     SEMANTIC_RELATIONS,
     SCHEMA as ARCHITECTURE_SCHEMA,
 )
@@ -52,6 +53,9 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
     ):
         raise ValueError("candidate link requires at least one non-empty reason_code")
     normalized_reason_codes = [code.strip() for code in reason_codes]
+    unknown_reason_codes = sorted(set(normalized_reason_codes) - REASON_CODES)
+    if unknown_reason_codes:
+        raise ValueError(f"unknown reason codes: {unknown_reason_codes}")
     confidence = raw.get("confidence")
     if confidence not in CONFIDENCE_LEVELS:
         raise ValueError(f"confidence must be one of {sorted(CONFIDENCE_LEVELS)}")
