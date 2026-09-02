@@ -15,7 +15,9 @@ Every proposed link records:
 
 `METHODOLOGY` edges remain methodology. An anchor concept is optional guidance, not a mandatory exact-match phrase.
 
-Reason-code provenance and claim class must remain compatible. If every reason code is only `METHODOLOGY_HEURISTIC` and/or `SEMANTIC_HYPOTHESIS`, the link cannot be labeled `OBSERVED` or `DERIVED`. A mixed reason set that also contains empirical repository evidence is not automatically downgraded; its claim class still has to be supportable by the supplied evidence.
+Reason codes are validated against the same finite v1 vocabulary used by Topical Architecture: `SERP_OVERLAP`, `SERP_BRIDGE_RISK`, `WORDSTAT_NESTED_RELATION`, `WORDSTAT_ASSOCIATION`, `WORDSTAT_DEMAND_CONTEXT`, `WORDSTAT_REGION_CONTEXT`, `WORDSTAT_SEASONAL_CONTEXT`, `WEBMASTER_QUERY_VISIBILITY`, `WEBMASTER_EXISTING_URL`, `METRIKA_LANDING_TRAFFIC`, `METRIKA_CONVERSION_CONTEXT`, `EXISTING_INTERNAL_LINK`, `EXISTING_BREADCRUMB`, `USER_BUSINESS_CONSTRAINT`, `MANUAL_ENTITY_RELATION`, `SEMANTIC_HYPOTHESIS`, `METHODOLOGY_HEURISTIC`. Unknown or misspelled codes are rejected instead of being treated as empirical evidence.
+
+Reason-code provenance and claim class must remain compatible on both approved semantic edges and preview link-plan records. If every reason code is only `METHODOLOGY_HEURISTIC` and/or `SEMANTIC_HYPOTHESIS`, the edge/link cannot be labeled `OBSERVED` or `DERIVED`. A mixed reason set that also contains valid empirical repository evidence is not automatically downgraded; its claim class still has to be supportable by the supplied evidence.
 
 ## Audit findings
 
