@@ -2,7 +2,7 @@
 
 [**Русский**](ROADMAP.md) · [English](ROADMAP.en.md)
 
-First-release scope заморожен после Phase 6B. Ниже зафиксированы выпущенные архитектурные фазы; backlog не является обещанием срока или следующего релиза.
+First-release scope заморожен после Phase 6B. Ниже зафиксированы выпущенные архитектурные фазы и post-first-release milestones; backlog не является обещанием срока или следующего релиза.
 
 ## Первый релиз — завершён
 
@@ -41,6 +41,19 @@ Review-driven maintenance укрепил safety/API semantics, затем OPUS �
 ### DOCS 1.0.0
 
 RU-primary / EN-mirror documentation layer, hero assets и orchestration diagrams. Plugin SemVer не изменяется.
+
+## Post-first-release — выпущено
+
+### Phase 7 — Topical Architecture
+
+Выпущено как repository release `phase-7-topical-architecture-1.0.0`: Wordstat `1.1.0`, SEO `1.1.0`, Search `1.0.2` без изменения runtime.
+
+- `yandex-wordstat-topic-map` формирует candidate-only `wordstat-topic-map/v1` с provenance, отдельными demand observations и limitation propagation.
+- `yandex-search-clustering` сохраняет ownership реального SERP-overlap/Jaccard clustering; альтернативный fuzzy-text clusterer не добавлен.
+- `yandex-seo-topical-architecture` формирует `seo-topical-architecture/v1` с `GREENFIELD|EXISTING_SITE`, page decisions, `structural_tree` и `semantic_graph`.
+- `yandex-seo-internal-linking` создаёт preview-only link plan и deterministic audit без CMS writes.
+- `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` остаются раздельными; semantic-cocoon/TGA/QBST methodology не заявляется как подтверждённый ranking mechanism.
+- При отсутствии Search evidence обязателен `SERP_VALIDATION_MISSING`, а page boundaries остаются гипотезами.
 
 ---
 
