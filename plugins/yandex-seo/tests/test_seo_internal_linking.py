@@ -82,6 +82,22 @@ class TestSeoInternalLinking(unittest.TestCase):
                 }],
             )
 
+    def test_link_plan_rejects_self_link(self):
+        with self.assertRaises(ValueError):
+            seo_internal_linking.build_link_plan(
+                architecture=ARCHITECTURE,
+                candidate_links=[{
+                    "from_page_id": "root",
+                    "to_page_id": "root",
+                    "relation": "SUPPORT",
+                    "user_need": "self link should be invalid",
+                    "reason_codes": ["METHODOLOGY_HEURISTIC"],
+                    "evidence": [],
+                    "confidence": "LOW",
+                    "claim_class": "METHODOLOGY",
+                }],
+            )
+
     def test_unknown_endpoint_and_forced_exact_match_are_rejected(self):
         with self.assertRaises(ValueError):
             seo_internal_linking.build_link_plan(
