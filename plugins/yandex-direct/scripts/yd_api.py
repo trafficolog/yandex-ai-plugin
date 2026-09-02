@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Small dependency-free Yandex Direct API v501 client.
 
-Read operations execute normally. Mutating operations should be previewed first;
-the CLI requires --execute for write methods.
+Only explicitly known read operations execute without --execute. Every other
+method is treated as consequential by default and is previewed first.
 """
 from __future__ import annotations
 
@@ -16,14 +16,21 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 API_BASE = "https://api.direct.yandex.com/json/v501"
-WRITE_METHODS = {
-    "add", "update", "delete", "suspend", "resume", "archive", "unarchive",
-    "setAuto", "moderate",
+READ_METHODS = {
+    "check",
+    "checkcampaigns",
+    "checkdictionaries",
+    "get",
+    "getchanges",
 }
 
 
 class YandexDirectError(RuntimeError):
     pass
+
+
+def is_read_method(method: str) -> bool:
+    return method.strip().casefold() in READ_METHODS
 
 
 @dataclass
@@ -108,12 +115,12 @@ def _load_params(args: argparse.Namespace) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Yandex Direct API v501 helper")
     parser.add_argument("service", help="campaigns, adgroups, keywords, ads, ...")
-    parser.add_argument("method", help="get, add, update, suspend, ...")
+    parser.add_argument("method", help="get, add, update, set, ...")
     parser.add_argument("--params", help="JSON object with method params")
     parser.add_argument("--params-file", help="Path to JSON params file")
     parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
-    parser.add_argument("--execute", action="store_true", help="Execute mutating operation")
+    parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
     args = parser.parse_args(argv)
 
@@ -123,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("Use only one of --params or --params-file")
 
     params = _load_params(args)
-    is_write = args.method in WRITE_METHODS
+    is_write = not is_read_method(args.method)
     dry_run = args.dry_run or (is_write and not args.execute)
 
     client = YandexDirectClient(args.token, client_login=args.client_login)
