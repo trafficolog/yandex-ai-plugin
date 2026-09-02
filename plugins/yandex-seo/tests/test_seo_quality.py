@@ -30,9 +30,10 @@ class QualityTests(unittest.TestCase):
         lag = next(item for item in out if item["kind"] == "METRIKA_DATA_LAG")
         self.assertEqual(lag["data_lag"], 3)
 
-    def test_missing_metrika_quality_is_explicit(self):
+    def test_missing_metrika_quality_uses_cross_service_marker(self):
         out = propagate_limitations([{"source": "yandex-metrika"}])
-        self.assertIn("METRIKA_QUALITY_UNKNOWN", {item["kind"] for item in out})
+        self.assertIn("QUALITY_METADATA_MISSING", {item["kind"] for item in out})
+        self.assertNotIn("METRIKA_QUALITY_UNKNOWN", {item["kind"] for item in out})
 
 
 if __name__ == "__main__":
