@@ -15,6 +15,12 @@
       "source": "./plugins/yandex-metrika",
       "description": "Yandex Metrika analytics, data-quality, Logs and import workflow skills.",
       "version": "1.0.0"
+    },
+    {
+      "name": "yandex-webmaster",
+      "source": "./plugins/yandex-webmaster",
+      "description": "Yandex Webmaster SEO, indexing, query, recrawl, sitemap, feed and export workflow skills.",
+      "version": "1.0.0"
     }
   ]
 }

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "scenarios": [
+    {"prompt":"Проведи аудит сайта в Яндекс Вебмастере.","skill":"yandex-webmaster-audit","write":false},
+    {"prompt":"Почему упали показы по поисковым запросам?","skill":"yandex-webmaster-search-queries","write":false},
+    {"prompt":"Проверь индексацию страниц.","skill":"yandex-webmaster-indexing","write":false},
+    {"prompt":"Отправь URL на переобход.","skill":"yandex-webmaster-recrawl","write":"approval-required"},
+    {"prompt":"URL уже добавлен в очередь переобхода.","skill":"yandex-webmaster-recrawl","write":false},
+    {"prompt":"Запусти приоритетный переобход sitemap.","skill":"yandex-webmaster-sitemaps","write":"approval-required"},
+    {"prompt":"Удали сайт из Вебмастера.","skill":"yandex-webmaster-site-management","write":"approval-required"},
+    {"prompt":"Выгрузи полный архив страниц.","skill":"yandex-webmaster-exports","write":"approval-required"},
+    {"prompt":"Удали feed.","skill":"yandex-webmaster-feeds","write":"approval-required"},
+    {"prompt":"Покажи внешние ссылки и битые ссылки.","skill":"yandex-webmaster-links","write":false},
+    {"prompt":"Собери raw API request для диагностики.","skill":"yandex-webmaster-api","write":false}
+  ]
+}

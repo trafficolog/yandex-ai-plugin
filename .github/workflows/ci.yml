@@ -29,6 +29,7 @@ jobs:
     outputs:
       direct: ${{ steps.detect.outputs.direct }}
       metrika: ${{ steps.detect.outputs.metrika }}
+      webmaster: ${{ steps.detect.outputs.webmaster }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +43,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "direct=true" >> "$GITHUB_OUTPUT"
             echo "metrika=true" >> "$GITHUB_OUTPUT"
+            echo "webmaster=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -70,6 +72,12 @@ jobs:
             echo "metrika=true" >> "$GITHUB_OUTPUT"
           else
             echo "metrika=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-webmaster/)|$shared"; then
+            echo "webmaster=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "webmaster=false" >> "$GITHUB_OUTPUT"
           fi
 
   direct:
@@ -107,3 +115,21 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile Metrika helpers
         run: python -m py_compile scripts/_http.py scripts/ym_api.py scripts/ym_report.py scripts/ym_logs.py scripts/ym_import.py
+
+  webmaster:
+    name: Yandex Webmaster plugin
+    needs: [validate, changes]
+    if: needs.changes.outputs.webmaster == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/yandex-webmaster
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run Webmaster tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Webmaster helpers
+        run: python -m py_compile scripts/_http.py scripts/yw_api.py scripts/yw_queries.py scripts/yw_indexing.py scripts/yw_recrawl.py scripts/yw_sitemaps.py scripts/yw_feeds.py scripts/yw_export.py

@@ -66,12 +66,22 @@ class MarketplaceLayoutTests(unittest.TestCase):
     def test_marketplace_exposes_direct_and_metrika(self):
         data = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
         paths = {item["source"]["path"] for item in data["plugins"]}
-        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika"})
+        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika", "./plugins/yandex-webmaster"})
 
     def test_ci_has_metrika_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("metrika:", content)
         self.assertIn("plugins/yandex-metrika", content)
+
+    def test_ci_has_webmaster_plugin_job(self):
+        content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("webmaster:", content)
+        self.assertIn("plugins/yandex-webmaster", content)
+        self.assertIn("steps.detect.outputs.webmaster", content)
+
+    def test_service_matrix_marks_webmaster_available(self):
+        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
+        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.0 |", content)
 
 
 if __name__ == "__main__":

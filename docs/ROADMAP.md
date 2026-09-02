@@ -15,7 +15,7 @@ Key correctness rules include current attribution models, sampling/data-lag disc
 
 ## Phase 3 — Yandex Webmaster
 
-Implement indexing, diagnostics, queries, sitemaps, recrawl, links, and safe management operations.
+Implemented as plugin `1.0.0` with eleven specialized skills, mixed v4/v4.1 endpoint routing, query/indexing helpers, quota-aware recrawl, priority Sitemap recrawl, feeds, async archive/PRO exports and destructive-write guards.
 
 ## Phase 4 — Wordstat + Search
 

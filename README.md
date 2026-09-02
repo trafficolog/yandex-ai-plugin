@@ -10,7 +10,7 @@ This is **not** one giant Yandex skill.
 |---|---|---:|---|
 | [`yandex-direct`](plugins/yandex-direct/) | available | 1.0.0 | Create, audit, report on, and safely optimize Yandex Direct campaigns |
 | [`yandex-metrika`](plugins/yandex-metrika/) | available | 1.0.0 | Reporting, conversions, ecommerce, attribution, goals, Logs API and safe imports |
-| Yandex Webmaster | planned | — | Indexing, diagnostics, queries, sitemaps, recrawl, links |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | available | 1.0.0 | Indexing, diagnostics, queries, sitemaps, recrawl, links, feeds and exports |
 | Yandex Wordstat | planned | — | Search demand, frequency, dynamics, regions, semantics |
 | Yandex Search | planned | — | Yandex Search/SERP workflows |
 
@@ -23,7 +23,8 @@ See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap acro
 ├── .agents/plugins/marketplace.json
 ├── plugins/
 │   ├── yandex-direct/
-│   └── yandex-metrika/
+│   ├── yandex-metrika/
+│   └── yandex-webmaster/
 ├── workflows/
 ├── packages/
 ├── docs/
@@ -38,7 +39,7 @@ The **plugin** is the installation/versioning boundary. The **skill** is a disco
 
 The root marketplace metadata is in `.agents/plugins/marketplace.json`. Import the GitHub repository as a marketplace, then install the individual Yandex service plugin you need.
 
-Direct and Metrika are independently installable plugins under `plugins/`, each at version `1.0.0`.
+Direct, Metrika and Webmaster are independently installable plugins under `plugins/`, each at version `1.0.0`.
 
 ## Common safety model
 
@@ -59,9 +60,9 @@ Draft creation is distinct from activation/publication. Plugins remain usable wi
 
 ## Production plugins
 
-Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers.
+Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers. Webmaster contains eleven SEO workflow skills plus v4/v4.1-aware helpers for queries, indexing, recrawl, sitemaps, feeds and exports.
 
-See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md) and [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md).
+See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md), [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md), and [`plugins/yandex-webmaster/README.md`](plugins/yandex-webmaster/README.md).
 
 ## Development
 
@@ -90,4 +91,12 @@ Metrika regression checks:
 cd plugins/yandex-metrika
 python -m unittest discover -s tests -v
 python -m py_compile scripts/_http.py scripts/ym_api.py scripts/ym_report.py scripts/ym_logs.py scripts/ym_import.py
+```
+
+Webmaster regression checks:
+
+```bash
+cd plugins/yandex-webmaster
+python -m unittest discover -s tests -v
+python -m py_compile scripts/_http.py scripts/yw_api.py scripts/yw_queries.py scripts/yw_indexing.py scripts/yw_recrawl.py scripts/yw_sitemaps.py scripts/yw_feeds.py scripts/yw_export.py
 ```
