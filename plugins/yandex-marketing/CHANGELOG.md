@@ -1,19 +1,21 @@
-# Changelog
+# Журнал изменений — Yandex Marketing
 
-## 1.1.0 — 2026-09-02
+[**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-- Added stable evidence roles: `canonical`, `reconciliation_only`, and `enrichment`, with deterministic role derivation and validation.
-- Hardened monetary evidence reconciliation so missing currency/VAT/period context remains explicitly incomparable instead of producing unsupported combined metrics.
-- Replaced the legacy 18-class priority taxonomy with the nine finding types actually produced by deterministic helpers; deferred/unknown external types are explicitly marked and sort after implemented types.
-- Removed dead `NEW_CAMPAIGN_CANDIDATE` delegation and preserved preview-only approval requirements for executable routes.
-- Propagated capped Wordstat association coverage as `WORDSTAT_ASSOCIATIONS_CAPPED`.
+> `DOCS 1.0.0` добавил bilingual README с reconciliation/orchestration diagram; SemVer плагина не изменён.
 
-## 1.0.1 — 2026-09-02
+## [1.1.0] — 2026-09-02
 
-- Aligned Metrika quality consumption with the producer's nested artifact schema and made missing quality explicit.
-- Connected canonical source-of-truth selection to metric reconciliation and forbade ambiguous `demand` evidence.
-- Required explicit KPI/money context before cross-record comparability or money-derived metrics.
-- Added adversarial eval expectations and clarified delegated previews as non-writing orchestration.
+- Добавлены stable evidence roles `canonical`, `reconciliation_only`, `enrichment`.
+- Money evidence без currency/VAT/period context остаётся explicitly incomparable.
+- Legacy 18-class taxonomy заменена на девять classes, реально производимых deterministic helpers; future classes deferred.
+- Удалён dead `NEW_CAMPAIGN_CANDIDATE` delegation; executable routes остаются preview-only + approval in owner.
+- Wordstat cap limitation propagируется.
 
-## 1.0.0
-- Initial cross-service paid-acquisition plugin.
+## [1.0.1] — 2026-09-02
+
+- Metrika quality schema, canonical reconciliation, ambiguous-demand ban, KPI/money compatibility и adversarial evals.
+
+## [1.0.0]
+
+- Первый cross-service paid-acquisition plugin.

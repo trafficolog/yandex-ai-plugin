@@ -1,16 +1,19 @@
-# Changelog
+# Журнал изменений — Yandex Search
 
-## 1.0.2 — 2026-09-02
+[**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-- Added strict enforcement of the documented 250-result search-depth ceiling using complete request-window validation.
-- Added snapshot depth metadata (`max_supported_results`, result window boundaries, and ceiling reach state) and rejected impossible observed ranks above 250.
-- Preserved absolute-rank and conservative tracking-URL identity behavior from 1.0.1.
+> `DOCS 1.0.0` добавил bilingual docs; SemVer плагина не изменён.
 
-## 1.0.1 — 2026-09-02
+## [1.0.2] — 2026-09-02
 
-- Made SERP ranks absolute across paginated result pages while preserving position-on-page metadata.
-- Added strict `fix_typo_mode` validation.
-- Added adversarial bridge-risk eval expectations and the required capability matrix.
+- Добавлен strict 250-result complete-window contract.
+- Snapshot получил depth metadata и rank ceiling guard.
+- Сохранены absolute-rank и conservative tracking-URL identity semantics 1.0.1.
 
-## 1.0.0 — 2026-09-01
-- Initial Yandex Search plugin release.
+## [1.0.1] — 2026-09-02
+
+- Исправлены absolute ranks across pages, `fix_typo_mode` validation и adversarial bridge-risk evals.
+
+## [1.0.0] — 2026-09-01
+
+- Первый Yandex Search plugin.

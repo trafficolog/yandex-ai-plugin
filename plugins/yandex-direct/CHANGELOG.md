@@ -1,20 +1,18 @@
-# Changelog
+# Журнал изменений — Yandex Direct
 
-## 1.0.1 — 2026-09-02
+[**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-- Made API method safety allowlist-based: unknown and mutating methods are preview-first by default.
-- Made Reports attribution/goals explicit, removed obsolete `IncludeDiscount`, and retry the first HTTP 500 once.
-- Added KPI provenance metadata sidecars for TSV reports without inventing currency.
-- Added regression eval expectations for write safety and report context.
+> Repository release `DOCS 1.0.0` добавил RU/EN documentation mirror; SemVer плагина не изменён.
 
-## 1.0.0 — 2026-09-01
+## [1.0.1] — 2026-09-02
 
-- Split monolithic Yandex Direct knowledge into 8 discoverable skills.
-- Updated core API workflow to v501 and EPK-first mental model.
-- Added safe dependency-free API helper with write preview by default.
-- Added Reports v501 helper with stable offline polling request and `retryIn` support.
-- Added autotargeting and shared-negative-set guidance.
-- Reworked audit/optimization rules to avoid universal PPC folklore thresholds.
-- Added OpenAI Codex plugin and GitHub marketplace manifests.
-- Added Claude-compatible metadata for portability.
-- Added offline unit tests and third-party attribution.
+- API safety переведён на allowlist: unknown и mutating methods preview-first по умолчанию.
+- Reports attribution/goals стали explicit; удалён obsolete `IncludeDiscount`; первый HTTP 500 ретраится один раз.
+- TSV reports получили KPI provenance metadata sidecars без выдумывания currency.
+- Добавлены regression eval expectations для write safety и report context.
+
+## [1.0.0] — 2026-09-01
+
+- Монолитные знания Direct разделены на 8 discoverable skills.
+- Core API workflow обновлён до v501 и EPK-first модели.
+- Добавлены safe API helper, Reports helper, autotargeting/shared negatives guidance, offline tests и marketplace manifests.

@@ -1,14 +1,16 @@
-# Changelog
+# Журнал изменений — Yandex Metrika
 
-## 1.0.1 — 2026-09-02
+[**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-- Strengthened Yandex Direct expense duplicate-risk detection across aliases and CSV content signals.
-- Preserved explicit Reporting API attribution metadata without inventing a default when attribution is omitted; metadata records explicit vs omitted provenance.
-- Preserved producer-shaped nested quality metadata for cross-service consumers.
-- Added verifiable eval expectations for reporting, imports, Logs and write safety.
+> `DOCS 1.0.0` добавил bilingual docs; версия плагина не изменена.
 
-## 1.0.0 — 2026-09-01
+## [1.0.1] — 2026-09-02
 
-- Initial Yandex Metrika plugin for the Yandex AI marketplace.
-- Added specialized skills for analytics, data quality, goals, Logs API and imports.
-- Added dependency-free local execution helpers with preview-before-write safety.
+- Усилено обнаружение duplicate-risk для Yandex Direct expense imports.
+- Reporting attribution metadata сохраняет explicit-vs-omitted provenance без invented default.
+- Nested producer quality metadata сохранена для cross-service consumers.
+- Добавлены verifiable eval expectations для reporting, imports, Logs и write safety.
+
+## [1.0.0] — 2026-09-01
+
+- Первый Yandex Metrika plugin: специализированные analytics/data-quality/goals/Logs/import skills и dependency-light helpers с preview-before-write.
