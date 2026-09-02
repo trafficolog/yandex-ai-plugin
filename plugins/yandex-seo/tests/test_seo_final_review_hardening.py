@@ -1,6 +1,6 @@
 import unittest
 
-from scripts import seo_topical_architecture
+from scripts import seo_internal_linking, seo_topical_architecture
 
 
 COVERAGE_WITH_SEARCH = {
@@ -21,6 +21,20 @@ NODES = [
         "confidence": "MEDIUM",
     }
 ]
+
+
+def _two_page_nodes():
+    return [
+        *NODES,
+        {
+            "page_id": "support",
+            "url": "/support/",
+            "canonical_parent_id": "existing",
+            "cluster_ids": [],
+            "evidence": [],
+            "confidence": "LOW",
+        },
+    ]
 
 
 class TestSeoFinalReviewHardening(unittest.TestCase):
@@ -77,17 +91,6 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
                     semantic_edges=[],
                 )
 
-        link_nodes = [
-            *NODES,
-            {
-                "page_id": "support",
-                "url": "/support/",
-                "canonical_parent_id": "existing",
-                "cluster_ids": [],
-                "evidence": [],
-                "confidence": "LOW",
-            },
-        ]
         with self.subTest(source="semantic_edge_reason"):
             with self.assertRaises(ValueError):
                 seo_topical_architecture.build_topical_architecture(
@@ -95,7 +98,7 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
                     coverage=missing_search,
                     clusters=[],
                     page_decisions=[],
-                    structural_nodes=link_nodes,
+                    structural_nodes=_two_page_nodes(),
                     semantic_edges=[{
                         "from_page_id": "existing",
                         "to_page_id": "support",
@@ -107,6 +110,33 @@ class TestSeoFinalReviewHardening(unittest.TestCase):
                         "claim_class": "HYPOTHESIS",
                     }],
                 )
+
+    def test_missing_search_rejects_search_owned_link_plan_reason(self):
+        architecture = seo_topical_architecture.build_topical_architecture(
+            mode="EXISTING_SITE",
+            coverage={**COVERAGE_WITH_SEARCH, "search": "MISSING"},
+            clusters=[],
+            page_decisions=[],
+            structural_nodes=_two_page_nodes(),
+            semantic_edges=[],
+        )
+
+        for reason_code in ("SERP_OVERLAP", "SERP_BRIDGE_RISK"):
+            with self.subTest(reason_code=reason_code):
+                with self.assertRaises(ValueError):
+                    seo_internal_linking.build_link_plan(
+                        architecture=architecture,
+                        candidate_links=[{
+                            "from_page_id": "existing",
+                            "to_page_id": "support",
+                            "relation": "SUPPORT",
+                            "user_need": "supporting detail",
+                            "reason_codes": [reason_code],
+                            "evidence": [],
+                            "confidence": "LOW",
+                            "claim_class": "HYPOTHESIS",
+                        }],
+                    )
 
 
 if __name__ == "__main__":
