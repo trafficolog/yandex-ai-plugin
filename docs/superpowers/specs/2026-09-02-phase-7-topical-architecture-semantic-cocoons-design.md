@@ -307,7 +307,23 @@ The structural tree models navigation, not every semantic relationship.
 
 Each page node has at most one `canonical_parent_id` unless it is a root. This follows the useful part of the Cocoon 4.0/TGA distinction: one canonical structural home prevents a page from appearing as a structural child of multiple branches while still allowing many semantic relationships in the graph.
 
-Suggested fields:
+Normative page-role vocabulary for v1:
+
+- `ROOT`
+- `HUB`
+- `SUPPORT`
+- `DETAIL`
+- `COMPARISON`
+- `TRANSACTIONAL`
+- `DEFINITION`
+- `EVIDENCE`
+- `BRIDGE`
+- `UTILITY`
+- `OTHER`
+
+These are information-architecture roles, not search-engine ranking classes.
+
+Page-node fields:
 
 ```json
 {
@@ -315,7 +331,7 @@ Suggested fields:
   "url": "...",
   "proposed_url": null,
   "title": "...",
-  "page_role": "...",
+  "page_role": "HUB",
   "decision": "PRESERVE|CREATE|...",
   "canonical_parent_id": "...",
   "breadcrumbs": [],
@@ -516,7 +532,7 @@ Deterministic responsibilities:
 
 - validate/normalize Topical Architecture Bundle;
 - enforce structural-tree invariants;
-- validate relation taxonomy and evidence fields;
+- validate page-role/relation taxonomy and evidence fields;
 - propagate source coverage/limitations;
 - audit duplicate parents/orphans/unknown nodes;
 - generate deterministic quality findings.
@@ -631,18 +647,24 @@ Update RU-primary and EN mirror documentation consistently:
 - root CHANGELOG RU/EN;
 - CONTRACT_MATRIX.
 
-## 23. Independent SemVer proposal
+## 23. Independent SemVer and release identity
 
 Because the release adds new public skills/capabilities without breaking existing contracts:
 
-| Plugin | Current | Proposed | Reason |
+| Plugin | Current | Target | Reason |
 | --- | ---: | ---: | --- |
 | `yandex-wordstat` | 1.0.2 | **1.1.0** | new public topic-map capability |
 | `yandex-search` | 1.0.2 | 1.0.2 | existing clustering contract reused |
 | `yandex-seo` | 1.0.1 | **1.1.0** | new topical-architecture + internal-linking capabilities |
 | all others | current | unchanged | evidence providers only |
 
-The repository milestone may use `phase-7-topical-architecture-1.0.0` or another umbrella tag, but plugin SemVer remains independent.
+The repository-level release tag for this phase is fixed as:
+
+```text
+phase-7-topical-architecture-1.0.0
+```
+
+Plugin SemVer remains independent.
 
 ## 24. Source assessment
 
