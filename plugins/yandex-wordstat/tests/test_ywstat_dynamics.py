@@ -20,12 +20,14 @@ class TestWordstatDynamics(unittest.TestCase):
         self.assertNotIn("from_date", payload)
         self.assertEqual(payload["folderId"], "folder")
 
-    def test_period_is_restricted(self):
-        with self.assertRaises(ValueError):
-            ywstat_dynamics.build_dynamics_payload(
-                "x", period="PERIOD_DAILY",
-                from_date="2026-01-01T00:00:00Z", to_date="2026-01-02T00:00:00Z"
-            )
+    def test_daily_period_is_supported(self):
+        payload = ywstat_dynamics.build_dynamics_payload(
+            '"зубная паста" -оптом',
+            period="PERIOD_DAILY",
+            from_date="2026-01-01T00:00:00Z",
+            to_date="2026-01-02T00:00:00Z",
+        )
+        self.assertEqual(payload["period"], "PERIOD_DAILY")
 
     def test_monthly_weekly_operator_compatibility(self):
         for period in ["PERIOD_MONTHLY", "PERIOD_WEEKLY"]:
@@ -37,6 +39,17 @@ class TestWordstatDynamics(unittest.TestCase):
             ]:
                 with self.assertRaises(ValueError, msg=(period, expression)):
                     ywstat_dynamics.validate_expression_for_period(expression, period)
+
+    def test_daily_allows_documented_operators(self):
+        for expression in [
+            "купить !собаку", '"зубная паста"', "билеты [из москвы]",
+            "заказать (роллы|пицца)", "доставка -цветы", "работа +на дому",
+        ]:
+            ywstat_dynamics.validate_expression_for_period(expression, "PERIOD_DAILY")
+
+    def test_unknown_period_is_rejected(self):
+        with self.assertRaises(ValueError):
+            ywstat_dynamics.validate_expression_for_period("x", "PERIOD_HOURLY")
 
     def test_date_order_is_validated(self):
         with self.assertRaises(ValueError):
