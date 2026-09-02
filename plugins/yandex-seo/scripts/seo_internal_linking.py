@@ -7,6 +7,7 @@ from .seo_topical_architecture import (
     CLAIM_CLASSES,
     CONFIDENCE_LEVELS,
     REASON_CODES,
+    SEARCH_REASON_CODES,
     SEMANTIC_RELATIONS,
     SCHEMA as ARCHITECTURE_SCHEMA,
 )
@@ -34,7 +35,12 @@ def _require_architecture(architecture: dict[str, Any]) -> tuple[list[dict[str, 
     return nodes, page_ids
 
 
-def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[str, Any]:
+def _normalize_candidate_link(
+    raw: dict[str, Any],
+    page_ids: set[str],
+    *,
+    search_missing: bool = False,
+) -> dict[str, Any]:
     source = raw.get("from_page_id")
     target = raw.get("to_page_id")
     if source not in page_ids or target not in page_ids:
@@ -58,6 +64,8 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
     unknown_reason_codes = sorted(set(normalized_reason_codes) - REASON_CODES)
     if unknown_reason_codes:
         raise ValueError(f"unknown reason codes: {unknown_reason_codes}")
+    if search_missing and set(normalized_reason_codes) & SEARCH_REASON_CODES:
+        raise ValueError("Search-owned link reasons require Search coverage")
     confidence = raw.get("confidence")
     if confidence not in CONFIDENCE_LEVELS:
         raise ValueError(f"confidence must be one of {sorted(CONFIDENCE_LEVELS)}")
@@ -106,7 +114,12 @@ def build_link_plan(
     _, page_ids = _require_architecture(architecture)
     if not isinstance(candidate_links, list):
         raise ValueError("candidate_links must be a list")
-    return [_normalize_candidate_link(raw, page_ids) for raw in candidate_links]
+    coverage = architecture.get("coverage")
+    search_missing = isinstance(coverage, dict) and coverage.get("search") == "MISSING"
+    return [
+        _normalize_candidate_link(raw, page_ids, search_missing=search_missing)
+        for raw in candidate_links
+    ]
 
 
 def audit_link_inventory(
