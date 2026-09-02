@@ -9,7 +9,7 @@ This is **not** one giant Yandex skill.
 | Plugin | Status | Version | Description |
 |---|---|---:|---|
 | [`yandex-direct`](plugins/yandex-direct/) | available | 1.0.0 | Create, audit, report on, and safely optimize Yandex Direct campaigns |
-| Yandex Metrika | planned | — | Reporting, conversions, ecommerce, attribution, logs, goals |
+| [`yandex-metrika`](plugins/yandex-metrika/) | available | 1.0.0 | Reporting, conversions, ecommerce, attribution, goals, Logs API and safe imports |
 | Yandex Webmaster | planned | — | Indexing, diagnostics, queries, sitemaps, recrawl, links |
 | Yandex Wordstat | planned | — | Search demand, frequency, dynamics, regions, semantics |
 | Yandex Search | planned | — | Yandex Search/SERP workflows |
@@ -22,7 +22,8 @@ See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap acro
 .
 ├── .agents/plugins/marketplace.json
 ├── plugins/
-│   └── yandex-direct/
+│   ├── yandex-direct/
+│   └── yandex-metrika/
 ├── workflows/
 ├── packages/
 ├── docs/
@@ -37,7 +38,7 @@ The **plugin** is the installation/versioning boundary. The **skill** is a disco
 
 The root marketplace metadata is in `.agents/plugins/marketplace.json`. Import the GitHub repository as a marketplace, then install the individual Yandex service plugin you need.
 
-The current Direct plugin is located at `plugins/yandex-direct/` and preserves its `1.0.0` version through the Phase 1 structural migration.
+Direct and Metrika are independently installable plugins under `plugins/`, each at version `1.0.0`.
 
 ## Common safety model
 
@@ -56,11 +57,11 @@ Draft creation is distinct from activation/publication. Plugins remain usable wi
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — implementation sequence.
 - [`docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md`](docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md) — approved architecture design.
 
-## Current reference implementation: Direct
+## Production plugins
 
-The Direct plugin contains eight focused skills, current v501 references, dependency-free API/report helpers, regression tests, and offline routing/safety eval fixtures.
+Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers.
 
-See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md).
+See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md) and [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md).
 
 ## Development
 
@@ -82,3 +83,11 @@ python -m py_compile scripts/yd_api.py scripts/yd_report.py
 ## Sources and licensing
 
 Repository code is MIT unless a plugin or vendored upstream notice states otherwise. Each plugin documents the upstream projects and public API documentation that informed it.
+
+Metrika regression checks:
+
+```bash
+cd plugins/yandex-metrika
+python -m unittest discover -s tests -v
+python -m py_compile scripts/_http.py scripts/ym_api.py scripts/ym_report.py scripts/ym_logs.py scripts/ym_import.py
+```

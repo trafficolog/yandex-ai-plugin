@@ -9,16 +9,9 @@
 
 ## Phase 2 — Yandex Metrika
 
-Next implementation target. Build to the same standard as Direct:
+Implemented as plugin `1.0.0` with ten specialized skills, quality-aware Reporting API support, safe Management/Logs/Data Import helpers, offline tests/evals and optional MCP/app execution fallback.
 
-- router + specialized reporting/conversion/ecommerce/attribution/logs/goals skills;
-- current official API reference;
-- safe management operations;
-- compact cache-aware reporting patterns;
-- tests and offline evals;
-- optional MCP/app execution adapter with bundled/file fallback.
-
-Use `mkultraaaa/claude-yandex-skills` as a workflow donor and `theYahia/YaAll` as a capability/MCP reference, with official Yandex docs as source of truth.
+Key correctness rules include current attribution models, sampling/data-lag disclosure, one-year Logs requests, preview-before-write and a guard against duplicate Yandex Direct expense imports.
 
 ## Phase 3 — Yandex Webmaster
 
