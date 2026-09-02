@@ -31,6 +31,7 @@ jobs:
       metrika: ${{ steps.detect.outputs.metrika }}
       webmaster: ${{ steps.detect.outputs.webmaster }}
       wordstat: ${{ steps.detect.outputs.wordstat }}
+      search: ${{ steps.detect.outputs.search }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +47,7 @@ jobs:
             echo "metrika=true" >> "$GITHUB_OUTPUT"
             echo "webmaster=true" >> "$GITHUB_OUTPUT"
             echo "wordstat=true" >> "$GITHUB_OUTPUT"
+            echo "search=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -69,23 +71,25 @@ jobs:
           else
             echo "direct=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-metrika/)|$shared"; then
             echo "metrika=true" >> "$GITHUB_OUTPUT"
           else
             echo "metrika=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-webmaster/)|$shared"; then
             echo "webmaster=true" >> "$GITHUB_OUTPUT"
           else
             echo "webmaster=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-wordstat/)|$shared"; then
             echo "wordstat=true" >> "$GITHUB_OUTPUT"
           else
             echo "wordstat=false" >> "$GITHUB_OUTPUT"
+          fi
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-search/)|$shared"; then
+            echo "search=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "search=false" >> "$GITHUB_OUTPUT"
           fi
 
   direct:
@@ -99,8 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+        with: {python-version: '3.13'}
       - name: Run Direct regression tests
         run: python -m unittest discover -s tests -v
       - name: Compile Direct helpers
@@ -117,8 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+        with: {python-version: '3.13'}
       - name: Run Metrika tests
         run: python -m unittest discover -s tests -v
       - name: Compile Metrika helpers
@@ -135,8 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+        with: {python-version: '3.13'}
       - name: Run Webmaster tests
         run: python -m unittest discover -s tests -v
       - name: Compile Webmaster helpers
@@ -153,9 +154,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+        with: {python-version: '3.13'}
       - name: Run Wordstat tests
         run: python -m unittest discover -s tests -v
       - name: Compile Wordstat helpers
         run: python -m py_compile scripts/_http.py scripts/ywstat_api.py scripts/ywstat_top.py scripts/ywstat_semantics.py scripts/ywstat_dynamics.py scripts/ywstat_regions.py scripts/ywstat_trends.py
+
+  search:
+    name: Yandex Search plugin
+    needs: [validate, changes]
+    if: needs.changes.outputs.search == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/yandex-search
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Run Search tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Search helpers
+        run: python -m py_compile scripts/_http.py scripts/ys_api.py scripts/ys_request.py scripts/ys_parse.py scripts/ys_async.py scripts/ys_batch.py scripts/ys_serp.py scripts/ys_overlap.py scripts/ys_compare.py
