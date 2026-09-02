@@ -2,7 +2,66 @@
 
 All notable repository-level changes are documented here. Individual plugins also keep their own changelogs where service-specific detail is useful.
 
-This project uses independent SemVer per plugin. The initial marketplace release shipped the seven available plugins at `1.0.0`; the current reviewed maintenance release is `1.0.1`.
+This project uses independent SemVer per plugin. The initial marketplace release shipped the seven available plugins at `1.0.0`; the OPUS 1.1.0 contract-hardening milestone intentionally publishes a mixed version set rather than artificially incrementing unchanged plugins.
+
+## [OPUS 1.1.0] — 2026-09-02
+
+Review-driven contract-hardening milestone closing the remaining verified OPUS findings while preserving the established seven-plugin architecture and the 1.0.1 safety/semantic baseline.
+
+### Published plugin versions
+
+- Yandex Direct `1.0.1` — unchanged; safe-by-default mutation gate remains the regression baseline.
+- Yandex Metrika `1.0.1` — unchanged; attribution omission/provenance behavior remains the regression baseline.
+- Yandex Webmaster `1.0.2`.
+- Yandex Wordstat `1.0.2`.
+- Yandex Search `1.0.2`.
+- Yandex SEO `1.0.1` — unchanged; context/period/geo semantics remain the regression baseline.
+- Yandex Marketing `1.1.0`.
+
+### Yandex Webmaster 1.0.2
+
+- Corrected PRO export `use_pro_tariff` serialization to API strings `"true"` / `"false"`.
+- Required non-empty host-relative export paths beginning with `/` and rejected full URLs.
+- Added deterministic export lifecycle normalization for `IN_PROGRESS`, `SUCCESS` and `FAILED`, including explicit missing URL and proven >24-hour expiry states.
+- Added quota planning states that distinguish known remaining quota from unknown usage; missing quota metadata is never interpreted as free capacity.
+- Kept PRO export lifecycle helpers pure: no autonomous polling, scheduling or invented retry intervals were introduced.
+
+### Yandex Wordstat 1.0.2
+
+- Added the verified GetTop association cap of 20 and explicit normalized coverage metadata: `associations_cap`, `associations_count`, `associations_truncated`.
+- Propagated capped association coverage to cross-service quality handling as `WORDSTAT_ASSOCIATIONS_CAPPED`.
+- Preserved the no-sum demand invariant: overlapping phrase/association counts are not converted into total demand or market size.
+- Corrected Dynamics operator provenance: monthly/weekly rejection remains a conservative repository compatibility guard rather than a claimed official Yandex prohibition; supported `PERIOD_DAILY` operator workflows remain available.
+
+### Yandex Search 1.0.2
+
+- Added `MAX_RESULTS = 250` and strict complete-window validation for request pagination/grouping.
+- A window ending exactly at 250 is valid; windows starting at or crossing past 250 are rejected rather than depending on undocumented partial-page behavior.
+- Added snapshot depth metadata (`max_supported_results`, `window_start`, `window_end`, `reaches_result_ceiling`) and guards against impossible observed ranks above 250.
+- Preserved 1.0.1 absolute-rank semantics and conservative tracking-URL identity behavior.
+
+### Yandex Marketing 1.1.0
+
+- Added stable evidence roles: `canonical`, `reconciliation_only` and `enrichment`, with deterministic derivation and explicit-role validation.
+- Reconciliation now returns role-bearing records, the selected canonical record, status and compatibility limitations without summing overlapping source views.
+- Monetary evidence missing material currency/VAT/period context remains explicitly incomparable and carries `MONEY_CONTEXT_UNKNOWN` rather than producing unsupported derived metrics.
+- Replaced the legacy 18-class priority taxonomy with the nine finding types actually produced by deterministic local helpers.
+- Added explicit implemented/deferred finding sets; unknown/deferred external findings sort after implemented findings and receive `UNKNOWN_OR_DEFERRED_TYPE` metadata.
+- Removed dead `NEW_CAMPAIGN_CANDIDATE` delegation while preserving preview-only approval requirements for executable owning-service routes.
+
+### Repository contracts and freshness
+
+- Added `docs/CONTRACT_MATRIX.json` with executable high-risk `SKILL.md → helper → regression test` traceability across service, cross-service and repository invariants.
+- Added deterministic offline API-reference freshness validation with `MAX_REFERENCE_AGE_DAYS = 90`.
+- Supported verification markers include `Verified: YYYY-MM-DD`, `verified YYYY-MM-DD` and `verified_at: YYYY-MM-DD`; malformed, future-dated and >90-day stale references fail validation.
+- Freshness-controlled Webmaster, Wordstat and Search API baselines were reverified on `2026-09-02`.
+- Repository validation requires the contract matrix and verifies known plugins, statuses, unique IDs, referenced paths, regression-test coverage and freshness-controlled references without network access.
+
+### TDD and release integration
+
+- Wordstat, Search, Webmaster, Marketing and repository-control changes were introduced through explicit RED→GREEN regression cycles on the PR branch.
+- Root marketplace registries and both plugin manifest formats use the mixed version set above.
+- `README.md` and `docs/SERVICE_MATRIX.md` document independent SemVer rather than falsely advertising synchronized `1.1.0` versions.
 
 ## [1.0.1] — 2026-09-02
 
