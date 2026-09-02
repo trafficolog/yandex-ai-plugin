@@ -2,13 +2,13 @@
 
 <p align="center"><strong>Русский</strong> · <a href="README.en.md">English</a></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-OPUS%201.1.1-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-PHASE%207%201.0.0-3155ff"></p>
 
 # Yandex AI Plugins
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** функциональный контур Phase 1–6B выпущен. Fix-release `OPUS 1.1.1` обновляет Metrika до `1.0.2` и Webmaster до `1.0.3`; Direct и SEO остаются `1.0.1`, Wordstat и Search — `1.0.2`, Marketing — `1.1.0`. Phase 7 Topical Architecture реализуется в отдельном release cycle.
+> **Статус:** Phase 1–7 реализованы. Release `PHASE 7 1.0.0` добавляет candidate Topic Map в Wordstat `1.1.0` и Topical Architecture + Internal Linking в SEO `1.1.0`; Search остаётся `1.0.2` и сохраняет ownership SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Marketing `1.1.0` не меняются.
 
 ## Быстрый обзор
 
@@ -17,9 +17,9 @@
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.0 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.1.0 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition и reconciliation | delegated preview only |
 
 Подробности: [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) · [English](docs/SERVICE_MATRIX.en.md).
@@ -151,13 +151,13 @@ python scripts/check_reference_freshness.py
 yandex-direct        1.0.1
 yandex-metrika       1.0.2
 yandex-webmaster     1.0.3
-yandex-wordstat      1.0.2
+yandex-wordstat      1.1.0
 yandex-search        1.0.2
-yandex-seo           1.0.1
+yandex-seo           1.1.0
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
 
 ## Документация
 
