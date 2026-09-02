@@ -26,6 +26,17 @@ class TestWebmasterApi(unittest.TestCase):
         self.assertEqual(preview["headers"]["Authorization"], "OAuth ***")
         self.assertEqual(preview["body"]["host_url"], "https://example.com")
 
+    def test_prepare_request_redacts_basic_auth_embedded_in_urls(self):
+        preview = yw_api.prepare_request(
+            method="POST",
+            path="user/1/hosts/h/feeds/add/start",
+            token="secret",
+            body={"url": "https://feeduser:feedpass@example.com/feed.yml"},
+        )
+        self.assertNotIn("feedpass", str(preview))
+        self.assertNotIn("feeduser", str(preview))
+        self.assertEqual(preview["body"]["url"], "https://***:***@example.com/feed.yml")
+
     def test_preview_does_not_execute_transport(self):
         calls = []
         result = yw_api.run_request(
