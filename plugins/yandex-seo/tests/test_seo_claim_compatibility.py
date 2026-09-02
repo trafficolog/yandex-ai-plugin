@@ -1,6 +1,6 @@
 import unittest
 
-from scripts import seo_internal_linking
+from scripts import seo_internal_linking, seo_topical_architecture
 
 
 ARCHITECTURE = {
@@ -13,6 +13,14 @@ ARCHITECTURE = {
         "edges": [],
     },
     "semantic_graph": {"nodes": [{"page_id": "a"}, {"page_id": "b"}], "edges": []},
+}
+
+COVERAGE = {
+    "wordstat": "COMPLETE",
+    "search": "COMPLETE",
+    "webmaster": "COMPLETE",
+    "metrika": "PARTIAL",
+    "site_inventory": "COMPLETE",
 }
 
 
@@ -48,6 +56,43 @@ class TestSeoClaimCompatibility(unittest.TestCase):
                     "evidence": [],
                     "confidence": "MEDIUM",
                     "claim_class": "DERIVED",
+                }],
+            )
+
+    def test_methodology_only_semantic_edge_cannot_claim_empirical_evidence(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="EXISTING_SITE",
+                coverage=COVERAGE,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=[
+                    {
+                        "page_id": "a",
+                        "url": "/a/",
+                        "canonical_parent_id": None,
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "MEDIUM",
+                    },
+                    {
+                        "page_id": "b",
+                        "url": "/b/",
+                        "canonical_parent_id": None,
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "MEDIUM",
+                    },
+                ],
+                semantic_edges=[{
+                    "from_page_id": "a",
+                    "to_page_id": "b",
+                    "relation": "SUPPORT",
+                    "user_need": "methodology-only semantic path",
+                    "reason_codes": ["METHODOLOGY_HEURISTIC"],
+                    "evidence": [],
+                    "confidence": "HIGH",
+                    "claim_class": "OBSERVED",
                 }],
             )
 
