@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 from typing import Any, Callable
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 try:
     from ._http import auth_headers, redact_headers, request_json
@@ -30,6 +30,34 @@ def is_consequential(method: str) -> bool:
     return method.upper() not in READ_METHODS
 
 
+def redact_url_credentials(value: str) -> str:
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return value
+    if not parsed.scheme or not parsed.hostname or (parsed.username is None and parsed.password is None):
+        return value
+    host = parsed.hostname
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+    netloc = f"***:***@{host}"
+    return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+
+
+def _redact_preview_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return redact_url_credentials(value)
+    if isinstance(value, list):
+        return [_redact_preview_value(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_redact_preview_value(item) for item in value)
+    if isinstance(value, dict):
+        return {key: _redact_preview_value(item) for key, item in value.items()}
+    return value
+
+
 def prepare_request(
     *, method: str, path: str, token: str, params: dict[str, Any] | None = None,
     body: Any | None = None, version: str = "v4"
@@ -38,7 +66,7 @@ def prepare_request(
         "method": method.upper(),
         "url": api_url(path, params=params, version=version),
         "headers": redact_headers(auth_headers(token)),
-        "body": body,
+        "body": _redact_preview_value(body),
         "consequential": is_consequential(method),
         "version": version,
     }
