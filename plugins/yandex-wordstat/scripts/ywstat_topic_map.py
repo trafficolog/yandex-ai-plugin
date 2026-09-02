@@ -54,6 +54,7 @@ def build_topic_map(
 
     normalized_queries: dict[str, dict[str, Any]] = {}
     query_aliases: dict[str, str] = {}
+    query_id_keys: dict[str, str] = {}
 
     for record in phrase_records:
         query_id = record.get("query_id")
@@ -68,6 +69,11 @@ def build_topic_map(
             raise ValueError("every phrase record requires relation")
 
         key = _normalize_text(text)
+        previous_key = query_id_keys.get(query_id)
+        if previous_key is not None and previous_key != key:
+            raise ValueError(f"query_id {query_id!r} resolves to multiple normalized queries")
+        query_id_keys[query_id] = key
+
         if key not in normalized_queries:
             normalized_queries[key] = {
                 "query_id": query_id,
