@@ -100,6 +100,26 @@ class TestSeoClaimCompatibility(unittest.TestCase):
                 }],
             )
 
+    def test_semantic_edge_requires_nonempty_reason_codes(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="EXISTING_SITE",
+                coverage=COVERAGE,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=existing_nodes(),
+                semantic_edges=[{
+                    "from_page_id": "a",
+                    "to_page_id": "b",
+                    "relation": "SUPPORT",
+                    "user_need": "edge must carry provenance",
+                    "reason_codes": [],
+                    "evidence": [],
+                    "confidence": "MEDIUM",
+                    "claim_class": "HYPOTHESIS",
+                }],
+            )
+
     def test_unknown_reason_code_cannot_bypass_claim_compatibility(self):
         with self.assertRaises(ValueError):
             seo_internal_linking.build_link_plan(
