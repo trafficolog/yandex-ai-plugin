@@ -33,6 +33,7 @@ jobs:
       wordstat: ${{ steps.detect.outputs.wordstat }}
       search: ${{ steps.detect.outputs.search }}
       seo: ${{ steps.detect.outputs.seo }}
+      marketing: ${{ steps.detect.outputs.marketing }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,6 +51,7 @@ jobs:
             echo "wordstat=true" >> "$GITHUB_OUTPUT"
             echo "search=true" >> "$GITHUB_OUTPUT"
             echo "seo=true" >> "$GITHUB_OUTPUT"
+            echo "marketing=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -73,35 +75,35 @@ jobs:
           else
             echo "direct=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-metrika/)|$shared"; then
             echo "metrika=true" >> "$GITHUB_OUTPUT"
           else
             echo "metrika=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-webmaster/)|$shared"; then
             echo "webmaster=true" >> "$GITHUB_OUTPUT"
           else
             echo "webmaster=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-wordstat/)|$shared"; then
             echo "wordstat=true" >> "$GITHUB_OUTPUT"
           else
             echo "wordstat=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-search/)|$shared"; then
             echo "search=true" >> "$GITHUB_OUTPUT"
           else
             echo "search=false" >> "$GITHUB_OUTPUT"
           fi
-
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-seo/)|$shared"; then
             echo "seo=true" >> "$GITHUB_OUTPUT"
           else
             echo "seo=false" >> "$GITHUB_OUTPUT"
+          fi
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-marketing/)|$shared"; then
+            echo "marketing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "marketing=false" >> "$GITHUB_OUTPUT"
           fi
 
   direct:
@@ -211,3 +213,21 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile SEO helpers
         run: python -m py_compile scripts/seo_context.py scripts/seo_bundle.py scripts/seo_join.py scripts/seo_quality.py scripts/seo_opportunities.py scripts/seo_cannibalization.py scripts/seo_prioritize.py
+
+  marketing:
+    name: Yandex Marketing plugin
+    needs: [validate, changes]
+    if: needs.changes.outputs.marketing == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/yandex-marketing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run Marketing tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile Marketing helpers
+        run: python -m py_compile scripts/marketing_context.py scripts/marketing_bundle.py scripts/marketing_join.py scripts/marketing_quality.py scripts/marketing_performance.py scripts/marketing_demand.py scripts/marketing_opportunities.py scripts/marketing_prioritize.py

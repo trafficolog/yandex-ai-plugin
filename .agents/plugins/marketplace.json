@@ -6,75 +6,45 @@
   "plugins": [
     {
       "name": "yandex-direct-suite",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-direct"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-direct"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "Marketing"
     },
     {
       "name": "yandex-metrika",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-metrika"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-metrika"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "Analytics"
     },
     {
       "name": "yandex-webmaster",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-webmaster"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-webmaster"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "SEO"
     },
     {
       "name": "yandex-wordstat",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-wordstat"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-wordstat"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "SEO"
     },
     {
       "name": "yandex-search",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-search"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-search"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "SEO"
     },
     {
       "name": "yandex-seo",
-      "source": {
-        "source": "local",
-        "path": "./plugins/yandex-seo"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
+      "source": {"source": "local", "path": "./plugins/yandex-seo"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
       "category": "SEO"
+    },
+    {
+      "name": "yandex-marketing",
+      "source": {"source": "local", "path": "./plugins/yandex-marketing"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+      "category": "Marketing"
     }
   ]
 }
