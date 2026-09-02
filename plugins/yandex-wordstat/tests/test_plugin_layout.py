@@ -7,6 +7,7 @@ EXPECTED_SKILLS = {
     "yandex-wordstat",
     "yandex-wordstat-research",
     "yandex-wordstat-semantics",
+    "yandex-wordstat-topic-map",
     "yandex-wordstat-frequency",
     "yandex-wordstat-dynamics",
     "yandex-wordstat-regions",
@@ -42,7 +43,7 @@ class TestPluginLayout(unittest.TestCase):
     def test_evals_have_scenarios(self):
         data = json.loads((ROOT / "evals/scenarios.json").read_text(encoding="utf-8"))
         self.assertEqual(data["version"], 1)
-        self.assertGreaterEqual(len(data["scenarios"]), 8)
+        self.assertGreaterEqual(len(data["scenarios"]), 13)
 
     def test_package_docs_exist(self):
         for path in ["README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md"]:
@@ -51,6 +52,7 @@ class TestPluginLayout(unittest.TestCase):
     def test_production_workflow_contracts(self):
         router = (ROOT / "skills/yandex-wordstat/SKILL.md").read_text(encoding="utf-8")
         semantics = (ROOT / "skills/yandex-wordstat-semantics/SKILL.md").read_text(encoding="utf-8")
+        topic_map = (ROOT / "skills/yandex-wordstat-topic-map/SKILL.md").read_text(encoding="utf-8")
         dynamics = (ROOT / "skills/yandex-wordstat-dynamics/SKILL.md").read_text(encoding="utf-8")
         trends = (ROOT / "skills/yandex-wordstat-trends/SKILL.md").read_text(encoding="utf-8")
         api = (ROOT / "skills/yandex-wordstat-api/SKILL.md").read_text(encoding="utf-8")
@@ -60,6 +62,10 @@ class TestPluginLayout(unittest.TestCase):
         self.assertIn("total demand", semantics.lower())
         self.assertIn("provenance", semantics.lower())
         self.assertIn("WORDSTAT_ASSOCIATIONS_CAPPED", semantics)
+        self.assertIn("wordstat-topic-map/v1", topic_map)
+        self.assertIn("candidate", topic_map.lower())
+        self.assertIn("yandex-search-clustering", topic_map)
+        self.assertIn("yandex-seo-topical-architecture", topic_map)
         self.assertIn("PERIOD_MONTHLY", dynamics)
         self.assertIn("PERIOD_WEEKLY", dynamics)
         self.assertIn("fromDate", dynamics)
@@ -73,7 +79,7 @@ class TestPluginLayout(unittest.TestCase):
 
     def test_current_reference_set_exists(self):
         expected = {
-            "api-2026.md", "auth.md", "operators.md", "semantics.md", "dynamics.md",
+            "api-2026.md", "auth.md", "operators.md", "semantics.md", "topic-map.md", "dynamics.md",
             "regions.md", "trends.md", "quota-pricing.md", "safety.md", "sources.md",
         }
         actual = {p.name for p in (ROOT / "references").glob("*.md")}
