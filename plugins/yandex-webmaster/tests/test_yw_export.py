@@ -19,6 +19,8 @@ class TestExport(unittest.TestCase):
     def test_download_url_for_success(self):
         self.assertEqual(yw_export.download_url({"download_status": "SUCCESS", "url": "https://storage/x"}), "https://storage/x")
         self.assertIsNone(yw_export.download_url({"download_status": "IN_PROGRESS"}))
+        with self.assertRaises(ValueError):
+            yw_export.download_url({"download_status": "SUCCESS", "url": "http://storage/x"})
 
     def test_download_to_file(self):
         with TemporaryDirectory() as tmp:
@@ -26,6 +28,14 @@ class TestExport(unittest.TestCase):
             result = yw_export.download_to_file("https://storage/x", output, transport=lambda url: b"a\tb\n1\t2\n")
             self.assertEqual(result, output)
             self.assertEqual(output.read_bytes(), b"a\tb\n1\t2\n")
+
+    def test_download_rejects_non_https_schemes_before_transport(self):
+        with TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.tsv"
+            for url in ["file:///etc/passwd", "http://127.0.0.1/report"]:
+                with self.subTest(url=url):
+                    with self.assertRaises(ValueError):
+                        yw_export.download_to_file(url, output, transport=lambda value: b"unsafe")
 
 
 if __name__ == "__main__":
