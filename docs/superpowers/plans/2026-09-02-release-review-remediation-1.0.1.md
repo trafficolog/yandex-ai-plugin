@@ -58,12 +58,12 @@
 
 **Interfaces:**
 - Expense import detects Direct-like provider labels after separator-insensitive normalization and emits/blocks a content-based `DIRECT_DUPLICATION_RISK` unless explicitly overridden.
-- Reporting always resolves an attribution model (`last` when omitted) and returns it in metadata.
-- Logs date validation rejects periods beyond one calendar year; `evaluate` and `create` use the same attribution context.
+- Reporting preserves an explicitly supplied attribution model, but omission stays omitted/unknown and is recorded as provenance without changing the request.
+- Logs date validation rejects periods beyond one calendar year; `evaluate` and `create` use the same explicit attribution context when one is supplied.
 
-- [ ] Add negative-space tests for `Директ`, `yandex-direct`, `yandexdirect`, `ya.direct`, risky CSV rows, unsampled `data_lag`, implicit attribution metadata, Logs anniversary boundary, and evaluate/create attribution parity.
+- [ ] Add negative-space tests for `Директ`, `yandex-direct`, `yandexdirect`, `ya.direct`, risky CSV rows, unsampled `data_lag`, explicit/omitted attribution provenance, Logs anniversary boundary, and evaluate/create attribution parity.
 - [ ] Verify RED.
-- [ ] Implement minimal fixes without claiming UTM fields are infallible Direct identifiers.
+- [ ] Implement minimal fixes without claiming UTM fields are infallible Direct identifiers and without inventing an attribution model when omitted.
 - [ ] Verify Metrika GREEN + compile.
 
 ### Task 3: Webmaster feed body, URL redaction, and safe downloads
@@ -137,7 +137,7 @@
 - Geo alignment returns `EXACT|APPROXIMATE|MISMATCHED|UNKNOWN` and preserves distinct visitor/SERP/Wordstat contexts.
 - `webmaster_impressions is None` is unknown, never measured zero.
 - `WEBMASTER_TOP_N` lowers content-gap certainty.
-- Metrika `data_lag` propagates independently of sampling; missing quality produces `METRIKA_QUALITY_UNKNOWN` where appropriate.
+- Metrika `data_lag` propagates independently of sampling; missing quality produces the repository-wide `QUALITY_METADATA_MISSING` limitation marker.
 
 - [ ] Add adversarial tests for all missing-context cases.
 - [ ] Verify RED.
@@ -177,10 +177,10 @@
 
 **Interfaces:**
 - Both marketplace manifests expose the same plugin names and `1.0.1` versions.
-- Cross-service plugins have no install-authentication requirement in `.agents` metadata; validator enforces no `.env.example` and no authentication requirement for `yandex-seo`/`yandex-marketing`.
-- Root validator checks manifest-set/version consistency.
+- The `.agents` schema uses supported authentication values only; credential-free `yandex-seo`/`yandex-marketing` use `authentication: ON_USE` rather than install-time `ON_INSTALL`, and still expose no `.env.example` or transport client.
+- Root validator checks manifest-set/version consistency, supported authentication values, and the `ON_USE` requirement for cross-service plugins.
 
-- [ ] Add root regression tests for marketplace consistency and cross-service auth-free metadata.
+- [ ] Add root regression tests for marketplace consistency and schema-valid cross-service `ON_USE` metadata.
 - [ ] Verify RED.
 - [ ] Update manifests/validator/docs/version table and root `1.0.1` changelog entry.
 - [ ] Run repository validator and root tests GREEN.
