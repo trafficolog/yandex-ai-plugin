@@ -30,6 +30,7 @@ DIRECT_SOURCE_ALIASES = {
     "directyandex",
     "yadirect",
 }
+DIRECT_SOURCE_TOKENS = {"direct", "директ"}
 DIRECT_UTM_SOURCES = {"yandex", "яндекс", "yandexdirect", "яндексдирект", "ya"}
 DIRECT_UTM_MEDIA = {"cpc", "ppc", "paidsearch", "context", "контекст"}
 
@@ -58,10 +59,20 @@ def _compact_label(value: str) -> str:
     return re.sub(r"[^0-9a-zа-яё]+", "", value.strip().casefold())
 
 
+def _label_tokens(value: str) -> set[str]:
+    return {
+        token
+        for token in re.split(r"[^0-9a-zа-яё]+", value.strip().casefold())
+        if token
+    }
+
+
 def guard_expense_source(source: str | None) -> None:
     if source is None:
         return
-    if _compact_label(source) in DIRECT_SOURCE_ALIASES:
+    compact = _compact_label(source)
+    tokens = _label_tokens(source)
+    if compact in DIRECT_SOURCE_ALIASES or tokens & DIRECT_SOURCE_TOKENS:
         raise ValueError(
             "Do not import Yandex Direct expenses into Metrika: Direct cost data is transferred automatically and manual upload can duplicate expenses"
         )
