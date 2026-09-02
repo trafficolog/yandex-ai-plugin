@@ -72,6 +72,8 @@ class Phase7ContractTests(unittest.TestCase):
         text = workflow.read_text(encoding="utf-8")
         for token in [
             "workflow_run:",
+            "github.event.workflow_run.event == 'push'",
+            "github.event.workflow_run.head_repository.full_name == github.repository",
             "head_branch == 'main'",
             "TARGET_SHA",
             'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
