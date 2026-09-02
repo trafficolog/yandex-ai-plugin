@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.ys_request import build_search_request, config_fingerprint
+from scripts.ys_request import MAX_RESULTS, build_search_request, config_fingerprint
 
 
 class TestSearchRequest(unittest.TestCase):
@@ -23,6 +23,38 @@ class TestSearchRequest(unittest.TestCase):
     def test_invalid_fix_typo_mode_rejected(self):
         with self.assertRaises(ValueError):
             build_search_request("x", folder_id="f", api_key="k", fix_typo_mode="FIX_TYPO_MODE_MAGIC")
+
+    def test_result_depth_constant(self):
+        self.assertEqual(MAX_RESULTS, 250)
+
+    def test_requested_page_cannot_exceed_result_ceiling(self):
+        with self.assertRaises(ValueError):
+            build_search_request(
+                "x", folder_id="f", api_key="k",
+                groups_on_page=100, docs_in_group=3,
+            )
+
+    def test_complete_window_ending_at_250_is_allowed(self):
+        request = build_search_request(
+            "x", folder_id="f", api_key="k",
+            page=4, groups_on_page=50, docs_in_group=1,
+        )
+        self.assertEqual(request["body"]["query"]["page"], "4")
+        self.assertEqual(request["body"]["groupSpec"]["groupsOnPage"], "50")
+
+    def test_partial_window_crossing_250_is_rejected(self):
+        with self.assertRaises(ValueError):
+            build_search_request(
+                "x", folder_id="f", api_key="k",
+                page=4, groups_on_page=60, docs_in_group=1,
+            )
+
+    def test_page_starting_at_250_is_rejected(self):
+        with self.assertRaises(ValueError):
+            build_search_request(
+                "x", folder_id="f", api_key="k",
+                page=5, groups_on_page=50, docs_in_group=1,
+            )
 
     def test_fingerprint_is_stable_and_ignores_query_text(self):
         left = build_search_request("one", folder_id="f", api_key="k", region=213)

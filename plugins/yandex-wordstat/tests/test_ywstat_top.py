@@ -53,6 +53,40 @@ class TestWordstatTop(unittest.TestCase):
         self.assertEqual(normalized["results"][0]["sources"], ["зубная паста"])
         self.assertEqual(len(normalized["records"]), 3)
 
+    def test_association_coverage_marks_exact_cap_as_truncated(self):
+        response = {
+            "totalCount": "100",
+            "results": [],
+            "associations": [
+                {"phrase": f"association {index}", "count": str(index + 1)}
+                for index in range(20)
+            ],
+        }
+        normalized = ywstat_top.normalize_top_response(response, seed="seed")
+        self.assertEqual(ywstat_top.MAX_ASSOCIATIONS, 20)
+        self.assertEqual(normalized["coverage"], {
+            "associations_cap": 20,
+            "associations_count": 20,
+            "associations_truncated": True,
+        })
+        self.assertTrue(all(row["relation"] == "association" for row in normalized["associations"]))
+
+    def test_association_coverage_below_cap_is_not_truncated(self):
+        response = {
+            "totalCount": "100",
+            "results": [],
+            "associations": [
+                {"phrase": f"association {index}", "count": str(index + 1)}
+                for index in range(5)
+            ],
+        }
+        normalized = ywstat_top.normalize_top_response(response, seed="seed")
+        self.assertEqual(normalized["coverage"], {
+            "associations_cap": 20,
+            "associations_count": 5,
+            "associations_truncated": False,
+        })
+
     def test_operator_expression_is_preserved(self):
         normalized = ywstat_top.normalize_top_response(
             {"totalCount": "2", "results": [{"phrase": "купить собаку", "count": "2"}]},

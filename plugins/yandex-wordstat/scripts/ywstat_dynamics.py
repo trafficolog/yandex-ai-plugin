@@ -39,8 +39,8 @@ def validate_expression_for_period(phrase: str, period: str) -> None:
         raise ValueError("phrase must not exceed 400 characters")
     if period in {"PERIOD_MONTHLY", "PERIOD_WEEKLY"} and _has_unsupported_operator(phrase):
         raise ValueError(
-            "Cloud Wordstat monthly/weekly Dynamics only guarantees '+' operator compatibility; "
-            "use PERIOD_DAILY when other documented Wordstat operators are required"
+            "Plugin compatibility guard cannot guarantee monthly/weekly Dynamics behavior for this "
+            "operator expression; use PERIOD_DAILY for the supported Wordstat operator path"
         )
 
 

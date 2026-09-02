@@ -20,7 +20,7 @@ class TestPluginLayout(unittest.TestCase):
     def test_codex_manifest_contract(self):
         data = json.loads((ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(data["name"], "yandex-wordstat")
-        self.assertEqual(data["version"], "1.0.1")
+        self.assertEqual(data["version"], "1.0.2")
         self.assertEqual(data["skills"], "./skills/")
 
     def test_exact_skill_set_exists(self):
@@ -59,6 +59,7 @@ class TestPluginLayout(unittest.TestCase):
             self.assertIn(name, router)
         self.assertIn("total demand", semantics.lower())
         self.assertIn("provenance", semantics.lower())
+        self.assertIn("WORDSTAT_ASSOCIATIONS_CAPPED", semantics)
         self.assertIn("PERIOD_MONTHLY", dynamics)
         self.assertIn("PERIOD_WEEKLY", dynamics)
         self.assertIn("fromDate", dynamics)

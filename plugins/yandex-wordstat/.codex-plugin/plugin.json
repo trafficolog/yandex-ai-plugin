@@ -1,7 +1,7 @@
 {
   "name": "yandex-wordstat",
   "description": "Workflow skills for Yandex Wordstat demand research using current Cloud Search API v2 behavior.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "wordstat", "seo", "semantics", "keywords", "demand", "trends"],

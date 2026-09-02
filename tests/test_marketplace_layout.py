@@ -35,7 +35,10 @@ class MarketplaceLayoutTests(unittest.TestCase):
             self.assertTrue((PLUGIN / path).is_dir(), path)
 
     def test_repository_foundation_docs_exist(self):
-        for path in ["docs/PLUGIN_STANDARD.md", "docs/SERVICE_MATRIX.md", "docs/ROADMAP.md", "packages/README.md", "workflows/README.md"]:
+        for path in [
+            "docs/CONTRACT_MATRIX.json", "docs/PLUGIN_STANDARD.md", "docs/SERVICE_MATRIX.md",
+            "docs/ROADMAP.md", "packages/README.md", "workflows/README.md",
+        ]:
             self.assertTrue((ROOT / path).is_file(), path)
 
     def test_plugin_standard_contains_safety_contract(self):
@@ -71,7 +74,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_webmaster_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.1 |", content)
+        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.2 |", content)
 
     def test_ci_has_wordstat_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -81,7 +84,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_wordstat_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.1 |", content)
+        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.2 |", content)
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
@@ -97,7 +100,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_search_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Search | 1 | **available** | 1.0.1 |',content)
+        self.assertIn('| Yandex Search | 1 | **available** | 1.0.2 |',content)
 
     def test_roadmap_marks_phase5_implemented_and_phase6_next(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -130,6 +133,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
         data=json.loads((ROOT/'.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
         marketing=next(item for item in data['plugins'] if item['name']=='yandex-marketing')
         self.assertEqual(marketing['source'], {'source':'local','path':'./plugins/yandex-marketing'})
+        self.assertEqual(marketing['version'], '1.1.0')
 
     def test_ci_has_marketing_plugin_job(self):
         content=(ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
@@ -141,8 +145,8 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_marketing_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Marketing | X | **available** | 1.0.1 |',content)
-        self.assertIn('`yandex-marketing`: **available 1.0.1**',content)
+        self.assertIn('| Yandex Marketing | X | **available** | 1.1.0 |',content)
+        self.assertIn('`yandex-marketing`: **available 1.1.0**',content)
 
     def test_roadmap_marks_phase6b_implemented(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -157,12 +161,14 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('[`yandex-marketing`](plugins/yandex-marketing/)',content)
         self.assertIn('cd plugins/yandex-marketing',content)
         self.assertIn('marketing_prioritize.py',content)
+        self.assertIn('yandex-marketing     1.1.0', content)
 
     def test_first_release_review_and_changelog_exist(self):
         self.assertTrue((ROOT/'CHANGELOG.md').is_file())
         self.assertTrue((ROOT/'docs/REVIEW_FIRST_RELEASE.md').is_file())
         changelog=(ROOT/'CHANGELOG.md').read_text(encoding='utf-8')
         review=(ROOT/'docs/REVIEW_FIRST_RELEASE.md').read_text(encoding='utf-8')
+        self.assertIn('## [OPUS 1.1.0] — 2026-09-02', changelog)
         self.assertIn('## [1.0.0] — 2026-09-02',changelog)
         self.assertIn('First Release Independent Review Guide',review)
 

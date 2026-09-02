@@ -6,6 +6,11 @@ import json
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+try:
+    from .ys_request import MAX_RESULTS
+except ImportError:
+    from ys_request import MAX_RESULTS
+
 
 def normalize_url(url: str) -> str:
     parsed = urlsplit(url.strip())
@@ -50,6 +55,18 @@ def build_snapshot(
     if page < 0 or groups_on_page < 1:
         raise ValueError("page must be non-negative and groups_on_page positive")
 
+    requested_per_page = groups_on_page * docs_in_group
+    window_start = page * requested_per_page
+    window_end = window_start + requested_per_page
+    if requested_per_page > MAX_RESULTS:
+        raise ValueError(f"snapshot page exceeds {MAX_RESULTS}-result API ceiling")
+    if window_start >= MAX_RESULTS:
+        raise ValueError(f"snapshot page starts outside the {MAX_RESULTS}-result API ceiling")
+    if window_end > MAX_RESULTS:
+        raise ValueError(f"snapshot result window crosses the {MAX_RESULTS}-result API ceiling")
+    if len(results) > requested_per_page:
+        raise ValueError("snapshot contains more results than the configured result window")
+
     config = {
         "search_type": search_type,
         "region": region,
@@ -66,14 +83,21 @@ def build_snapshot(
     normalized = []
     for position, item in enumerate(results, start=1):
         row = dict(item)
+        rank = window_start + position
+        if rank > MAX_RESULTS:
+            raise ValueError(f"observed rank cannot exceed {MAX_RESULTS}")
         row["position_on_page"] = position
-        row["rank"] = page * groups_on_page + position
+        row["rank"] = rank
         row["url_key"] = normalize_url(row["url"])
         row["host"] = urlsplit(row["url_key"]).hostname
         normalized.append(row)
     return {
         "query": query,
         **config,
+        "max_supported_results": MAX_RESULTS,
+        "window_start": window_start,
+        "window_end": window_end,
+        "reaches_result_ceiling": window_end == MAX_RESULTS,
         "config_fingerprint": _fingerprint(config),
         "collected_at": collected_at or datetime.now(timezone.utc).isoformat(),
         "results": normalized,

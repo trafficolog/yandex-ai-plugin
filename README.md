@@ -14,7 +14,7 @@ The repository ships a **first-release set of seven independently installable pl
 
 This repository is intentionally **not one giant Yandex skill**. Installation/versioning happens at plugin level; workflow knowledge is split into focused skills inside each plugin; volatile API behavior stays inside the owning service plugin; cross-service plugins compose structured outputs instead of duplicating API clients.
 
-> **Release status:** the Phase 1–6B feature set remains the frozen first-release scope. The current remediation release is **1.0.1** for all seven shipped plugins. Operations / AI / Mobile integrations remain backlog; see [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Release status:** the Phase 1–6B feature set remains the frozen first-release scope. The current OPUS contract-hardening release is intentionally mixed-version: Direct, Metrika and SEO remain `1.0.1`; Webmaster, Wordstat and Search are `1.0.2`; Marketing is `1.1.0`. Operations / AI / Mobile integrations remain backlog; see [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Table of contents
 
@@ -97,11 +97,11 @@ Donor repositories are useful for workflow ideas, capability discovery and UX pa
 |---|---:|---|---|---|
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | Campaigns, reports, audit, keywords, budgets, safe optimization | Yes, only through preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.1 | service | Reporting, conversions, ecommerce, attribution, goals, Logs, imports | Yes, selected Management/import operations with guards |
-| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.1 | service | Search queries, indexing, recrawl, sitemaps, links, feeds, exports | Yes, quota/destructive operations require preview + approval |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.1 | service | Demand, semantics, frequency, dynamics, regions, trends | No consequential mutation surface in 1.0.1 |
-| [`yandex-search`](plugins/yandex-search/) | 1.0.1 | service | Web SERP, batch retrieval, snapshots, rankings, competitors, clustering | No |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.2 | service | Search queries, indexing, recrawl, sitemaps, links, feeds, exports | Yes, quota/destructive operations require preview + approval |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.2 | service | Demand, semantics, frequency, dynamics, regions, trends | No consequential mutation surface in 1.0.2 |
+| [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | Web SERP, batch retrieval, snapshots, rankings, competitors, clustering | No |
 | [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | Organic evidence, opportunities, gaps, cannibalization, CTR/conversion/technical context | **No — delegated preview only** |
-| [`yandex-marketing`](plugins/yandex-marketing/) | 1.0.1 | cross-service | Paid-acquisition evidence, reconciliation, demand/query/landing/budget opportunities | **No — delegated preview only** |
+| [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | Paid-acquisition evidence, reconciliation, demand/query/landing/budget opportunities | **No — delegated preview only** |
 
 Detailed service coverage is maintained in [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md).
 
@@ -126,6 +126,7 @@ Detailed service coverage is maintained in [`docs/SERVICE_MATRIX.md`](docs/SERVI
 │   ├── yandex-seo/
 │   └── yandex-marketing/
 ├── docs/
+│   ├── CONTRACT_MATRIX.json            # executable high-risk contract traceability
 │   ├── PLUGIN_STANDARD.md
 │   ├── SERVICE_MATRIX.md
 │   ├── ROADMAP.md
@@ -136,6 +137,7 @@ Detailed service coverage is maintained in [`docs/SERVICE_MATRIX.md`](docs/SERVI
 ├── workflows/                           # cross-repository workflow conventions / future shared workflows
 ├── packages/                            # reserved shared packages; intentionally minimal in first release
 ├── scripts/
+│   ├── contract_controls.py             # freshness + contract-matrix controls
 │   └── validate_repo.py                 # repository contract validator
 ├── tests/                               # root marketplace/architecture tests
 ├── CHANGELOG.md
@@ -386,6 +388,11 @@ The plugin intentionally does not pretend that the whole Webmaster API has one u
 - recrawl is quota-consuming and does not guarantee indexing or ranking;
 - sitemap submission does not guarantee inclusion;
 - feed batch-add uses the documented `{"feeds": [...]}` wrapper;
+- PRO export paths are host-relative and start with `/`; full URLs are rejected as request paths;
+- `use_pro_tariff` is serialized to the API strings `"true"` / `"false"`;
+- PRO export lifecycle is explicit (`IN_PROGRESS` → pending, `SUCCESS` → ready only with HTTPS URL, `FAILED` → failed); URL expiry is asserted only when age is proven beyond 24 hours;
+- quota planning distinguishes known remaining quota from unknown usage and does not assume missing metadata means free capacity;
+- the plugin does not autonomously poll or schedule PRO export status checks;
 - artifact downloads require absolute HTTPS URLs and preview output redacts embedded URL credentials;
 - destructive host/sitemap/feed operations require exact target approval.
 
@@ -415,6 +422,10 @@ Wordstat phrase counts can overlap. Therefore:
 > The plugin never sums overlapping phrase counts and labels the result "total market demand".
 
 `results` and `associations` remain semantically distinct. After deduplication, all relevant seed provenance is retained rather than keeping only the first source.
+
+Cloud GetTop associations are capped at 20. A response with exactly 20 associations is treated as potentially truncated; normalized coverage records `associations_cap`, `associations_count` and `associations_truncated`, and cross-service consumers propagate `WORDSTAT_ASSOCIATIONS_CAPPED` rather than claiming exhaustive semantic coverage.
+
+For monthly/weekly Dynamics the bundled plugin retains a conservative operator compatibility guard. That guard is repository policy, **not** a claim that Yandex officially prohibits those operator combinations. `PERIOD_DAILY` remains the supported path for non-`+` Wordstat operators covered by the plugin.
 
 Regional volume and affinity are separate signals: a large absolute region is not necessarily the strongest relative-interest region.
 
@@ -447,6 +458,8 @@ For rank/clustering workflows, the release uses flat result semantics rather tha
 ### Reproducibility
 
 SERP snapshots preserve a configuration fingerprint such as query, region/index, grouping and related request context. Ranking comparison rejects materially incompatible snapshots instead of reporting a misleading rank delta. Ranks are absolute across paginated result pages while `position_on_page` remains available separately.
+
+The documented 250-result depth is enforced as a strict complete-window contract. A result window ending exactly at 250 is valid; requests/snapshots starting at or crossing beyond the ceiling are rejected instead of relying on undocumented partial-page truncation. Snapshot metadata exposes `max_supported_results`, `window_start`, `window_end` and `reaches_result_ceiling`.
 
 ### Clustering
 
@@ -510,7 +523,7 @@ Evidence/finding semantics:
 - Missing period/geo/search/device context yields explicit `UNKNOWN`/validation states, never guessed equivalence.
 - Query joins are conservative; no automatic stemming/fuzzy merge.
 - Functional URL query parameters are retained. Tracking parameters (`utm_*`, `yclid`, `_openstat`) are removed from the canonical `url_key` and preserved separately as `tracking_params` so one landing is not silently fragmented by attribution decoration.
-- Metrika sampling/data lag, Webmaster top-N limitations and Search bridge risk propagate into final findings.
+- Metrika sampling/data lag, Webmaster top-N limitations, capped Wordstat association coverage and Search bridge/depth limitations propagate into final findings.
 - A Wordstat phrase alone is a discovery candidate, not automatically a validated content gap.
 - Missing `webmaster_impressions` is not treated as measured zero.
 - Cannibalization requires evidence of competing own URLs, not merely two matching strings.
@@ -561,7 +574,13 @@ business objective
 
 Missing material KPI fields make records incomparable; `None == None` is not evidence of compatibility. Money-derived metrics such as CPC/CPA/ROAS/DRR require explicit currency and VAT context.
 
-### No Direct/Metrika double counting
+### Evidence roles and no double counting
+
+Evidence records use three stable roles:
+
+- `canonical` — source-of-truth record for the metric under the repository policy;
+- `reconciliation_only` — overlapping evidence used for comparison, not addition;
+- `enrichment` — contextual evidence that is not a canonical numeric substitute.
 
 Overlapping values are reconciled, not added:
 
@@ -571,13 +590,17 @@ Metrika Direct cost   = reconciliation/context evidence
 Metrika conversions   = canonical conversion evidence when comparable
 ```
 
-`reconcile_metric` returns the canonical record together with reconciliation status; it never sums overlapping views.
+`reconcile_metric` returns role-bearing records, the canonical record, reconciliation status and compatibility limitations; it never sums overlapping views. Monetary evidence missing currency/VAT/period context remains explicitly incomparable.
 
 ### Demand/query semantics
 
-A high Wordstat count with low Direct coverage is a **demand expansion candidate**, not proof that the same number of ad impressions was lost. Ambiguous `metric: demand` is rejected; source-specific `wordstat_count` is required.
+A high Wordstat count with low Direct coverage is a **demand expansion candidate**, not proof that the same number of ad impressions was lost. Ambiguous `metric: demand` is rejected; source-specific `wordstat_count` is required. Capped Wordstat associations propagate `WORDSTAT_ASSOCIATIONS_CAPPED`.
 
 A search term with zero conversions is not automatically a negative-keyword recommendation. Maturity, objective, spend, conversion delay and evidence sufficiency matter.
+
+### Finding taxonomy
+
+The default local priority taxonomy is executable rather than aspirational: it contains only the nine finding types actually produced by deterministic `find_*` helpers. Deferred/unknown external finding classes sort after implemented classes and receive `UNKNOWN_OR_DEFERRED_TYPE` metadata. Dead `NEW_CAMPAIGN_CANDIDATE` delegation is not executable.
 
 ### URL identity
 
@@ -742,7 +765,9 @@ Preferred behavior:
 
 ## Testing and validation
 
-The repository combines a root validator, root architecture tests, verifiable eval fixtures and per-plugin offline regression suites.
+The repository combines a root validator, root architecture tests, verifiable eval fixtures and per-plugin offline regression suites. High-risk behavior is additionally mapped in [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json), which links contracts to real skills, helpers, regression tests and freshness-controlled references.
+
+API-reference freshness is an offline deterministic repository gate: selected source-of-truth references must contain a valid verification marker no more than 90 days old; malformed, future-dated or stale markers fail validation. CI performs no external web requests for that check.
 
 ### Root checks
 
@@ -815,19 +840,19 @@ python -m py_compile scripts/marketing_context.py scripts/marketing_bundle.py sc
 
 ## Versioning and releases
 
-Each plugin has independent SemVer. The current remediation release publishes:
+Each plugin has independent SemVer. The current OPUS contract-hardening release publishes:
 
 ```text
 yandex-direct-suite  1.0.1
 yandex-metrika       1.0.1
-yandex-webmaster     1.0.1
-yandex-wordstat      1.0.1
-yandex-search        1.0.1
+yandex-webmaster     1.0.2
+yandex-wordstat      1.0.2
+yandex-search        1.0.2
 yandex-seo           1.0.1
-yandex-marketing     1.0.1
+yandex-marketing     1.1.0
 ```
 
-A future change to one service does not require artificially incrementing every plugin.
+A change to one service does not require artificially incrementing every plugin. Patch versions are used for service-level contract corrections; Marketing `1.1.0` reflects its new public evidence-role/taxonomy contract while remaining read-only orchestration.
 
 Release history is summarized in [`CHANGELOG.md`](CHANGELOG.md); plugin-specific changes remain documented in their local changelogs.
 
@@ -875,11 +900,13 @@ No backlog item should be interpreted as a compatibility promise or release date
 
 ## Standards and design documents
 
+- [`docs/CONTRACT_MATRIX.json`](docs/CONTRACT_MATRIX.json) — executable high-risk `SKILL.md → helper → regression test` traceability and freshness-controlled references;
 - [`docs/PLUGIN_STANDARD.md`](docs/PLUGIN_STANDARD.md) — mandatory plugin structure, safety, versioning and eval conventions;
 - [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) — current shipped/planned service coverage;
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — completed first-release phases and future backlog;
 - [`docs/REVIEW_FIRST_RELEASE.md`](docs/REVIEW_FIRST_RELEASE.md) — independent review guide;
 - [`docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md`](docs/superpowers/specs/2026-09-01-yandex-ai-marketplace-design.md) — marketplace architecture baseline;
+- [`docs/superpowers/specs/2026-09-02-opus-1.1.0-contract-hardening-design.md`](docs/superpowers/specs/2026-09-02-opus-1.1.0-contract-hardening-design.md) — OPUS contract-hardening design;
 - subsequent specs in [`docs/superpowers/specs/`](docs/superpowers/specs/) — service and cross-service design decisions;
 - implementation plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
@@ -907,7 +934,7 @@ If you only read one section, these are the contracts the repository is designed
 6. **No causal certainty from observational correlation.** Use `HYPOTHESIS` when that is what the evidence supports.
 7. **A recommendation is not permission.** Consequential writes require preview and explicit approval in the owning service plugin.
 8. **Keep secrets out of content and previews.** Cross-service plugins need no credentials.
-9. **Expose data-quality limitations.** Sampling, lag, top-N coverage, timing/context mismatch and cluster bridge risk are part of the answer.
+9. **Expose data-quality limitations.** Sampling, lag, top-N coverage, result-depth/cap limits, timing/context mismatch and cluster bridge risk are part of the answer.
 10. **Prefer reproducibility.** Preserve request/snapshot/config context needed to explain how a result was produced.
 11. **Use artifacts for large outputs.** Do not pretend a truncated context contains the complete dataset.
 12. **Treat backlog as backlog.** The first release intentionally stops at the current seven-plugin set.

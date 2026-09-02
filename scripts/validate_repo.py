@@ -1,11 +1,27 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from datetime import date
 import json
 from pathlib import Path
 import re
 import sys
 from typing import Any
+
+try:
+    from .contract_controls import (
+        MAX_REFERENCE_AGE_DAYS,
+        parse_verified_date,
+        validate_contract_matrix,
+        validate_reference_freshness,
+    )
+except ImportError:
+    from contract_controls import (
+        MAX_REFERENCE_AGE_DAYS,
+        parse_verified_date,
+        validate_contract_matrix,
+        validate_reference_freshness,
+    )
 
 FORBIDDEN_RUNTIME_PATHS = ("~/.openclaw/", "~/.claude/", "~/.codex/")
 ALLOWED_EVAL_WRITE = {False, "preview-first", "approval-required"}
@@ -273,7 +289,7 @@ def _validate_plugin(
             errors.append(f"root README version {codex_version} missing for {plugin_name}")
 
 
-def validate_repository(root: Path) -> list[str]:
+def validate_repository(root: Path, *, today: date | None = None) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
     agent_marketplace_path = root / ".agents/plugins/marketplace.json"
@@ -297,6 +313,7 @@ def validate_repository(root: Path) -> list[str]:
         if isinstance(item, dict) and isinstance(item.get("name"), str)
     }
 
+    known_plugin_dirs: set[str] = set()
     for item in plugins:
         if not isinstance(item, dict):
             errors.append(f"marketplace plugin entry is not an object: {agent_marketplace_path}")
@@ -310,6 +327,7 @@ def validate_repository(root: Path) -> list[str]:
             errors.append(f"marketplace plugin source path missing: {item.get('name')}")
             continue
         plugin_path = (root / raw_path).resolve()
+        known_plugin_dirs.add(plugin_path.name)
         try:
             plugin_path.relative_to(root)
         except ValueError:
@@ -324,6 +342,18 @@ def validate_repository(root: Path) -> list[str]:
     extra_claude = set(claude_by_name) - agent_names
     for name in sorted(extra_claude):
         errors.append(f"claude marketplace contains plugin absent from agent marketplace: {name}")
+
+    matrix_path = root / "docs/CONTRACT_MATRIX.json"
+    matrix = _load_json(matrix_path, errors)
+    if matrix is not None:
+        errors.extend(
+            validate_contract_matrix(
+                root,
+                matrix,
+                known_plugins=known_plugin_dirs,
+                today=today,
+            )
+        )
 
     return errors
 
