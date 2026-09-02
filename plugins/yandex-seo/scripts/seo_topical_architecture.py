@@ -267,12 +267,14 @@ def _normalize_page_decisions(
         if decision not in PAGE_DECISIONS:
             raise ValueError(f"decision must be one of {sorted(PAGE_DECISIONS)}")
         claim_class = _validate_claim_class(raw.get("claim_class"))
+        evidence = deepcopy(raw.get("evidence", []))
+        reason_codes: list[str] = []
 
         item = {
             "page_id": page_id,
             "decision": decision,
             "cluster_ids": deepcopy(raw.get("cluster_ids", [])),
-            "evidence": deepcopy(raw.get("evidence", [])),
+            "evidence": evidence,
             "confidence": _validate_confidence(raw.get("confidence")),
             "claim_class": claim_class,
             "status": "PREVIEW",
@@ -291,6 +293,9 @@ def _normalize_page_decisions(
                     "methodology/hypothesis-only page decision reasons cannot use an empirical claim_class"
                 )
             item["reason_codes"] = reason_codes
+
+        if claim_class in EMPIRICAL_CLAIM_CLASSES and not reason_codes and not evidence:
+            raise ValueError("empirical page decisions require reason_codes or evidence provenance")
 
         if "target_page_id" in raw:
             target_page_id = _require_nonempty_string(
