@@ -66,7 +66,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
     def test_marketplace_exposes_direct_and_metrika(self):
         data = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
         paths = {item["source"]["path"] for item in data["plugins"]}
-        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika", "./plugins/yandex-webmaster"})
+        self.assertEqual(paths, {"./plugins/yandex-direct", "./plugins/yandex-metrika", "./plugins/yandex-webmaster", "./plugins/yandex-wordstat"})
 
     def test_ci_has_metrika_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -82,6 +82,22 @@ class MarketplaceLayoutTests(unittest.TestCase):
     def test_service_matrix_marks_webmaster_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
         self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.0 |", content)
+
+    def test_ci_has_wordstat_plugin_job(self):
+        content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("wordstat:", content)
+        self.assertIn("plugins/yandex-wordstat", content)
+        self.assertIn("steps.detect.outputs.wordstat", content)
+
+    def test_service_matrix_marks_wordstat_available(self):
+        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
+        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.0.0 |", content)
+
+    def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
+        content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
+        self.assertIn("## Phase 4 — Yandex Wordstat", content)
+        self.assertIn("Implemented as plugin `1.0.0`", content)
+        self.assertIn("## Phase 5 — Yandex Search", content)
 
 
 if __name__ == "__main__":

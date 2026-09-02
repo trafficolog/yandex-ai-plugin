@@ -11,7 +11,7 @@ This is **not** one giant Yandex skill.
 | [`yandex-direct`](plugins/yandex-direct/) | available | 1.0.0 | Create, audit, report on, and safely optimize Yandex Direct campaigns |
 | [`yandex-metrika`](plugins/yandex-metrika/) | available | 1.0.0 | Reporting, conversions, ecommerce, attribution, goals, Logs API and safe imports |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | available | 1.0.0 | Indexing, diagnostics, queries, sitemaps, recrawl, links, feeds and exports |
-| Yandex Wordstat | planned | — | Search demand, frequency, dynamics, regions, semantics |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | available | 1.0.0 | Demand, semantics, frequency, dynamics, regions and trend research |
 | Yandex Search | planned | — | Yandex Search/SERP workflows |
 
 See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap across Tracker, 360, Maps, AppMetrica, YandexGPT, and SpeechKit.
@@ -24,7 +24,8 @@ See [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) for the full roadmap acro
 ├── plugins/
 │   ├── yandex-direct/
 │   ├── yandex-metrika/
-│   └── yandex-webmaster/
+│   ├── yandex-webmaster/
+│   └── yandex-wordstat/
 ├── workflows/
 ├── packages/
 ├── docs/
@@ -39,7 +40,7 @@ The **plugin** is the installation/versioning boundary. The **skill** is a disco
 
 The root marketplace metadata is in `.agents/plugins/marketplace.json`. Import the GitHub repository as a marketplace, then install the individual Yandex service plugin you need.
 
-Direct, Metrika and Webmaster are independently installable plugins under `plugins/`, each at version `1.0.0`.
+Direct, Metrika, Webmaster and Wordstat are independently installable plugins under `plugins/`, each at version `1.0.0`.
 
 ## Common safety model
 
@@ -60,9 +61,9 @@ Draft creation is distinct from activation/publication. Plugins remain usable wi
 
 ## Production plugins
 
-Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers. Webmaster contains eleven SEO workflow skills plus v4/v4.1-aware helpers for queries, indexing, recrawl, sitemaps, feeds and exports.
+Direct contains eight focused advertising skills and v501 helpers. Metrika contains ten analytics/data-quality skills plus Management, Reporting, Logs and import helpers. Webmaster contains eleven SEO workflow skills plus v4/v4.1-aware helpers. Wordstat contains nine demand-research skills plus Cloud v2 helpers for semantics, dynamics, regions, trends, quota and cost planning.
 
-See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md), [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md), and [`plugins/yandex-webmaster/README.md`](plugins/yandex-webmaster/README.md).
+See [`plugins/yandex-direct/README.md`](plugins/yandex-direct/README.md), [`plugins/yandex-metrika/README.md`](plugins/yandex-metrika/README.md), [`plugins/yandex-webmaster/README.md`](plugins/yandex-webmaster/README.md), and [`plugins/yandex-wordstat/README.md`](plugins/yandex-wordstat/README.md).
 
 ## Development
 
@@ -99,4 +100,12 @@ Webmaster regression checks:
 cd plugins/yandex-webmaster
 python -m unittest discover -s tests -v
 python -m py_compile scripts/_http.py scripts/yw_api.py scripts/yw_queries.py scripts/yw_indexing.py scripts/yw_recrawl.py scripts/yw_sitemaps.py scripts/yw_feeds.py scripts/yw_export.py
+```
+
+Wordstat regression checks:
+
+```bash
+cd plugins/yandex-wordstat
+python -m unittest discover -s tests -v
+python -m py_compile scripts/_http.py scripts/ywstat_api.py scripts/ywstat_top.py scripts/ywstat_semantics.py scripts/ywstat_dynamics.py scripts/ywstat_regions.py scripts/ywstat_trends.py
 ```
