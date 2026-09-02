@@ -271,7 +271,21 @@ def _normalize_page_decisions(
             "claim_class": _validate_claim_class(raw.get("claim_class")),
             "status": "PREVIEW",
         }
-        for field in PAGE_DECISION_OPTIONAL_FIELDS:
+
+        if "target_page_id" in raw:
+            target_page_id = _require_nonempty_string(
+                raw.get("target_page_id"), "page_decision.target_page_id"
+            )
+            if target_page_id not in known_pages:
+                raise ValueError(f"page decision references unknown target page: {target_page_id}")
+            item["target_page_id"] = target_page_id
+
+        if "target_url" in raw:
+            item["target_url"] = _require_nonempty_string(
+                raw.get("target_url"), "page_decision.target_url"
+            )
+
+        for field in PAGE_DECISION_OPTIONAL_FIELDS - {"target_page_id", "target_url"}:
             if field in raw:
                 item[field] = deepcopy(raw[field])
         result.append(item)
