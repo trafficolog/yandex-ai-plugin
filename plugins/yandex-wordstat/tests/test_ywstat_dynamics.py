@@ -40,6 +40,16 @@ class TestWordstatDynamics(unittest.TestCase):
                 with self.assertRaises(ValueError, msg=(period, expression)):
                     ywstat_dynamics.validate_expression_for_period(expression, period)
 
+    def test_monthly_weekly_rejection_is_described_as_plugin_compatibility_guard(self):
+        with self.assertRaises(ValueError) as caught:
+            ywstat_dynamics.validate_expression_for_period("купить !собаку", "PERIOD_MONTHLY")
+        message = str(caught.exception).lower()
+        self.assertIn("plugin compatibility", message)
+        self.assertIn("period_daily", message)
+        self.assertNotIn("yandex forbids", message)
+        self.assertNotIn("documented yandex restriction", message)
+        self.assertNotIn("only guarantees", message)
+
     def test_daily_allows_documented_operators(self):
         for expression in [
             "купить !собаку", '"зубная паста"', "билеты [из москвы]",
