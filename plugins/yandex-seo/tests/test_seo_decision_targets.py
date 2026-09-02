@@ -31,18 +31,44 @@ NODES = [
 ]
 
 
-def build_with(decision):
+def build_with_decisions(decisions):
     return seo_topical_architecture.build_topical_architecture(
         mode="EXISTING_SITE",
         coverage=COVERAGE,
         clusters=[],
-        page_decisions=[decision],
+        page_decisions=decisions,
         structural_nodes=NODES,
         semantic_edges=[],
     )
 
 
+def build_with(decision):
+    return build_with_decisions([decision])
+
+
 class TestSeoDecisionTargets(unittest.TestCase):
+    def test_duplicate_page_decisions_are_rejected(self):
+        with self.assertRaises(ValueError):
+            build_with_decisions([
+                {
+                    "page_id": "legacy",
+                    "decision": "PRESERVE",
+                    "cluster_ids": [],
+                    "evidence": ["WEBMASTER_EXISTING_URL"],
+                    "confidence": "MEDIUM",
+                    "claim_class": "OBSERVED",
+                },
+                {
+                    "page_id": "legacy",
+                    "decision": "REDIRECT",
+                    "target_page_id": "target",
+                    "cluster_ids": [],
+                    "evidence": ["WEBMASTER_EXISTING_URL"],
+                    "confidence": "MEDIUM",
+                    "claim_class": "DERIVED",
+                },
+            ])
+
     def test_target_page_id_must_reference_known_architecture_page(self):
         with self.assertRaises(ValueError):
             build_with({
