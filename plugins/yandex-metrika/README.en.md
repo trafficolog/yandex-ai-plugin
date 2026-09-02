@@ -2,9 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.1`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
-
-> `DOCS 1.0.0` changes documentation only.
+Version `1.0.2`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
 
 ## Capability matrix
 
@@ -22,6 +20,8 @@ Version `1.0.1`. Service plugin for Yandex Metrika reporting, conversions, ecomm
 - sampling, sample share, data lag and quality fields are part of the result contract;
 - Logs lifecycle is explicit: evaluate → create → status → download → clean;
 - imports guard against duplicate native Yandex Direct expenses;
+- the 1.0.2 expense guard rejects exact aliases and tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`) and independently inspects CSV `UTMSource`/`UTMMedium` content;
+- an arbitrary substring such as `MyDirect` is not treated as proven Direct provenance by label alone;
 - goal mutations are preview-first;
 - cross-service consumers preserve quality limitations.
 
