@@ -2,6 +2,6 @@
 
 Operators include `-`, `!`, `+`, quotes, `[]`, `()`, and `|`.
 
-Top/Regions workflows can use the full operator language. Cloud v2 REST Dynamics currently exposes `PERIOD_MONTHLY` and `PERIOD_WEEKLY`; for those granularities only `+` is guaranteed by the current Search API operator documentation. Do not silently strip unsupported operators from a requested expression.
+Top/Regions workflows can use the Wordstat operator language. The bundled plugin keeps a conservative compatibility guard for Cloud v2 `PERIOD_MONTHLY` and `PERIOD_WEEKLY`: expressions using operators beyond `+` are rejected because this repository does not guarantee that combination. This is a repository compatibility policy, **not** a documented Yandex API prohibition. `PERIOD_DAILY` remains available for the supported non-`+` Wordstat operator path.
 
-Preserve the exact operator expression next to every frequency result so numbers are not separated from the query semantics that produced them.
+Do not silently strip or rewrite operators from a requested expression. Preserve the exact operator expression next to every frequency result so numbers are not separated from the query semantics that produced them.
