@@ -96,6 +96,22 @@ class TestSeoClaimCompatibility(unittest.TestCase):
                 }],
             )
 
+    def test_unknown_reason_code_cannot_bypass_claim_compatibility(self):
+        with self.assertRaises(ValueError):
+            seo_internal_linking.build_link_plan(
+                architecture=ARCHITECTURE,
+                candidate_links=[{
+                    "from_page_id": "a",
+                    "to_page_id": "b",
+                    "relation": "SUPPORT",
+                    "user_need": "typo must not create empirical provenance",
+                    "reason_codes": ["METHODOLOGY_HEURISTIC", "SERP_OVELRAP"],
+                    "evidence": [],
+                    "confidence": "HIGH",
+                    "claim_class": "OBSERVED",
+                }],
+            )
+
     def test_methodology_only_link_remains_valid_as_methodology(self):
         plan = seo_internal_linking.build_link_plan(
             architecture=ARCHITECTURE,
