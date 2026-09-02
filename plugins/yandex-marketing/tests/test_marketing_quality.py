@@ -5,29 +5,31 @@ from scripts.marketing_quality import canonical_metric, reconcile_metric, propag
 class MarketingQualityTests(unittest.TestCase):
     def test_canonical_source_rules_select_source_of_truth(self):
         records = [
-            {'metric':'cost','value':100,'source':'yandex-direct'},
-            {'metric':'cost','value':98,'source':'yandex-metrika'},
+            {'metric':'cost','value':100,'source':'yandex-direct','role':'canonical'},
+            {'metric':'cost','value':98,'source':'yandex-metrika','role':'reconciliation_only'},
         ]
         self.assertEqual(canonical_metric('cost', records)['source'], 'yandex-direct')
         conversions = [
-            {'metric':'conversions','value':10,'source':'yandex-direct'},
-            {'metric':'conversions','value':12,'source':'yandex-metrika'},
+            {'metric':'conversions','value':10,'source':'yandex-direct','role':'reconciliation_only'},
+            {'metric':'conversions','value':12,'source':'yandex-metrika','role':'canonical'},
         ]
         self.assertEqual(canonical_metric('conversions', conversions)['source'], 'yandex-metrika')
 
-    def test_reconciliation_returns_canonical_record_without_summing(self):
+    def test_reconciliation_returns_role_bearing_records_without_summing(self):
         kpi={
             'business_objective':'purchase','goal_ids':['1'],'attribution_model':'automatic',
             'metric_basis':'converted_sessions','currency':'RUB','vat_basis':'excluded',
             'period':{'from':'2026-08-01','to':'2026-08-31'},
         }
         records=[
-            {'metric':'conversions','value':10,'source':'yandex-direct','kpi':kpi},
-            {'metric':'conversions','value':10,'source':'yandex-metrika','kpi':kpi},
+            {'metric':'conversions','value':10,'source':'yandex-direct','kpi':kpi,'role':'reconciliation_only'},
+            {'metric':'conversions','value':10,'source':'yandex-metrika','kpi':kpi,'role':'canonical'},
         ]
         result=reconcile_metric('conversions', records, {})
         self.assertEqual(result['status'], 'ALIGNED')
         self.assertEqual(result['canonical']['source'], 'yandex-metrika')
+        self.assertEqual([record['role'] for record in result['records']], ['reconciliation_only','canonical'])
+        self.assertEqual(result['compatibility_limitations'], [])
         self.assertNotIn('total', result)
         changed=[dict(records[0]), dict(records[1])]
         changed[1]['value']=12
@@ -42,6 +44,16 @@ class MarketingQualityTests(unittest.TestCase):
         incomparable=reconcile_metric('conversions', [changed[0],bad], {})
         self.assertEqual(incomparable['status'], 'INCOMPARABLE')
         self.assertEqual(incomparable['canonical']['source'], 'yandex-metrika')
+        self.assertIn('KPI_CONTEXT_INCOMPATIBLE', incomparable['compatibility_limitations'])
+
+    def test_monetary_reconciliation_without_full_context_is_incomparable(self):
+        records=[
+            {'metric':'cost','value':100,'source':'yandex-direct','role':'canonical'},
+            {'metric':'cost','value':98,'source':'yandex-metrika','role':'reconciliation_only'},
+        ]
+        result=reconcile_metric('cost', records, {})
+        self.assertEqual(result['status'], 'INCOMPARABLE')
+        self.assertIn('MONEY_CONTEXT_UNKNOWN', result['compatibility_limitations'])
 
     def test_metrika_limitations_use_nested_producer_quality_shape(self):
         metrika_artifact = {
@@ -54,9 +66,10 @@ class MarketingQualityTests(unittest.TestCase):
             metrika_artifact,
             {'source':'yandex-direct','maturity':'IMMATURE'},
             {'source':'yandex-search','bridge_risk':True},
+            {'source':'yandex-wordstat','coverage':{'associations_truncated':True}},
         ])
         codes={x['code'] for x in limits}
-        self.assertTrue({'METRIKA_SAMPLED','DATA_LAG','IMMATURE','SEARCH_BRIDGE_RISK'} <= codes)
+        self.assertTrue({'METRIKA_SAMPLED','DATA_LAG','IMMATURE','SEARCH_BRIDGE_RISK','WORDSTAT_ASSOCIATIONS_CAPPED'} <= codes)
         sampled=next(item for item in limits if item['code']=='METRIKA_SAMPLED')
         self.assertEqual(sampled['sample_share'], 0.2)
 
