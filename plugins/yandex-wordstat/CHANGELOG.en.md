@@ -2,7 +2,13 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
-> `DOCS 1.0.0` added bilingual docs; plugin SemVer is unchanged.
+## [1.1.0] — 2026-09-02
+
+- Added `yandex-wordstat-topic-map` and the deterministic `wordstat-topic-map/v1` helper for candidate demand/topic mapping.
+- Equivalent query text is deduplicated without summing overlapping demand; all source seeds, Wordstat relation types, and separate demand observations are preserved.
+- Candidate topics remain `CANDIDATE` and candidate relations remain `HYPOTHESIS`; Wordstat does not claim final page boundaries.
+- `WORDSTAT_ASSOCIATIONS_CAPPED` propagates into topic-map limitations.
+- Final SERP clustering is explicitly delegated to `yandex-search-clustering`, while page architecture belongs to `yandex-seo-topical-architecture`.
 
 ## [1.0.2] — 2026-09-02
 
