@@ -1,0 +1,121 @@
+name: Publish OPUS 1.1.0 releases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-opus-1.1.0.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish GitHub releases
+    runs-on: ubuntu-latest
+    if: github.repository == 'trafficolog/yandex-ai-plugin'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish OPUS and plugin releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: 3440af170e947bb5b898b97c32e60d1b2090067d
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          git merge-base --is-ancestor "$TARGET_SHA" HEAD
+
+          publish_release() {
+            local tag="$1"
+            local title="$2"
+            local notes_file="$3"
+
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "Release $tag already exists; leaving it unchanged."
+              return 0
+            fi
+
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET_SHA" \
+              --title "$title" \
+              --notes-file "$notes_file"
+          }
+
+          cat > /tmp/opus.md <<'EOF'
+          OPUS 1.1.0 is the repository-level contract-hardening milestone for the seven-plugin Yandex AI marketplace.
+
+          Published plugin matrix:
+          - Yandex Direct 1.0.1 (unchanged)
+          - Yandex Metrika 1.0.1 (unchanged)
+          - Yandex Webmaster 1.0.2
+          - Yandex Wordstat 1.0.2
+          - Yandex Search 1.0.2
+          - Yandex SEO 1.0.1 (unchanged)
+          - Yandex Marketing 1.1.0
+
+          Highlights:
+          - strict Wordstat association-cap coverage semantics;
+          - strict Search 250-result depth contract;
+          - hardened Webmaster PRO request/lifecycle/quota behavior without autonomous polling;
+          - stable Marketing evidence roles and executable nine-type local finding taxonomy;
+          - executable high-risk contract matrix and deterministic 90-day API-reference freshness gate.
+
+          The release commit passed the complete 9-job CI matrix on main.
+          EOF
+
+          cat > /tmp/webmaster.md <<'EOF'
+          Yandex Webmaster 1.0.2 hardens the PRO export contract:
+          - `use_pro_tariff` is serialized as documented `"true"` / `"false"` strings;
+          - export paths are host-relative, non-empty and begin with `/`;
+          - explicit `IN_PROGRESS` / `SUCCESS` / `FAILED` lifecycle normalization;
+          - successful downloads require HTTPS URLs and proven age over 24 hours before expiry is asserted;
+          - quota planning distinguishes known remaining quota from unknown usage;
+          - no autonomous polling, scheduling or invented retry cadence.
+
+          Existing 1.0.1 feed safety and preview/download protections remain regression-covered.
+          EOF
+
+          cat > /tmp/wordstat.md <<'EOF'
+          Yandex Wordstat 1.0.2 adds contract-level coverage semantics:
+          - verified GetTop association cap of 20;
+          - normalized `associations_cap`, `associations_count`, `associations_truncated` metadata;
+          - capped coverage propagates as `WORDSTAT_ASSOCIATIONS_CAPPED`;
+          - overlapping phrase/association counts remain non-additive demand evidence;
+          - monthly/weekly operator rejection is documented as repository compatibility policy rather than an asserted Yandex prohibition;
+          - supported `PERIOD_DAILY` operator workflows remain available.
+          EOF
+
+          cat > /tmp/search.md <<'EOF'
+          Yandex Search 1.0.2 hardens the documented 250-result ceiling:
+          - strict complete-window validation for request pagination/grouping;
+          - windows ending exactly at 250 are valid;
+          - windows starting at or crossing beyond 250 are rejected;
+          - SERP snapshots expose `max_supported_results`, `window_start`, `window_end`, and `reaches_result_ceiling`;
+          - impossible observed ranks above 250 are rejected.
+
+          Absolute-rank and conservative URL-identity behavior from 1.0.1 remain regression-covered.
+          EOF
+
+          cat > /tmp/marketing.md <<'EOF'
+          Yandex Marketing 1.1.0 introduces a hardened public evidence contract:
+          - stable roles: `canonical`, `reconciliation_only`, `enrichment`;
+          - deterministic role derivation and explicit-role validation;
+          - overlapping Direct/Metrika evidence is reconciled, never summed;
+          - monetary evidence missing currency/VAT/period context remains `MONEY_CONTEXT_UNKNOWN` / incomparable;
+          - local executable taxonomy now contains only the nine finding types actually produced by tested deterministic helpers;
+          - deferred/unknown classes sort after implemented findings with `UNKNOWN_OR_DEFERRED_TYPE`;
+          - dead `NEW_CAMPAIGN_CANDIDATE` delegation is removed;
+          - delegated consequential actions remain preview-only and require approval in the owning service plugin.
+          EOF
+
+          publish_release "opus-1.1.0" "OPUS 1.1.0 — Contract Hardening" /tmp/opus.md
+          publish_release "yandex-webmaster-v1.0.2" "Yandex Webmaster 1.0.2" /tmp/webmaster.md
+          publish_release "yandex-wordstat-v1.0.2" "Yandex Wordstat 1.0.2" /tmp/wordstat.md
+          publish_release "yandex-search-v1.0.2" "Yandex Search 1.0.2" /tmp/search.md
+          publish_release "yandex-marketing-v1.1.0" "Yandex Marketing 1.1.0" /tmp/marketing.md
