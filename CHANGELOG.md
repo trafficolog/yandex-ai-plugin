@@ -2,7 +2,46 @@
 
 All notable repository-level changes are documented here. Individual plugins also keep their own changelogs where service-specific detail is useful.
 
-This project uses independent SemVer per plugin. The first repository release ships all currently available plugins at `1.0.0`.
+This project uses independent SemVer per plugin. The initial marketplace release shipped the seven available plugins at `1.0.0`; the current reviewed maintenance release is `1.0.1`.
+
+## [1.0.1] — 2026-09-02
+
+Review-driven maintenance release that hardens API correctness, cross-service evidence semantics, validation and regression coverage without changing the seven-plugin marketplace boundary.
+
+### Service correctness and provenance
+
+- Yandex Direct Reports now write a JSON metadata sidecar next to TSV output, preserving report type, period, goal/attribution/VAT context when supplied and request provenance without inventing unknown currency.
+- Yandex Metrika strengthened import safety for Direct-like expense data and preserved producer-shaped nested quality metadata for downstream consumers.
+- Yandex Webmaster tightened preview/export URL redaction and HTTPS-only download handling.
+- Yandex Wordstat added supported daily Dynamics handling while keeping weekly/monthly operator restrictions explicit, and added adversarial protection against presenting overlapping phrase-count sums as total market demand.
+- Yandex Search corrected absolute ranking across result pages and strengthened bridge-risk/adversarial coverage for URL-overlap clustering.
+
+### Cross-service evidence contracts
+
+- Yandex SEO now requires explicit `site`, `analysis_period` and `search_region_id` in its Evidence Bundle and materializes independent period, geography, Search-configuration and device alignment states.
+- SEO geography alignment now distinguishes Search ranking region, Wordstat query region, Webmaster query region and Metrika visitor geography even when numeric region IDs happen to match.
+- Yandex Marketing consumes the actual nested Metrika `quality` shape, returns the selected canonical reconciliation record and rejects ambiguous generic `demand` evidence in favor of source-specific metrics such as `wordstat_count`.
+- Marketing missing-Direct coverage now returns `ROUTING_REQUIRED` consistently instead of raising in one helper while routing in another.
+- Empty Marketing priority lists now use the documented default categorical order rather than being mislabeled as a user-supplied order.
+- SEO and Marketing use the same `QUALITY_METADATA_MISSING` limitation marker when Metrika quality metadata is absent.
+
+### URL identity semantics
+
+- Cross-service page/landing joins now remove only tracking parameters (`utm_*`, `yclid`, `_openstat`) from canonical `url_key` identity while preserving functional query parameters such as product/page IDs.
+- Stripped tracking values are retained separately as `tracking_params`, so attribution metadata is not discarded while equivalent landing pages no longer fragment into separate identity buckets.
+
+### Evals, validation and CI
+
+- All seven plugin eval fixtures now include machine-checkable `expect` contracts with routing, refusal, required-mention and forbidden-claim assertions, plus adversarial scenarios for the highest-risk semantics.
+- Repository validation now checks both marketplace formats, both plugin manifest formats, SemVer consistency, capability matrices, eval expectations, folded YAML frontmatter, runtime-specific paths, credential-like literals and the no-transport boundary for cross-service plugins.
+- Path-aware CI now models producer-to-consumer dependencies: source-plugin changes trigger the relevant SEO and/or Marketing regression suites instead of testing only the directly changed plugin.
+- Package/version regression assertions were synchronized with `1.0.1` while preserving historical `1.0.0` roadmap assertions.
+
+### Release metadata
+
+- All Codex and Claude plugin manifests plus root marketplace metadata are synchronized at `1.0.1`.
+- Plugin READMEs expose capability matrices and current version/state; `docs/SERVICE_MATRIX.md` reports all seven shipped plugins at `1.0.1`.
+- `docs/PLUGIN_STANDARD.md` now makes eval expectations, capability/version consistency, secret/path checks and cross-service transport boundaries part of the repository contract.
 
 ## [1.0.0] — 2026-09-02
 
@@ -131,4 +170,3 @@ First complete marketplace release covering Yandex advertising, analytics, techn
 - No persistent SEO/marketing warehouse is included.
 - No scheduler/monitoring daemon is included.
 - No universal optimization benchmark or opaque scoring model is treated as platform truth.
-
