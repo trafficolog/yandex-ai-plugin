@@ -6,7 +6,7 @@ Internal-linking recommendations are a **preview layer** over an approved Topica
 
 Every proposed link records:
 
-- source and target page IDs;
+- distinct source and target page IDs; a self-link preview where `from_page_id == to_page_id` is rejected;
 - semantic relation;
 - explicit user need/context;
 - at least one non-empty reason code plus evidence/context when available;
@@ -33,7 +33,7 @@ These findings describe the supplied architecture/inventory contract. They do no
 
 ## Cycles
 
-Semantic cycles are legal. Overview → detail → overview or comparison paths can be useful. Do not reject a semantic graph merely because it contains a directed cycle. A cycle becomes a problem only when separate evidence identifies a concrete navigation, UX or crawl issue.
+Semantic cycles are legal. Overview → detail → overview or comparison paths can be useful. Do not reject a semantic graph merely because it contains a directed cycle. A cycle becomes a problem only when separate evidence identifies a concrete navigation, UX or crawl issue. This does not permit a preview self-link recommendation: self-links are rejected independently from multi-page semantic-cycle handling.
 
 ## Prohibited universal rules
 
