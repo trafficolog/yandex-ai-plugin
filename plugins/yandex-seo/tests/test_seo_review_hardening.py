@@ -107,6 +107,69 @@ class TestSeoReviewHardening(unittest.TestCase):
         )
         self.assertEqual(result["structural_tree"]["nodes"][0]["page_role"], "ROOT")
 
+    def test_supplied_breadcrumbs_must_match_canonical_ancestor_chain(self):
+        with self.assertRaises(ValueError):
+            seo_topical_architecture.build_topical_architecture(
+                mode="GREENFIELD",
+                coverage=COVERAGE,
+                clusters=[],
+                page_decisions=[],
+                structural_nodes=[
+                    {
+                        "page_id": "root",
+                        "proposed_url": "/",
+                        "page_role": "ROOT",
+                        "canonical_parent_id": None,
+                        "breadcrumbs": [],
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "MEDIUM",
+                    },
+                    {
+                        "page_id": "child",
+                        "proposed_url": "/child/",
+                        "page_role": "SUPPORT",
+                        "canonical_parent_id": "root",
+                        "breadcrumbs": [],
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "LOW",
+                    },
+                ],
+                semantic_edges=[],
+            )
+
+        result = seo_topical_architecture.build_topical_architecture(
+            mode="GREENFIELD",
+            coverage=COVERAGE,
+            clusters=[],
+            page_decisions=[],
+            structural_nodes=[
+                {
+                    "page_id": "root",
+                    "proposed_url": "/",
+                    "page_role": "ROOT",
+                    "canonical_parent_id": None,
+                    "breadcrumbs": [],
+                    "cluster_ids": [],
+                    "evidence": [],
+                    "confidence": "MEDIUM",
+                },
+                {
+                    "page_id": "child",
+                    "proposed_url": "/child/",
+                    "page_role": "SUPPORT",
+                    "canonical_parent_id": "root",
+                    "breadcrumbs": ["root"],
+                    "cluster_ids": [],
+                    "evidence": [],
+                    "confidence": "LOW",
+                },
+            ],
+            semantic_edges=[],
+        )
+        self.assertEqual(result["structural_tree"]["nodes"][1]["breadcrumbs"], ["root"])
+
 
 if __name__ == "__main__":
     unittest.main()
