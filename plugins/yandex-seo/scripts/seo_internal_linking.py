@@ -39,6 +39,8 @@ def _normalize_candidate_link(raw: dict[str, Any], page_ids: set[str]) -> dict[s
     target = raw.get("to_page_id")
     if source not in page_ids or target not in page_ids:
         raise ValueError("candidate link references unknown page")
+    if source == target:
+        raise ValueError("candidate link source and target must differ")
     relation = raw.get("relation")
     if relation not in SEMANTIC_RELATIONS:
         raise ValueError(f"relation must be one of {sorted(SEMANTIC_RELATIONS)}")
