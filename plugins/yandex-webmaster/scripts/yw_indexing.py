@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import urlsplit
 
 
 def _host_path(user_id: int | str, host_id: str, suffix: str) -> str:
@@ -14,6 +15,13 @@ def _dates(date_from: str | None, date_to: str | None) -> dict[str, str]:
     if date_to:
         params["date_to"] = date_to
     return params
+
+
+def _validate_https_download_url(url: str) -> str:
+    parsed = urlsplit(url)
+    if parsed.scheme.lower() != "https" or not parsed.hostname:
+        raise ValueError("archive download URL must be absolute HTTPS")
+    return url
 
 
 def indexing_history_request(user_id: int | str, host_id: str, *, date_from: str | None = None, date_to: str | None = None) -> dict[str, Any]:
@@ -46,4 +54,6 @@ def archive_download_url(response: dict[str, Any]) -> str | None:
     if response.get("state") != "DONE":
         return None
     value = response.get("download_url")
-    return value if isinstance(value, str) and value else None
+    if not isinstance(value, str) or not value:
+        return None
+    return _validate_https_download_url(value)
