@@ -69,6 +69,40 @@ class TestSeoDecisionTargets(unittest.TestCase):
                 },
             ])
 
+    def test_empirical_page_decision_requires_provenance(self):
+        for claim_class in ("OBSERVED", "DERIVED"):
+            with self.subTest(claim_class=claim_class):
+                with self.assertRaises(ValueError):
+                    build_with({
+                        "page_id": "legacy",
+                        "decision": "PRESERVE",
+                        "cluster_ids": [],
+                        "evidence": [],
+                        "confidence": "MEDIUM",
+                        "claim_class": claim_class,
+                    })
+
+        reason_only = build_with({
+            "page_id": "legacy",
+            "decision": "PRESERVE",
+            "reason_codes": ["WEBMASTER_EXISTING_URL"],
+            "cluster_ids": [],
+            "evidence": [],
+            "confidence": "MEDIUM",
+            "claim_class": "OBSERVED",
+        })
+        self.assertEqual(reason_only["page_decisions"][0]["reason_codes"], ["WEBMASTER_EXISTING_URL"])
+
+        evidence_only = build_with({
+            "page_id": "legacy",
+            "decision": "PRESERVE",
+            "cluster_ids": [],
+            "evidence": ["webmaster:page-observed"],
+            "confidence": "MEDIUM",
+            "claim_class": "OBSERVED",
+        })
+        self.assertEqual(evidence_only["page_decisions"][0]["evidence"], ["webmaster:page-observed"])
+
     def test_target_page_id_must_reference_known_architecture_page(self):
         with self.assertRaises(ValueError):
             build_with({
