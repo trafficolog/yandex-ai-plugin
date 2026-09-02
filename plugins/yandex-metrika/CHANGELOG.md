@@ -3,7 +3,7 @@
 ## 1.0.1 — 2026-09-02
 
 - Strengthened Yandex Direct expense duplicate-risk detection across aliases and CSV content signals.
-- Materialized the resolved Reporting API attribution model in request metadata.
+- Preserved explicit Reporting API attribution metadata without inventing a default when attribution is omitted; metadata records explicit vs omitted provenance.
 - Preserved producer-shaped nested quality metadata for cross-service consumers.
 - Added verifiable eval expectations for reporting, imports, Logs and write safety.
 
