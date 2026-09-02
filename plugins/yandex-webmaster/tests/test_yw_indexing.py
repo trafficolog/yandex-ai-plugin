@@ -16,7 +16,7 @@ class TestIndexing(unittest.TestCase):
         req = yw_indexing.search_events_request(1, "h", date_from="2026-08-01", date_to="2026-08-31")
         self.assertTrue(req["path"].endswith("/search-urls/events/history"))
 
-    def test_archive_lifecycle(self):
+    def test_archive_lifecycle_uses_documented_state_field(self):
         start = yw_indexing.archive_start_request(1, "h")
         status = yw_indexing.archive_status_request(1, "h", "task-1")
         self.assertEqual(start["method"], "POST")
@@ -25,6 +25,9 @@ class TestIndexing(unittest.TestCase):
         self.assertTrue(status["path"].endswith("/indexing/archive/task-1"))
         self.assertEqual(yw_indexing.archive_download_url({"state": "DONE", "download_url": "https://storage/x"}), "https://storage/x")
         self.assertIsNone(yw_indexing.archive_download_url({"state": "IN_PROGRESS"}))
+        self.assertIsNone(yw_indexing.archive_download_url({"state": "FAILED", "download_url": "https://storage/x"}))
+        self.assertIsNone(yw_indexing.archive_download_url({"state": "DONE"}))
+        self.assertIsNone(yw_indexing.archive_download_url({"status": "DONE", "download_url": "https://storage/x"}))
 
     def test_archive_download_url_rejects_non_https(self):
         for url in ["file:///etc/passwd", "http://127.0.0.1/archive"]:
