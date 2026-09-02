@@ -20,6 +20,15 @@ PAGE_DECISIONS = {
     "NO_PAGE",
     "MANUAL_REVIEW",
 }
+SEARCH_REQUIRED_BOUNDARY_DECISIONS = {
+    "CREATE",
+    "MERGE",
+    "SPLIT",
+    "REDIRECT",
+    "SECTION_ONLY",
+    "BRIDGE",
+    "NO_PAGE",
+}
 CLAIM_CLASSES = {"OBSERVED", "DERIVED", "HYPOTHESIS", "METHODOLOGY"}
 CONFIDENCE_LEVELS = {"LOW", "MEDIUM", "HIGH"}
 SEMANTIC_RELATIONS = {
@@ -260,6 +269,14 @@ def build_topical_architecture(
     output_limitations = _unique(list(limitations or []))
     if normalized_coverage["search"] == "MISSING":
         output_limitations = _unique([*output_limitations, SERP_VALIDATION_MISSING])
+        for decision in decisions:
+            if (
+                decision["decision"] in SEARCH_REQUIRED_BOUNDARY_DECISIONS
+                and decision["claim_class"] != "HYPOTHESIS"
+            ):
+                raise ValueError(
+                    "boundary-changing page decisions must remain HYPOTHESIS when Search evidence is missing"
+                )
 
     structural_edges = [
         {"parent_page_id": node["canonical_parent_id"], "child_page_id": node["page_id"]}
