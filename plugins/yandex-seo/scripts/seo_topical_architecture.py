@@ -87,6 +87,7 @@ REASON_CODES = {
     "SEMANTIC_HYPOTHESIS",
     "METHODOLOGY_HEURISTIC",
 }
+SEARCH_REASON_CODES = {"SERP_OVERLAP", "SERP_BRIDGE_RISK"}
 NON_EMPIRICAL_REASON_CODES = {"METHODOLOGY_HEURISTIC", "SEMANTIC_HYPOTHESIS"}
 EMPIRICAL_CLAIM_CLASSES = {"OBSERVED", "DERIVED"}
 SERP_VALIDATION_MISSING = "SERP_VALIDATION_MISSING"
@@ -437,13 +438,24 @@ def build_topical_architecture(
     output_limitations = _unique(list(limitations or []))
     if normalized_coverage["search"] == "MISSING":
         output_limitations = _unique([*output_limitations, SERP_VALIDATION_MISSING])
+        if clusters:
+            raise ValueError("Search clusters cannot be supplied when Search coverage is missing")
         for decision in decisions:
+            if set(decision.get("reason_codes", [])) & SEARCH_REASON_CODES:
+                raise ValueError(
+                    "Search-owned page decision provenance cannot be supplied when Search coverage is missing"
+                )
             if (
                 decision["decision"] in SEARCH_REQUIRED_BOUNDARY_DECISIONS
                 and decision["claim_class"] != "HYPOTHESIS"
             ):
                 raise ValueError(
                     "boundary-changing page decisions must remain HYPOTHESIS when Search evidence is missing"
+                )
+        for edge in edges:
+            if set(edge.get("reason_codes", [])) & SEARCH_REASON_CODES:
+                raise ValueError(
+                    "Search-owned semantic provenance cannot be supplied when Search coverage is missing"
                 )
 
     structural_edges = [
