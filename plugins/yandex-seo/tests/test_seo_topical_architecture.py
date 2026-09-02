@@ -29,6 +29,7 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
             structural_nodes=[{
                 "page_id": "p1",
                 "proposed_url": "/seo/",
+                "page_role": "ROOT",
                 "canonical_parent_id": None,
                 "breadcrumbs": [],
                 "cluster_ids": ["c1"],
@@ -58,6 +59,7 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
                 structural_nodes=[{
                     "page_id": "p1",
                     "proposed_url": "/new/",
+                    "page_role": "ROOT",
                     "canonical_parent_id": None,
                     "breadcrumbs": [],
                     "cluster_ids": [],
@@ -107,8 +109,8 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
                 clusters=[],
                 page_decisions=[],
                 structural_nodes=[
-                    {"page_id": "p1", "proposed_url": "/same/", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
-                    {"page_id": "p2", "proposed_url": "/same/", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
+                    {"page_id": "p1", "proposed_url": "/same/", "page_role": "ROOT", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
+                    {"page_id": "p2", "proposed_url": "/same/", "page_role": "ROOT", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
                 ],
                 semantic_edges=[],
             )
@@ -141,7 +143,7 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
 
     def test_semantic_edge_requires_known_pages_and_valid_claim_class(self):
         nodes = [
-            {"page_id": "p1", "proposed_url": "/p1/", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"}
+            {"page_id": "p1", "proposed_url": "/p1/", "page_role": "ROOT", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"}
         ]
         with self.assertRaises(ValueError):
             seo_topical_architecture.build_topical_architecture(
@@ -170,7 +172,7 @@ class TestSeoTopicalArchitecture(unittest.TestCase):
                 page_decisions=[],
                 structural_nodes=[
                     *nodes,
-                    {"page_id": "p2", "proposed_url": "/p2/", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
+                    {"page_id": "p2", "proposed_url": "/p2/", "page_role": "ROOT", "canonical_parent_id": None, "breadcrumbs": [], "cluster_ids": [], "evidence": [], "confidence": "LOW"},
                 ],
                 semantic_edges=[{
                     "from_page_id": "p1",
