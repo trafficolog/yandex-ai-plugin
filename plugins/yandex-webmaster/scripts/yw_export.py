@@ -2,11 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 
 def _host_path(user_id: int | str, host_id: str, suffix: str) -> str:
     return f"user/{user_id}/hosts/{host_id}/{suffix.lstrip('/')}"
+
+
+def _validate_https_url(url: str) -> str:
+    parsed = urlsplit(url)
+    if parsed.scheme.lower() != "https" or not parsed.hostname:
+        raise ValueError("artifact download URL must be absolute HTTPS")
+    return url
 
 
 def limits_request(user_id: int | str, host_id: str) -> dict[str, Any]:
@@ -53,7 +61,9 @@ def download_url(response: dict[str, Any]) -> str | None:
     if response.get("download_status") != "SUCCESS":
         return None
     value = response.get("url")
-    return value if isinstance(value, str) and value else None
+    if not isinstance(value, str) or not value:
+        return None
+    return _validate_https_url(value)
 
 
 def download_to_file(
@@ -62,8 +72,7 @@ def download_to_file(
     *,
     transport: Callable[[str], bytes] | None = None,
 ) -> Path:
-    if not url:
-        raise ValueError("download URL is required")
+    _validate_https_url(url)
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     if transport is not None:

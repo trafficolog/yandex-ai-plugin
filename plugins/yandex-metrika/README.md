@@ -1,8 +1,18 @@
 # Yandex Metrika Plugin
 
-Workflow-first plugin for Yandex Metrika API as part of the Yandex AI marketplace. Version 1.0.0 covers audit, reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level API workflows.
+Workflow-first plugin for Yandex Metrika API as part of the Yandex AI marketplace. Version 1.0.1 covers audit, reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level API workflows.
 
 Execution preference: connected Metrika app/MCP when available, bundled Python helpers when executable, otherwise user-provided exports/files. Consequential changes follow `read → analyze → preview → explicit approval → write → verify`.
+
+## Capability matrix
+
+| Capability | Read | Write | MCP/App | Bundled API | File fallback |
+|---|---:|---:|---:|---:|---:|
+| Reporting / attribution / quality | yes | no | optional | yes | yes |
+| Goals management | yes | approval | optional | yes | preview |
+| Logs API lifecycle | yes | preview-first | optional | yes | yes |
+| Offline conversions / calls / expenses import | preview | approval | optional | yes | yes |
+| Raw Management API operations | yes | approval | optional | yes | preview |
 
 ## Skills
 

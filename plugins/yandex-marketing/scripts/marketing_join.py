@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from .marketing_context import normalize_query, normalize_url
+from .marketing_context import normalize_query, normalize_url_identity
 
 
 def _group(records: list[dict], key_name: str) -> dict[str, list[dict]]:
@@ -32,6 +32,14 @@ def join_queries(records: list[dict]) -> dict[str, list[dict]]:
 def join_landings(records: list[dict]) -> dict[str, list[dict]]:
     grouped: dict[str, list[dict]] = defaultdict(list)
     for record in records:
-        if record.get('url'):
-            grouped[normalize_url(record['url'])].append(record)
+        if not record.get('url'):
+            continue
+        url_key, tracking_params = normalize_url_identity(record['url'])
+        item = dict(record)
+        item['url_key'] = url_key
+        if tracking_params:
+            item['tracking_params'] = tracking_params
+        else:
+            item.pop('tracking_params', None)
+        grouped[url_key].append(item)
     return dict(grouped)

@@ -22,6 +22,16 @@ IMPORT_PATHS = {
     "calls": "offline_conversions/upload_calls",
     "expenses": "expense/upload",
 }
+DIRECT_SOURCE_ALIASES = {
+    "direct",
+    "директ",
+    "yandexdirect",
+    "яндексдирект",
+    "directyandex",
+    "yadirect",
+}
+DIRECT_UTM_SOURCES = {"yandex", "яндекс", "yandexdirect", "яндексдирект", "ya"}
+DIRECT_UTM_MEDIA = {"cpc", "ppc", "paidsearch", "context", "контекст"}
 
 
 def inspect_csv(path: Path) -> dict[str, Any]:
@@ -44,18 +54,40 @@ def inspect_csv(path: Path) -> dict[str, Any]:
     }
 
 
-def _normalize_source(source: str) -> str:
-    return re.sub(r"[.\s]+", " ", source.strip().casefold())
+def _compact_label(value: str) -> str:
+    return re.sub(r"[^0-9a-zа-яё]+", "", value.strip().casefold())
 
 
 def guard_expense_source(source: str | None) -> None:
     if source is None:
         return
-    normalized = _normalize_source(source)
-    if normalized in {"direct", "yandex direct", "яндекс директ"}:
+    if _compact_label(source) in DIRECT_SOURCE_ALIASES:
         raise ValueError(
             "Do not import Yandex Direct expenses into Metrika: Direct cost data is transferred automatically and manual upload can duplicate expenses"
         )
+
+
+def detect_direct_expense_risk(path: Path) -> bool:
+    """Detect Direct-like UTM rows as a risk signal, not a provenance guarantee."""
+    path = Path(path)
+    try:
+        with path.open("r", encoding="utf-8", newline="") as fh:
+            reader = csv.DictReader(fh)
+            if not reader.fieldnames:
+                return False
+            normalized_names = {_compact_label(name): name for name in reader.fieldnames if name}
+            source_key = normalized_names.get("utmsource")
+            medium_key = normalized_names.get("utmmedium")
+            if not source_key or not medium_key:
+                return False
+            for row in reader:
+                source = _compact_label(str(row.get(source_key) or ""))
+                medium = _compact_label(str(row.get(medium_key) or ""))
+                if source in DIRECT_UTM_SOURCES and medium in DIRECT_UTM_MEDIA:
+                    return True
+    except UnicodeDecodeError as exc:
+        raise ValueError("CSV must be UTF-8 encoded") from exc
+    return False
 
 
 def import_url(kind: str, counter_id: int, query: dict[str, Any] | None = None) -> str:
@@ -96,13 +128,25 @@ def prepare_import(
     token: str,
     *,
     source: str | None = None,
+    allow_direct_risk: bool = False,
     **query: Any,
 ) -> dict[str, Any]:
+    file_path = Path(file_path)
+    warnings: list[str] = []
     if kind == "expenses":
         guard_expense_source(source)
+        if detect_direct_expense_risk(file_path):
+            warning = "DIRECT_DUPLICATION_RISK"
+            if not allow_direct_risk:
+                raise ValueError(
+                    f"{warning}: CSV contains Direct-like UTM source/medium values. "
+                    "Metrika receives Yandex Direct costs automatically; inspect the file and "
+                    "use --allow-direct-risk only after confirming these rows are intentionally uploaded."
+                )
+            warnings.append(warning)
         if source is not None and "provider" not in query:
             query["provider"] = source
-    file_info = inspect_csv(Path(file_path))
+    file_info = inspect_csv(file_path)
     url = import_url(kind, counter_id, query)
     return {
         "method": "POST",
@@ -112,6 +156,7 @@ def prepare_import(
         "kind": kind,
         "counter_id": int(counter_id),
         "consequential": True,
+        "warnings": warnings,
     }
 
 
@@ -122,11 +167,20 @@ def execute_import(
     token: str,
     *,
     source: str | None = None,
+    allow_direct_risk: bool = False,
     timeout: int = 120,
     opener: Callable[..., Any] = urlopen,
     **query: Any,
 ) -> Any:
-    prepare_import(kind, counter_id, file_path, token, source=source, **query)
+    prepare_import(
+        kind,
+        counter_id,
+        file_path,
+        token,
+        source=source,
+        allow_direct_risk=allow_direct_risk,
+        **query,
+    )
     if kind == "expenses" and source is not None and "provider" not in query:
         query["provider"] = source
     url = import_url(kind, counter_id, query)
@@ -146,7 +200,12 @@ def main() -> int:
     parser.add_argument("counter", type=int)
     parser.add_argument("file")
     parser.add_argument("--comment")
-    parser.add_argument("--source", help="Provider/source label. Direct/Yandex Direct is rejected for expenses.")
+    parser.add_argument("--source", help="Provider/source label. Direct/Yandex Direct aliases are rejected for expenses.")
+    parser.add_argument(
+        "--allow-direct-risk",
+        action="store_true",
+        help="Allow an expense CSV with Direct-like UTM values after explicitly reviewing duplication risk.",
+    )
     parser.add_argument("--new-goal-name", help="Calls import new_goal_name")
     parser.add_argument("--type", dest="offline_type", choices=["BASIC", "CALLS", "CHATS"])
     parser.add_argument("--execute", action="store_true")
@@ -164,6 +223,7 @@ def main() -> int:
         Path(args.file),
         token,
         source=args.source,
+        allow_direct_risk=args.allow_direct_risk,
         **query,
     )
     if not args.execute:
@@ -175,6 +235,7 @@ def main() -> int:
         Path(args.file),
         token,
         source=args.source,
+        allow_direct_risk=args.allow_direct_risk,
         **query,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2))

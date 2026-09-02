@@ -1,15 +1,16 @@
 {
   "version": 1,
   "scenarios": [
-    {"prompt":"Покажи топ выдачи Яндекса по запросу в Москве.","skill":"yandex-search-web","write":false},
-    {"prompt":"Спланируй сбор SERP по 500 запросам и сравни стоимость sync/async.","skill":"yandex-search-batch","write":false},
-    {"prompt":"Нормализуй XML выдачу в воспроизводимый SERP snapshot.","skill":"yandex-search-serp","write":false},
-    {"prompt":"Сравни присутствие конкурентов по 100 SERP.","skill":"yandex-search-competitors","write":false},
-    {"prompt":"Сравни позиции страниц между двумя совместимыми снимками выдачи.","skill":"yandex-search-rankings","write":false},
-    {"prompt":"Кластеризуй запросы по общим URL с min_shared_urls=3.","skill":"yandex-search-clustering","write":false},
-    {"prompt":"Составь запрос с site: и точной фразой.","skill":"yandex-search-operators","write":false},
-    {"prompt":"Проведи SERP research по конкурентам и интентам.","skill":"yandex-search-research","write":false},
-    {"prompt":"Собери raw Search API v2 request для FORMAT_XML.","skill":"yandex-search-api","write":false},
-    {"prompt":"Какой skill использовать для общего вопроса про Yandex Search?","skill":"yandex-search","write":false}
+    {"prompt":"Покажи топ выдачи Яндекса по запросу в Москве.","skill":"yandex-search-web","write":false,"expect":{"must_route_to":"yandex-search-web","must_refuse":false,"must_mention":["region"],"must_not_claim":["SERP snapshot is a period aggregate"]}},
+    {"prompt":"Спланируй сбор SERP по 500 запросам и сравни стоимость sync/async.","skill":"yandex-search-batch","write":false,"expect":{"must_route_to":"yandex-search-batch","must_refuse":false,"must_mention":["cost","sync","async"],"must_not_claim":["unbounded polling"]}},
+    {"prompt":"Нормализуй XML выдачу в воспроизводимый SERP snapshot.","skill":"yandex-search-serp","write":false,"expect":{"must_route_to":"yandex-search-serp","must_refuse":false,"must_mention":["config_fingerprint","absolute rank"],"must_not_claim":["second-page rank starts at one globally"]}},
+    {"prompt":"Сравни присутствие конкурентов по 100 SERP.","skill":"yandex-search-competitors","write":false,"expect":{"must_route_to":"yandex-search-competitors","must_refuse":false,"must_mention":["SERP presence"],"must_not_claim":["SERP presence equals market share"]}},
+    {"prompt":"Сравни позиции страниц между двумя совместимыми снимками выдачи.","skill":"yandex-search-rankings","write":false,"expect":{"must_route_to":"yandex-search-rankings","must_refuse":false,"must_mention":["fingerprint"],"must_not_claim":["rank delta for incompatible snapshots"]}},
+    {"prompt":"Кластеризуй запросы по общим URL с min_shared_urls=3.","skill":"yandex-search-clustering","write":false,"expect":{"must_route_to":"yandex-search-clustering","must_refuse":false,"must_mention":["min_shared_urls","bridge_risk"],"must_not_claim":["connected component guarantees pairwise overlap"]}},
+    {"prompt":"Есть A–B и B–C overlap, но A–C overlap нет. Считай весь компонент одним однородным кластером.","skill":"yandex-search-clustering","write":false,"expect":{"must_route_to":"yandex-search-clustering","must_refuse":true,"must_mention":["bridge_risk","A–C"],"must_not_claim":["transitive connectivity proves semantic homogeneity"]}},
+    {"prompt":"Составь запрос с site: и точной фразой.","skill":"yandex-search-operators","write":false,"expect":{"must_route_to":"yandex-search-operators","must_refuse":false,"must_mention":["operator"],"must_not_claim":[]}},
+    {"prompt":"Проведи SERP research по конкурентам и интентам.","skill":"yandex-search-research","write":false,"expect":{"must_route_to":"yandex-search-research","must_refuse":false,"must_mention":["SERP evidence"],"must_not_claim":["competitor presence equals market share"]}},
+    {"prompt":"Собери raw Search API v2 request для FORMAT_XML.","skill":"yandex-search-api","write":false,"expect":{"must_route_to":"yandex-search-api","must_refuse":false,"must_mention":["preview"],"must_not_claim":["unsupported fixTypoMode accepted"]}},
+    {"prompt":"Какой skill использовать для общего вопроса про Yandex Search?","skill":"yandex-search","write":false,"expect":{"must_route_to":"yandex-search","must_refuse":false,"must_mention":["routing"],"must_not_claim":[]}}
   ]
 }

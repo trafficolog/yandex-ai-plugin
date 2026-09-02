@@ -9,7 +9,7 @@ try:
 except ImportError:
     from ywstat_api import validate_folder_id
 
-ALLOWED_PERIODS = {"PERIOD_MONTHLY", "PERIOD_WEEKLY"}
+ALLOWED_PERIODS = {"PERIOD_MONTHLY", "PERIOD_WEEKLY", "PERIOD_DAILY"}
 ALLOWED_DEVICES = {"DEVICE_ALL", "DEVICE_DESKTOP", "DEVICE_PHONE", "DEVICE_TABLET"}
 
 
@@ -37,10 +37,10 @@ def validate_expression_for_period(phrase: str, period: str) -> None:
         raise ValueError("phrase is required")
     if len(phrase.strip()) > 400:
         raise ValueError("phrase must not exceed 400 characters")
-    if _has_unsupported_operator(phrase):
+    if period in {"PERIOD_MONTHLY", "PERIOD_WEEKLY"} and _has_unsupported_operator(phrase):
         raise ValueError(
             "Cloud Wordstat monthly/weekly Dynamics only guarantees '+' operator compatibility; "
-            "remove other operators or use another compatible surface"
+            "use PERIOD_DAILY when other documented Wordstat operators are required"
         )
 
 

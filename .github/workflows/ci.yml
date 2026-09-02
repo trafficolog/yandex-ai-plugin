@@ -68,7 +68,7 @@ jobs:
           fi
 
           printf '%s\n' "$changed_files"
-          shared='^(\.agents/|\.claude-plugin/|scripts/validate_repo\.py$|docs/PLUGIN_STANDARD\.md$|tests/)'
+          shared='^(\.agents/|\.claude-plugin/|\.github/workflows/ci\.yml$|scripts/validate_repo\.py$|docs/PLUGIN_STANDARD\.md$|docs/superpowers/specs/|tests/)'
 
           if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-direct/)|$shared"; then
             echo "direct=true" >> "$GITHUB_OUTPUT"
@@ -95,12 +95,12 @@ jobs:
           else
             echo "search=false" >> "$GITHUB_OUTPUT"
           fi
-          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-seo/)|$shared"; then
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-seo/|plugins/yandex-wordstat/|plugins/yandex-search/|plugins/yandex-webmaster/|plugins/yandex-metrika/)|$shared"; then
             echo "seo=true" >> "$GITHUB_OUTPUT"
           else
             echo "seo=false" >> "$GITHUB_OUTPUT"
           fi
-          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-marketing/)|$shared"; then
+          if printf '%s\n' "$changed_files" | grep -Eq "^(plugins/yandex-marketing/|plugins/yandex-direct/|plugins/yandex-metrika/|plugins/yandex-wordstat/|plugins/yandex-search/)|$shared"; then
             echo "marketing=true" >> "$GITHUB_OUTPUT"
           else
             echo "marketing=false" >> "$GITHUB_OUTPUT"

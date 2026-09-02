@@ -26,6 +26,12 @@ class TestIndexing(unittest.TestCase):
         self.assertEqual(yw_indexing.archive_download_url({"state": "DONE", "download_url": "https://storage/x"}), "https://storage/x")
         self.assertIsNone(yw_indexing.archive_download_url({"state": "IN_PROGRESS"}))
 
+    def test_archive_download_url_rejects_non_https(self):
+        for url in ["file:///etc/passwd", "http://127.0.0.1/archive"]:
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    yw_indexing.archive_download_url({"state": "DONE", "download_url": url})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -51,7 +51,8 @@ def build_request(
 ) -> dict[str, Any]:
     if method not in ENDPOINTS:
         raise ValueError(f"Unsupported Wordstat method: {method}")
-    headers = auth_headers(api_key=api_key, iam_token=iam_token)
+    # Validate credentials now, but retain only redacted headers in the public object.
+    safe_headers = redact_headers(auth_headers(api_key=api_key, iam_token=iam_token))
     body = dict(payload)
     normalized_folder = validate_folder_id(folder_id)
     if normalized_folder is not None:
@@ -61,22 +62,29 @@ def build_request(
         "method": "POST",
         "operation": method,
         "url": url,
-        "headers": headers,
+        "headers": safe_headers,
         "body": body,
         "preview": {
             "method": "POST",
             "operation": method,
             "url": url,
-            "headers": redact_headers(headers),
+            "headers": dict(safe_headers),
             "body": body,
         },
     }
 
 
-def execute_request(request: dict[str, Any], transport: Callable[..., Any] | None = None) -> Any:
+def execute_request(
+    request: dict[str, Any],
+    *,
+    api_key: str | None = None,
+    iam_token: str | None = None,
+    transport: Callable[..., Any] | None = None,
+) -> Any:
+    headers = auth_headers(api_key=api_key, iam_token=iam_token)
     if transport is not None:
-        return transport(request["method"], request["url"], request["headers"], request["body"])
-    return request_json(request["method"], request["url"], request["headers"], request["body"])
+        return transport(request["method"], request["url"], headers, request["body"])
+    return request_json(request["method"], request["url"], headers, request["body"])
 
 
 def _validated_counts(request_counts: dict[str, int]) -> dict[str, int]:
@@ -154,7 +162,7 @@ def main() -> int:
     if not args.execute:
         print(json.dumps({"dry_run": True, **request["preview"]}, ensure_ascii=False, indent=2))
         return 0
-    payload = execute_request(request)
+    payload = execute_request(request, api_key=api_key, iam_token=iam_token)
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 

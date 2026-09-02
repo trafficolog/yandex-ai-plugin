@@ -1,7 +1,1 @@
-{
-  "name": "yandex-direct-suite",
-  "version": "1.0.0",
-  "description": "Skills for Yandex Direct campaign creation, audit, reporting and optimization.",
-  "author": {"name": "Community"},
-  "license": "MIT"
-}
+{"name":"yandex-direct-suite","version":"1.0.1","skills":"./skills/"}

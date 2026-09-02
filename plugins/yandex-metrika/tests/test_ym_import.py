@@ -38,11 +38,46 @@ class TestMetrikaImport(unittest.TestCase):
             with self.assertRaises(ValueError):
                 inspect_csv(path)
 
-    def test_direct_expense_sources_are_rejected(self):
-        for source in ["Yandex Direct", "Яндекс Директ", "direct", "  YANDEX   DIRECT  "]:
+    def test_direct_expense_source_aliases_are_rejected(self):
+        aliases = [
+            "Yandex Direct",
+            "Яндекс Директ",
+            "direct",
+            "Директ",
+            "yandex-direct",
+            "yandexdirect",
+            "ЯндексДирект",
+            "direct_yandex",
+            "ya.direct",
+        ]
+        for source in aliases:
             with self.subTest(source=source):
                 with self.assertRaises(ValueError):
                     guard_expense_source(source)
+
+    def test_direct_like_utm_expense_csv_requires_explicit_override(self):
+        content = "Date,UTMSource,UTMMedium,Expenses\n2026-08-01,yandex,cpc,100\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, content)
+            with self.assertRaisesRegex(ValueError, "DIRECT_DUPLICATION_RISK"):
+                prepare_import("expenses", 123, path, "secret", source="agency")
+
+            preview = prepare_import(
+                "expenses",
+                123,
+                path,
+                "secret",
+                source="agency",
+                allow_direct_risk=True,
+            )
+            self.assertIn("DIRECT_DUPLICATION_RISK", preview["warnings"])
+
+    def test_non_direct_expense_csv_is_not_flagged(self):
+        content = "Date,UTMSource,UTMMedium,Expenses\n2026-08-01,newsletter,email,100\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, content)
+            preview = prepare_import("expenses", 123, path, "secret", source="agency")
+            self.assertEqual(preview.get("warnings"), [])
 
     def test_preview_redacts_token_and_keeps_file_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:

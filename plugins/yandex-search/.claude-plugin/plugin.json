@@ -1,1 +1,1 @@
-{"name":"yandex-search","description":"Yandex Search SERP workflow skills.","version":"1.0.0","author":{"name":"Trafficolog"}}
+{"name":"yandex-search","version":"1.0.1","skills":"./skills/"}

@@ -14,7 +14,7 @@ The repository ships a **first-release set of seven independently installable pl
 
 This repository is intentionally **not one giant Yandex skill**. Installation/versioning happens at plugin level; workflow knowledge is split into focused skills inside each plugin; volatile API behavior stays inside the owning service plugin; cross-service plugins compose structured outputs instead of duplicating API clients.
 
-> **Release status:** the Phase 1–6B feature set is the frozen scope of the first release. Operations / AI / Mobile integrations are kept in backlog for later releases; see [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Release status:** the Phase 1–6B feature set remains the frozen first-release scope. The current remediation release is **1.0.1** for all seven shipped plugins. Operations / AI / Mobile integrations remain backlog; see [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Table of contents
 
@@ -95,13 +95,13 @@ Donor repositories are useful for workflow ideas, capability discovery and UX pa
 
 | Plugin | Version | Type | Primary scope | Live writes in this plugin? |
 |---|---:|---|---|---|
-| [`yandex-direct`](plugins/yandex-direct/) | 1.0.0 | service | Campaigns, reports, audit, keywords, budgets, safe optimization | Yes, only through preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.0 | service | Reporting, conversions, ecommerce, attribution, goals, Logs, imports | Yes, selected Management/import operations with guards |
-| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.0 | service | Search queries, indexing, recrawl, sitemaps, links, feeds, exports | Yes, quota/destructive operations require preview + approval |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.0 | service | Demand, semantics, frequency, dynamics, regions, trends | No consequential mutation surface in 1.0.0 |
-| [`yandex-search`](plugins/yandex-search/) | 1.0.0 | service | Web SERP, batch retrieval, snapshots, rankings, competitors, clustering | No |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.0.0 | cross-service | Organic evidence, opportunities, gaps, cannibalization, CTR/conversion/technical context | **No — delegated preview only** |
-| [`yandex-marketing`](plugins/yandex-marketing/) | 1.0.0 | cross-service | Paid-acquisition evidence, reconciliation, demand/query/landing/budget opportunities | **No — delegated preview only** |
+| [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | Campaigns, reports, audit, keywords, budgets, safe optimization | Yes, only through preview + explicit approval |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.1 | service | Reporting, conversions, ecommerce, attribution, goals, Logs, imports | Yes, selected Management/import operations with guards |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.1 | service | Search queries, indexing, recrawl, sitemaps, links, feeds, exports | Yes, quota/destructive operations require preview + approval |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.0.1 | service | Demand, semantics, frequency, dynamics, regions, trends | No consequential mutation surface in 1.0.1 |
+| [`yandex-search`](plugins/yandex-search/) | 1.0.1 | service | Web SERP, batch retrieval, snapshots, rankings, competitors, clustering | No |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.0.1 | cross-service | Organic evidence, opportunities, gaps, cannibalization, CTR/conversion/technical context | **No — delegated preview only** |
+| [`yandex-marketing`](plugins/yandex-marketing/) | 1.0.1 | cross-service | Paid-acquisition evidence, reconciliation, demand/query/landing/budget opportunities | **No — delegated preview only** |
 
 Detailed service coverage is maintained in [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md).
 
@@ -288,7 +288,7 @@ Examples:
 
 Path: [`plugins/yandex-direct/`](plugins/yandex-direct/)
 
-The first-release Direct plugin is the advertising execution and analysis layer.
+The Direct plugin is the advertising execution and analysis layer.
 
 ### Skills
 
@@ -304,7 +304,8 @@ The first-release Direct plugin is the advertising execution and analysis layer.
 ### Important correctness rules
 
 - Reports use the current v501 report surface used by this release.
-- 201/202 report polling preserves the original payload and report name and respects `retryIn`.
+- 201/202 report polling preserves the original payload and report name and respects `retryIn`; the first HTTP 500 is retried once.
+- Reports make attribution/goals explicit and write a JSON metadata sidecar next to file output so downstream KPI reconciliation retains period, goals, attribution and VAT context without guessing currency.
 - Criterion analysis keeps keyword/autotargeting and criterion types explicit.
 - Shared negatives and autotargeting are first-class concepts.
 - Revenue-dependent metrics are not invented when revenue is absent.
@@ -313,7 +314,7 @@ The first-release Direct plugin is the advertising execution and analysis layer.
 
 ### Writes
 
-Direct can perform consequential writes, but only after exact preview and explicit approval. Activation/publication must not be silently coupled to object creation.
+Direct can perform consequential writes, but only after exact preview and explicit approval. Unknown API methods are treated as non-read/safe-by-default unless explicitly allowlisted. Activation/publication must not be silently coupled to object creation.
 
 ---
 
@@ -347,9 +348,9 @@ Cross-service plugins are required to propagate these limitations rather than di
 
 ### Important guards
 
-- incompatible/legacy attribution assumptions are rejected rather than silently mapped;
+- attribution context is materialized explicitly in report artifacts;
 - Logs lifecycle is explicit: evaluate → create → status → download → clean;
-- expense import protects against duplicating native Yandex Direct expenses;
+- expense import protects against duplicating native Yandex Direct expenses and flags Direct-like CSV content for explicit override;
 - goal writes are preview-first;
 - unrelated goals are not silently aggregated into one business conversion KPI.
 
@@ -384,7 +385,8 @@ The plugin intentionally does not pretend that the whole Webmaster API has one u
 - popular queries/top-N are not described as complete site query coverage;
 - recrawl is quota-consuming and does not guarantee indexing or ranking;
 - sitemap submission does not guarantee inclusion;
-- feed mutations require their documented host/scheme context;
+- feed batch-add uses the documented `{"feeds": [...]}` wrapper;
+- artifact downloads require absolute HTTPS URLs and preview output redacts embedded URL credentials;
 - destructive host/sitemap/feed operations require exact target approval.
 
 ---
@@ -401,7 +403,7 @@ Wordstat is the external-demand and semantic research layer.
 - nested results and associations kept separate;
 - provenance-aware seed expansion;
 - operator-aware frequency work;
-- dynamics/seasonality;
+- daily/weekly/monthly dynamics and seasonality;
 - regions and affinity;
 - trend classification;
 - quota/cost planning.
@@ -416,7 +418,7 @@ Wordstat phrase counts can overlap. Therefore:
 
 Regional volume and affinity are separate signals: a large absolute region is not necessarily the strongest relative-interest region.
 
-Trend classification distinguishes growth from low-volume percentage noise and recurring seasonality.
+Trend classification distinguishes growth from low-volume percentage noise and recurring seasonality. Serializable request artifacts never retain the raw authorization secret.
 
 ---
 
@@ -444,7 +446,7 @@ For rank/clustering workflows, the release uses flat result semantics rather tha
 
 ### Reproducibility
 
-SERP snapshots preserve a configuration fingerprint such as query, region/index, grouping and related request context. Ranking comparison rejects materially incompatible snapshots instead of reporting a misleading rank delta.
+SERP snapshots preserve a configuration fingerprint such as query, region/index, grouping and related request context. Ranking comparison rejects materially incompatible snapshots instead of reporting a misleading rank delta. Ranks are absolute across paginated result pages while `position_on_page` remains available separately.
 
 ### Clustering
 
@@ -470,7 +472,7 @@ Interactive and batch workloads are separated because deferred search can have m
 
 Path: [`plugins/yandex-seo/`](plugins/yandex-seo/)
 
-`yandex-seo` is the first cross-service plugin. It has **no Yandex credentials or transport layer**.
+`yandex-seo` is a cross-service plugin with **no Yandex credentials or transport layer**.
 
 ```text
 Wordstat ─ demand / trends / regions
@@ -485,11 +487,12 @@ findings + prioritization + delegated previews
 
 ### Evidence bundle
 
-The versioned SEO Evidence Bundle preserves:
+The versioned SEO Evidence Bundle requires `site`, `analysis_period` and `search_region_id` and preserves:
 
 - source provenance;
 - period context;
-- geography context;
+- separate Wordstat/Search/Webmaster/Metrika geography semantics;
+- Search configuration and device alignment;
 - query/page/cluster relationships;
 - quality limitations;
 - distinction between observed and inferred statements.
@@ -503,11 +506,13 @@ Evidence/finding semantics:
 ### Important invariants
 
 - Wordstat demand and Webmaster demand are **not automatically interchangeable**.
-- Visitor geography from Metrika is not silently treated as the Search ranking region.
+- Visitor geography from Metrika is not silently treated as the Search ranking region even when numeric region IDs match.
+- Missing period/geo/search/device context yields explicit `UNKNOWN`/validation states, never guessed equivalence.
 - Query joins are conservative; no automatic stemming/fuzzy merge.
-- URL query parameters are retained by default.
+- Functional URL query parameters are retained. Tracking parameters (`utm_*`, `yclid`, `_openstat`) are removed from the canonical `url_key` and preserved separately as `tracking_params` so one landing is not silently fragmented by attribution decoration.
 - Metrika sampling/data lag, Webmaster top-N limitations and Search bridge risk propagate into final findings.
 - A Wordstat phrase alone is a discovery candidate, not automatically a validated content gap.
+- Missing `webmaster_impressions` is not treated as measured zero.
 - Cannibalization requires evidence of competing own URLs, not merely two matching strings.
 - CTR opportunities use comparable/site evidence, not universal position→CTR benchmarks.
 - Conversion/intent explanations remain hypotheses unless the data supports stronger causality.
@@ -538,7 +543,7 @@ reconciliation + findings + prioritization + delegated previews
 
 ### Direct is mandatory
 
-Without Direct evidence, the router must not pretend that a task is a paid-acquisition analysis. It can route the user toward Metrika, Wordstat or Search workflows instead.
+Without Direct evidence, the router/bundle returns a routing-required state rather than pretending that Metrika alone is paid-acquisition evidence.
 
 ### KPI fingerprint
 
@@ -554,7 +559,7 @@ business objective
 + period
 ```
 
-A campaign optimized to a business purchase goal is not declared worse than a campaign optimized to an easier micro-conversion simply because the second has a lower numeric CPA.
+Missing material KPI fields make records incomparable; `None == None` is not evidence of compatibility. Money-derived metrics such as CPC/CPA/ROAS/DRR require explicit currency and VAT context.
 
 ### No Direct/Metrika double counting
 
@@ -563,15 +568,20 @@ Overlapping values are reconciled, not added:
 ```text
 Direct cost           = canonical paid-cost evidence
 Metrika Direct cost   = reconciliation/context evidence
+Metrika conversions   = canonical conversion evidence when comparable
 ```
 
-The same rule applies to overlapping conversion and revenue views. Different date bases, attribution contexts or goal definitions can legitimately produce different values.
+`reconcile_metric` returns the canonical record together with reconciliation status; it never sums overlapping views.
 
 ### Demand/query semantics
 
-A high Wordstat count with low Direct coverage is a **demand expansion candidate**, not proof that the same number of ad impressions was lost.
+A high Wordstat count with low Direct coverage is a **demand expansion candidate**, not proof that the same number of ad impressions was lost. Ambiguous `metric: demand` is rejected; source-specific `wordstat_count` is required.
 
 A search term with zero conversions is not automatically a negative-keyword recommendation. Maturity, objective, spend, conversion delay and evidence sufficiency matter.
+
+### URL identity
+
+Functional query parameters remain part of the landing identity. Tracking-only parameters (`utm_*`, `yclid`, `_openstat`) are excluded from canonical `url_key` and retained in `tracking_params` for provenance, preventing campaign decoration from splitting one landing into multiple analytical pages.
 
 ### Findings and writes
 
@@ -646,15 +656,16 @@ Examples:
 - Direct revenue ≠ complete ecommerce revenue by default;
 - Metrika visitor region ≠ Search SERP region.
 
-### Temporal alignment
+### Temporal/context alignment
 
 Evidence can be classified as:
 
-- `EXACT` — materially equivalent periods/context;
-- `APPROXIMATE` — usable with disclosed timing difference;
-- `MISMATCHED` — invalid for direct comparative interpretation.
+- `EXACT` — materially equivalent context;
+- `APPROXIMATE` — usable with a disclosed difference;
+- `MISMATCHED` — invalid for direct comparative interpretation;
+- `UNKNOWN` — required context is absent or insufficient.
 
-Wordstat rolling windows, point-in-time SERP snapshots, Webmaster date ranges and Metrika periods must not be silently described as one identical measurement interval.
+Wordstat rolling windows, point-in-time SERP snapshots, Webmaster date ranges and Metrika periods must not be silently described as one identical measurement interval. Geography, Search configuration and device context are aligned independently from time.
 
 ### Data maturity
 
@@ -674,7 +685,7 @@ Where possible, stable IDs are preferred:
 - goal ID over goal label;
 - criterion identity over display text.
 
-Query normalization is limited to safe lexical normalization unless a workflow explicitly introduces another relation. URL normalization retains query parameters by default.
+Query normalization is limited to safe lexical normalization unless a workflow explicitly introduces another relation. URL identity retains functional query parameters while separating recognized tracking parameters from the canonical key.
 
 ---
 
@@ -731,7 +742,7 @@ Preferred behavior:
 
 ## Testing and validation
 
-The repository combines a root validator, root architecture tests and per-plugin offline regression suites.
+The repository combines a root validator, root architecture tests, verifiable eval fixtures and per-plugin offline regression suites.
 
 ### Root checks
 
@@ -798,26 +809,22 @@ python -m py_compile scripts/marketing_context.py scripts/marketing_bundle.py sc
 
 ### Path-aware CI
 
-`.github/workflows/ci.yml` detects shared/root changes and plugin-specific changes. Shared contract changes intentionally trigger regression coverage across the affected plugin set; isolated plugin changes avoid running unrelated work where possible.
-
-The first release was developed with explicit RED→GREEN tests for the major behavior contracts and with a final server-side GitHub Actions gate before release finalization.
+`.github/workflows/ci.yml` models service → cross-service dependencies: Metrika/Wordstat/Search/Webmaster changes trigger SEO regressions where applicable, and Direct/Metrika/Wordstat/Search changes trigger Marketing regressions. CI/validator/spec/shared changes trigger the complete plugin matrix.
 
 ---
 
 ## Versioning and releases
 
-Each plugin has independent SemVer.
-
-The first repository release ships the following plugin versions:
+Each plugin has independent SemVer. The current remediation release publishes:
 
 ```text
-yandex-direct-suite  1.0.0
-yandex-metrika       1.0.0
-yandex-webmaster     1.0.0
-yandex-wordstat      1.0.0
-yandex-search        1.0.0
-yandex-seo           1.0.0
-yandex-marketing     1.0.0
+yandex-direct-suite  1.0.1
+yandex-metrika       1.0.1
+yandex-webmaster     1.0.1
+yandex-wordstat      1.0.1
+yandex-search        1.0.1
+yandex-seo           1.0.1
+yandex-marketing     1.0.1
 ```
 
 A future change to one service does not require artificially incrementing every plugin.
@@ -840,7 +847,7 @@ That document provides:
 - cross-service double-counting/context checks;
 - mutation-safety checks;
 - suggested adversarial scenarios;
-- known intentional limitations of 1.0.0.
+- known intentional limitations of the first release.
 
 The approved designs are under [`docs/superpowers/specs/`](docs/superpowers/specs/) and are useful for checking implementation-vs-design drift.
 
@@ -900,7 +907,7 @@ If you only read one section, these are the contracts the repository is designed
 6. **No causal certainty from observational correlation.** Use `HYPOTHESIS` when that is what the evidence supports.
 7. **A recommendation is not permission.** Consequential writes require preview and explicit approval in the owning service plugin.
 8. **Keep secrets out of content and previews.** Cross-service plugins need no credentials.
-9. **Expose data-quality limitations.** Sampling, lag, top-N coverage, timing mismatch and cluster bridge risk are part of the answer.
+9. **Expose data-quality limitations.** Sampling, lag, top-N coverage, timing/context mismatch and cluster bridge risk are part of the answer.
 10. **Prefer reproducibility.** Preserve request/snapshot/config context needed to explain how a result was produced.
 11. **Use artifacts for large outputs.** Do not pretend a truncated context contains the complete dataset.
 12. **Treat backlog as backlog.** The first release intentionally stops at the current seven-plugin set.

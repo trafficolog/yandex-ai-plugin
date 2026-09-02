@@ -28,5 +28,12 @@ class AgentContractTests(unittest.TestCase):
         sources=(ROOT/'references'/'sources.md').read_text(); self.assertIn('Verified: 2026-09-02',sources)
     def test_references_and_eval_contract(self):
         for ref in REFS: self.assertTrue((ROOT/'references'/ref).exists(),ref)
-        data=json.loads((ROOT/'evals/scenarios.json').read_text()); self.assertEqual(data['version'],1); self.assertEqual(len(data['scenarios']),11); self.assertEqual({s['skill'] for s in data['scenarios']},set(SKILLS)); self.assertTrue(all(s['write'] in (False,'preview-first') for s in data['scenarios'])); self.assertTrue(all(isinstance(s['prompt'],str) and s['prompt'].strip() for s in data['scenarios']))
+        data=json.loads((ROOT/'evals/scenarios.json').read_text())
+        self.assertEqual(data['version'],1)
+        self.assertGreaterEqual(len(data['scenarios']),len(SKILLS))
+        self.assertEqual({s['skill'] for s in data['scenarios']},set(SKILLS))
+        self.assertTrue(all(s['write'] in (False,'preview-first') for s in data['scenarios']))
+        self.assertTrue(all(isinstance(s['prompt'],str) and s['prompt'].strip() for s in data['scenarios']))
+        self.assertTrue(all(isinstance(s.get('expect'),dict) for s in data['scenarios']))
+        self.assertTrue(all(s['expect'].get('must_route_to') == s['skill'] for s in data['scenarios']))
 if __name__=='__main__': unittest.main()

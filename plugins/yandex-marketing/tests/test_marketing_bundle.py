@@ -1,6 +1,7 @@
 import unittest
 from scripts.marketing_bundle import new_bundle, add_evidence
 
+
 class MarketingBundleTests(unittest.TestCase):
     def test_bundle_requires_explicit_direct_coverage_key(self):
         with self.assertRaises(ValueError):
@@ -17,4 +18,13 @@ class MarketingBundleTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             add_evidence(bundle, {'kind':'GUESS','metric':'cost','value':1,'source':'x'})
 
-if __name__ == '__main__': unittest.main()
+    def test_ambiguous_demand_metric_is_rejected(self):
+        bundle = new_bundle({}, {'direct':True,'metrika':False,'wordstat':True,'search':False})
+        with self.assertRaises(ValueError):
+            add_evidence(bundle, {'kind':'OBSERVED','metric':'demand','value':100,'source':'yandex-wordstat'})
+        add_evidence(bundle, {'kind':'OBSERVED','metric':'wordstat_count','value':100,'source':'yandex-wordstat'})
+        self.assertEqual(bundle['evidence'][-1]['metric'], 'wordstat_count')
+
+
+if __name__ == '__main__':
+    unittest.main()

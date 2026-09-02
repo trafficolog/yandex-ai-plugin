@@ -1,6 +1,11 @@
+import io
 import json
 import unittest
-from scripts.yd_api import YandexDirectClient, WRITE_METHODS
+from contextlib import redirect_stderr, redirect_stdout
+from unittest.mock import patch
+
+from scripts import yd_api
+from scripts.yd_api import YandexDirectClient
 
 
 class TestYandexDirectClient(unittest.TestCase):
@@ -24,9 +29,33 @@ class TestYandexDirectClient(unittest.TestCase):
         self.assertEqual(preview["headers"]["Authorization"], "Bearer ***REDACTED***")
         self.assertEqual(preview["body"]["method"], "update")
 
-    def test_write_methods_include_budget_affecting_mutations(self):
-        for method in {"add", "update", "delete", "suspend", "resume", "archive", "unarchive", "setAuto"}:
-            self.assertIn(method, WRITE_METHODS)
+    def _run_cli_and_capture_dry_run(self, method: str) -> bool:
+        captured = {}
+
+        def fake_request(self, service, request_method, params, *, dry_run=False):
+            captured["service"] = service
+            captured["method"] = request_method
+            captured["dry_run"] = dry_run
+            return {"dry_run": dry_run}
+
+        with patch.object(yd_api.YandexDirectClient, "request", new=fake_request):
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                rc = yd_api.main(["bids", method, "--params", "{}", "--token", "token"])
+        self.assertEqual(rc, 0)
+        return captured["dry_run"]
+
+    def test_set_defaults_to_preview_without_execute(self):
+        self.assertTrue(self._run_cli_and_capture_dry_run("set"))
+
+    def test_unknown_method_defaults_to_preview_without_execute(self):
+        self.assertTrue(self._run_cli_and_capture_dry_run("frobnicate"))
+
+    def test_known_read_method_executes_without_execute(self):
+        self.assertFalse(self._run_cli_and_capture_dry_run("get"))
+
+    def test_method_classification_is_case_insensitive(self):
+        self.assertFalse(self._run_cli_and_capture_dry_run("GET"))
+        self.assertTrue(self._run_cli_and_capture_dry_run("Set"))
 
 
 if __name__ == "__main__":

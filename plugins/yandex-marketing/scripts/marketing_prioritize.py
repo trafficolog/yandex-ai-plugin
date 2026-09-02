@@ -10,9 +10,10 @@ DEFAULT_GROUP_ORDER = [
 
 
 def prioritize(findings: list[dict], priority_order: list[str] | None = None) -> list[dict]:
-    order = list(priority_order or DEFAULT_GROUP_ORDER)
+    use_default = not priority_order
+    order = list(DEFAULT_GROUP_ORDER if use_default else priority_order)
     rank = {name: i for i, name in enumerate(order)}
-    mode = 'USER_ORDER' if priority_order is not None else 'DEFAULT_CATEGORICAL'
+    mode = 'DEFAULT_CATEGORICAL' if use_default else 'USER_ORDER'
     result=[]
     for finding in findings:
         item=dict(finding)
