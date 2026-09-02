@@ -8,6 +8,20 @@ SCHEMA = "seo-topical-architecture/v1"
 MODES = {"GREENFIELD", "EXISTING_SITE"}
 COVERAGE_STATES = {"COMPLETE", "PARTIAL", "MISSING"}
 COVERAGE_KEYS = {"wordstat", "search", "webmaster", "metrika", "site_inventory"}
+PAGE_ROLES = {
+    "ROOT",
+    "HUB",
+    "SUPPORT",
+    "DETAIL",
+    "COMPARISON",
+    "TRANSACTIONAL",
+    "DEFINITION",
+    "EVIDENCE",
+    "BRIDGE",
+    "UTILITY",
+    "OTHER",
+}
+ROOT_PAGE_ROLES = {"ROOT", "BRIDGE"}
 PAGE_DECISIONS = {
     "PRESERVE",
     "CREATE",
@@ -119,6 +133,12 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         node.setdefault("cluster_ids", [])
         node.setdefault("evidence", [])
 
+        if node.get("page_role") is not None:
+            page_role = _require_nonempty_string(node.get("page_role"), "page_role")
+            if page_role not in PAGE_ROLES:
+                raise ValueError(f"page_role must be one of {sorted(PAGE_ROLES)}")
+            node["page_role"] = page_role
+
         for field in ("url", "proposed_url"):
             location = node.get(field)
             if location is None:
@@ -137,6 +157,8 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
     for node in normalized:
         parent = node.get("canonical_parent_id")
         if parent is None:
+            if node.get("proposed_url") is not None and node.get("page_role") not in ROOT_PAGE_ROLES:
+                raise ValueError("parentless proposed page requires page_role ROOT or BRIDGE")
             continue
         parent = _require_nonempty_string(parent, "canonical_parent_id")
         node["canonical_parent_id"] = parent
