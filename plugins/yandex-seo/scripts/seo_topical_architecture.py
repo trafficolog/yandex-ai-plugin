@@ -20,6 +20,14 @@ PAGE_DECISIONS = {
     "NO_PAGE",
     "MANUAL_REVIEW",
 }
+PAGE_DECISION_OPTIONAL_FIELDS = {
+    "reason_codes",
+    "target_page_id",
+    "target_url",
+    "notes",
+    "methodology_source",
+    "limitations",
+}
 SEARCH_REQUIRED_BOUNDARY_DECISIONS = {
     "CREATE",
     "MERGE",
@@ -171,13 +179,19 @@ def _normalize_page_decisions(
         decision = raw.get("decision")
         if decision not in PAGE_DECISIONS:
             raise ValueError(f"decision must be one of {sorted(PAGE_DECISIONS)}")
-        item = deepcopy(raw)
-        item["page_id"] = page_id
-        item["decision"] = decision
-        item["confidence"] = _validate_confidence(raw.get("confidence"))
-        item["claim_class"] = _validate_claim_class(raw.get("claim_class"))
-        item.setdefault("cluster_ids", [])
-        item.setdefault("evidence", [])
+
+        item = {
+            "page_id": page_id,
+            "decision": decision,
+            "cluster_ids": deepcopy(raw.get("cluster_ids", [])),
+            "evidence": deepcopy(raw.get("evidence", [])),
+            "confidence": _validate_confidence(raw.get("confidence")),
+            "claim_class": _validate_claim_class(raw.get("claim_class")),
+            "status": "PREVIEW",
+        }
+        for field in PAGE_DECISION_OPTIONAL_FIELDS:
+            if field in raw:
+                item[field] = deepcopy(raw[field])
         result.append(item)
     return result
 
