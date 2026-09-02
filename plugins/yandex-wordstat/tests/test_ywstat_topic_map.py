@@ -76,6 +76,22 @@ class TestWordstatTopicMap(unittest.TestCase):
         self.assertEqual(len(result["queries"]), 1)
         self.assertEqual(result["queries"][0]["query_id"], "q1")
 
+    def test_phrase_record_source_seed_must_be_declared(self):
+        with self.assertRaises(ValueError):
+            ywstat_topic_map.build_topic_map(
+                seeds=[{"seed": "seo", "operators": "", "filters": {}, "coverage": {}}],
+                phrase_records=[
+                    {
+                        "query_id": "q1",
+                        "text": "seo аудит",
+                        "source_seed": "seo typo",
+                        "relation": "nested",
+                        "demand": None,
+                    }
+                ],
+                candidate_topics=[],
+            )
+
     def test_unknown_query_reference_is_rejected(self):
         with self.assertRaises(ValueError):
             ywstat_topic_map.build_topic_map(
