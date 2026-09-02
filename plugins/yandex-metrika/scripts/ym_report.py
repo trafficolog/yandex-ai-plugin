@@ -25,6 +25,7 @@ CURRENT_ATTRIBUTION_MODELS = {
     "cross_device_last_significant",
     "automatic",
 }
+DEFAULT_ATTRIBUTION_MODEL = "last"
 QUALITY_FIELDS = (
     "sampled",
     "sample_share",
@@ -54,8 +55,9 @@ def _normalize_params(params: dict[str, Any]) -> dict[str, Any]:
             normalized[key] = ",".join(str(item) for item in value)
         else:
             normalized[key] = value
-    if "attribution" in normalized:
-        validate_attribution_model(str(normalized["attribution"]))
+    attribution = str(normalized.get("attribution") or DEFAULT_ATTRIBUTION_MODEL)
+    validate_attribution_model(attribution)
+    normalized["attribution"] = attribution
     return normalized
 
 
@@ -73,11 +75,27 @@ def extract_quality_metadata(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def fetch_report(mode: str, params: dict[str, Any], token: str) -> dict[str, Any]:
-    url = build_report_url(mode, params)
+    normalized = _normalize_params(params)
+    try:
+        path = REPORT_PATHS[mode]
+    except KeyError as exc:
+        raise ValueError(f"Unknown report mode: {mode}") from exc
+    query = urlencode(normalized)
+    url = f"{API_BASE}{path}" + (f"?{query}" if query else "")
     _, payload = request_json("GET", url, token)
     if not isinstance(payload, dict):
         raise RuntimeError("Unexpected Yandex Metrika Reporting API response")
-    return {"data": payload, "quality": extract_quality_metadata(payload)}
+    metadata = {
+        "attribution_model": normalized["attribution"],
+        "date1": normalized.get("date1"),
+        "date2": normalized.get("date2"),
+        "ids": normalized.get("ids"),
+    }
+    return {
+        "data": payload,
+        "quality": extract_quality_metadata(payload),
+        "metadata": metadata,
+    }
 
 
 def main() -> int:
@@ -90,7 +108,11 @@ def main() -> int:
     parser.add_argument("--date2")
     parser.add_argument("--filters")
     parser.add_argument("--accuracy")
-    parser.add_argument("--attribution", choices=sorted(CURRENT_ATTRIBUTION_MODELS))
+    parser.add_argument(
+        "--attribution",
+        choices=sorted(CURRENT_ATTRIBUTION_MODELS),
+        default=DEFAULT_ATTRIBUTION_MODEL,
+    )
     parser.add_argument("--limit", type=int)
     parser.add_argument("--offset", type=int)
     args = parser.parse_args()
