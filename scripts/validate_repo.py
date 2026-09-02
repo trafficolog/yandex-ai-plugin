@@ -12,6 +12,7 @@ ALLOWED_EVAL_WRITE = {False, "preview-first", "approval-required"}
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml"}
 CAPABILITY_HEADER = "| Capability | Read | Write | MCP/App | Bundled API | File fallback |"
 CROSS_SERVICE_PLUGINS = {"yandex-seo", "yandex-marketing"}
+SUPPORTED_AUTHENTICATION_POLICIES = {"ON_INSTALL", "ON_USE"}
 SECRET_PATTERNS = (
     re.compile(r"Authorization\s*:\s*(?:Bearer|OAuth)\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
     re.compile(r"Api-Key\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
@@ -199,6 +200,16 @@ def _validate_plugin(
         errors.append(f"version mismatch for {agent_entry.get('name')}: {versions}")
 
     plugin_name = agent_entry.get("name")
+    policy = agent_entry.get("policy")
+    authentication = policy.get("authentication") if isinstance(policy, dict) else None
+    if authentication not in SUPPORTED_AUTHENTICATION_POLICIES:
+        errors.append(f"unsupported or missing authentication policy for {plugin_name}: {authentication}")
+    if plugin_name in CROSS_SERVICE_PLUGINS:
+        if authentication != "ON_USE":
+            errors.append(f"cross-service authentication policy must be ON_USE for {plugin_name}")
+        if (plugin_path / ".env.example").exists():
+            errors.append(f"cross-service plugin must not define .env.example: {plugin_name}")
+
     if codex.get("name") != plugin_name:
         errors.append(f"codex manifest name mismatch for {plugin_name}: {codex_path}")
     if isinstance(claude, dict) and claude.get("name") != plugin_name:
