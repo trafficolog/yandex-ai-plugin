@@ -127,9 +127,14 @@ jobs:
           git show "$RELEASE_TARGET_SHA:CHANGELOG.en.md" | grep -F '## [OPUS 1.1.2] — 2026-09-03'
           git show "$RELEASE_TARGET_SHA:docs/superpowers/specs/2026-09-03-opus-1.1.2-residual-audit-hardening-amendment.md" >/dev/null
 
-          python scripts/validate_repo.py
-          python -m unittest discover -s tests -v
-          python scripts/check_reference_freshness.py
+          RELEASE_WORKTREE="$(mktemp -d)"
+          trap 'git worktree remove --force "$RELEASE_WORKTREE" >/dev/null 2>&1 || true' EXIT
+          git worktree add --detach "$RELEASE_WORKTREE" "$RELEASE_TARGET_SHA"
+          (cd "$RELEASE_WORKTREE"
+            python scripts/validate_repo.py
+            python -m unittest discover -s tests -v
+            python scripts/check_reference_freshness.py
+          )
 
       - name: Publish repository and plugin releases
         if: steps.release_state.outputs.already_published != 'true'
