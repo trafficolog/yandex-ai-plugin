@@ -80,30 +80,65 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(late_guard, first_publish)
         self.assertNotIn('publish_release "', text[late_gate:late_guard])
 
+    def test_recovery_ancestry_is_checked_against_live_main_tip(self):
+        text = self._text()
+        recovery = text.index('echo "initial_publication=false"')
+        fetch_live_main = text.index('git fetch origin main --prune', recovery)
+        live_main = text.index('live_main_sha="$(git rev-parse origin/main)"', fetch_live_main)
+        ancestry = text.index('git merge-base --is-ancestor "$immutable_sha" "$live_main_sha"', live_main)
+        target_output = text.index('release_target_sha=$immutable_sha', ancestry)
+        self.assertLess(recovery, fetch_live_main)
+        self.assertLess(fetch_live_main, live_main)
+        self.assertLess(live_main, ancestry)
+        self.assertLess(ancestry, target_output)
+        self.assertIn('Existing OPUS 1.1.3 immutable commit $immutable_sha is not an ancestor of live main $live_main_sha', text)
+
     def test_publication_checks_immutability_before_optional_admin_put(self):
         text = self._text()
-        self.assertIn("IMMUTABILITY_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}", text)
-        first_publish = text.index('publish_release "opus-1.1.3"')
-        publish_step = text.rfind('- name: Publish repository and plugin releases', 0, first_publish)
-        get_setting = text.index(
-            'immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\' 2>/dev/null || true)"',
-            publish_step,
+        publish_step = text.index('- name: Publish repository and plugin releases')
+        first_release = text.index('publish_release "opus-1.1.3"', publish_step)
+        segment = text[publish_step:first_release]
+        get_setting = segment.index(
+            'immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\' 2>/dev/null || true)"'
         )
-        needs_enable = text.index('if [[ "$immutable_enabled" != "true" ]]', get_setting)
-        enable_attempt = text.index(
+        conditional = segment.index('if [[ "$immutable_enabled" != "true" ]]', get_setting)
+        put_setting = segment.index(
             'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases"',
-            needs_enable,
+            conditional,
         )
-        verify_setting = text.index(
-            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\'',
-            enable_attempt,
+        second_get = segment.index(
+            'immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\')"',
+            put_setting,
         )
-        self.assertLess(publish_step, get_setting)
-        self.assertLess(get_setting, needs_enable)
-        self.assertLess(needs_enable, enable_attempt)
-        self.assertLess(enable_attempt, verify_setting)
-        self.assertLess(verify_setting, first_publish)
-        self.assertIn('Repository immutable releases must be enabled before OPUS 1.1.3 publication.', text)
+        final_guard = segment.index('if [[ "$immutable_enabled" != "true" ]]', second_get)
+        self.assertLess(get_setting, conditional)
+        self.assertLess(conditional, put_setting)
+        self.assertLess(put_setting, second_get)
+        self.assertLess(second_get, final_guard)
+
+    def test_release_tags_are_locked_against_updates_and_deletions_before_publication(self):
+        text = self._text()
+        publish_step = text.index('- name: Publish repository and plugin releases')
+        first_publish = text.index('publish_release "opus-1.1.3"', publish_step)
+        segment = text[publish_step:first_publish]
+        for token in (
+            'OPUS 1.1.3 immutable release tags',
+            '"target":"tag"',
+            '"enforcement":"active"',
+            '"refs/tags/opus-1.1.3"',
+            '"refs/tags/yandex-wordstat-v1.1.2"',
+            '"refs/tags/yandex-seo-v1.1.2"',
+            '"type":"update"',
+            '"type":"deletion"',
+            '"bypass_actors":[]',
+            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" --input -',
+            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/rulesets/$release_tag_ruleset_id"',
+            'release_tag_ruleset_verified=true',
+        ):
+            self.assertIn(token, segment)
+        self.assertNotIn('"type":"creation"', segment)
+        verify_index = segment.index('release_tag_ruleset_verified=true')
+        self.assertLess(verify_index, segment.index('publish_release() {'))
 
     def test_publisher_supports_noop_partial_recovery_and_rejects_multi_sha_state(self):
         text = self._text()
@@ -116,7 +151,6 @@ class Opus113PublisherTests(unittest.TestCase):
             "already_published=true",
             "partial_release=true",
             "Existing OPUS 1.1.3 tags/releases point to multiple commits",
-            'git merge-base --is-ancestor "$immutable_sha" "$TARGET_SHA"',
             "release_target_sha=$immutable_sha",
             "steps.release_state.outputs.already_published == 'true'",
             "steps.release_state.outputs.partial_release == 'true'",
@@ -195,8 +229,8 @@ class Opus113PublisherTests(unittest.TestCase):
     def test_publish_release_atomically_creates_and_verifies_target_tag(self):
         text = self._text()
         function_start = text.index('publish_release() {')
-        first_call = text.index('publish_release "opus-1.1.3"')
-        function = text[function_start:first_call]
+        function_end = text.index("          cat > /tmp/opus-1.1.3.md", function_start)
+        function = text[function_start:function_end]
         for token in (
             'gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"',
             '-f ref="refs/tags/$tag"',
@@ -204,19 +238,23 @@ class Opus113PublisherTests(unittest.TestCase):
             'git fetch origin "refs/tags/$tag:refs/tags/$tag" --force',
             'existing_sha="$(git rev-list -n 1 "$tag")"',
             'if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]',
+            'gh release create "$tag"',
             '--verify-tag',
         ):
             self.assertIn(token, function)
         self.assertNotIn('--target "$RELEASE_TARGET_SHA"', function)
-        atomic_create = function.index('gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"')
-        fetch_tag = function.index('git fetch origin "refs/tags/$tag:refs/tags/$tag" --force', atomic_create)
-        verify_sha = function.index('if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]', fetch_tag)
+        verify_sha = function.index('if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]', function.index('gh api --method POST'))
         create_release = function.index('gh release create "$tag"', verify_sha)
-        verify_tag = function.index('--verify-tag', create_release)
-        self.assertLess(atomic_create, fetch_tag)
-        self.assertLess(fetch_tag, verify_sha)
         self.assertLess(verify_sha, create_release)
-        self.assertLess(create_release, verify_tag)
+
+    def test_existing_tags_and_releases_are_verified_against_immutable_target(self):
+        text = self._text()
+        for token in (
+            'existing_sha="$(git rev-list -n 1 "$tag")"',
+            'if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]',
+            '--verify-tag',
+        ):
+            self.assertIn(token, text)
 
 
 if __name__ == "__main__":
