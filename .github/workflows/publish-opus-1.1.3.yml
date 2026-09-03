@@ -220,6 +220,7 @@ jobs:
             local published_sha=""
             local rollback_armed=false
             local cleanup_delete_status=0
+            local prepublish_tag_probe_status=0
 
             cleanup_published_release() {
               local cleanup_status=0
@@ -283,8 +284,15 @@ jobs:
                   echo "Draft release $tag targets $release_target_commitish, expected $RELEASE_TARGET_SHA" >&2
                   exit 1
                 fi
-                if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+                prepublish_tag_probe_status=0
+                git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || prepublish_tag_probe_status=$?
+                if [[ "$prepublish_tag_probe_status" -eq 0 ]]; then
                   echo "Draft release $tag unexpectedly materialized a Git tag before publication." >&2
+                  exit 1
+                elif [[ "$prepublish_tag_probe_status" -eq 2 ]]; then
+                  :
+                else
+                  echo "Unable to verify pre-publication tag state for $tag." >&2
                   exit 1
                 fi
                 echo "Reusing exact-target draft release $tag."
@@ -307,8 +315,15 @@ jobs:
                 return 0
               fi
             else
-              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+              prepublish_tag_probe_status=0
+              git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || prepublish_tag_probe_status=$?
+              if [[ "$prepublish_tag_probe_status" -eq 0 ]]; then
                 echo "Standalone tag $tag exists without a GitHub Release; refusing unsafe recovery without a draft reservation." >&2
+                exit 1
+              elif [[ "$prepublish_tag_probe_status" -eq 2 ]]; then
+                :
+              else
+                echo "Unable to verify pre-publication tag state for $tag." >&2
                 exit 1
               fi
 
@@ -329,8 +344,15 @@ jobs:
                 echo "Draft release $tag targets $draft_target_commitish, expected $RELEASE_TARGET_SHA" >&2
                 exit 1
               fi
-              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+              prepublish_tag_probe_status=0
+              git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || prepublish_tag_probe_status=$?
+              if [[ "$prepublish_tag_probe_status" -eq 0 ]]; then
                 echo "Draft release $tag unexpectedly materialized a Git tag before publication." >&2
+                exit 1
+              elif [[ "$prepublish_tag_probe_status" -eq 2 ]]; then
+                :
+              else
+                echo "Unable to verify pre-publication tag state for $tag." >&2
                 exit 1
               fi
             fi
