@@ -93,6 +93,18 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(ancestry, target_output)
         self.assertIn('Existing OPUS 1.1.3 immutable commit $immutable_sha is not an ancestor of live main $live_main_sha', text)
 
+    def test_exact_target_verification_does_not_reject_valid_recovery_against_stale_event_sha(self):
+        text = self._text()
+        verify_step = text.index('- name: Verify exact release target')
+        publish_step = text.index('- name: Publish repository and plugin releases', verify_step)
+        segment = text[verify_step:publish_step]
+        self.assertIn("if [[ \"${{ steps.release_state.outputs.initial_publication }}\" == \"true\" ]]", segment)
+        self.assertIn('test "$RELEASE_TARGET_SHA" = "$TARGET_SHA"', segment)
+        self.assertIn('git fetch origin main --prune', segment)
+        self.assertIn('live_main_sha="$(git rev-parse origin/main)"', segment)
+        self.assertIn('git merge-base --is-ancestor "$RELEASE_TARGET_SHA" "$live_main_sha"', segment)
+        self.assertNotIn('git merge-base --is-ancestor "$RELEASE_TARGET_SHA" "$TARGET_SHA"', segment)
+
     def test_publication_checks_immutability_before_optional_admin_put(self):
         text = self._text()
         publish_step = text.index('- name: Publish repository and plugin releases')
