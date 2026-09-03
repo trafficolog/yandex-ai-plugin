@@ -14,7 +14,7 @@ Phase 7 contract hardening from the new Opus 5 audit.
 - `coverage.search=PARTIAL` is now exposed as `SERP_VALIDATION_PARTIAL`; Search cluster ingress is validated and bridge/source limitations propagate downstream automatically.
 - `METHODOLOGY` is now a first-class qualitative Evidence Bundle kind but cannot masquerade as quantitative metric evidence.
 - Not-evaluated `link_plan`/`audits` are distinct from evaluated empty results (`null` vs explicitly attached `[]`).
-- Internal-link audit defines orphaning by missing inbound links, preserves/flags duplicates, and treats a rootless `BRIDGE` without inbound links as orphan/broken bridge while `ROOT` remains exempt.
+- Internal-link audit defines orphaning by missing inbound links, preserves/flags duplicates, and treats a rootless `BRIDGE` without inbound links as orphan/broken bridge. Explicit `ROOT` and a legacy parentless node without `page_role` remain exempt; explicit non-root roles are still audited for orphaning. Self-links are reported as `SELF_LINK` and excluded from valid/inbound reachability counts.
 - Yandex Wordstat `1.1.2`: topic-map query normalization uses Unicode NFKC + casefold + whitespace folding without invented demand summation.
 - The legacy OPUS 1.1.0 publisher now uses the canonical `trafficolog/yandex-ai-plugins-skills` repository guard; a repository-level regression prevents the old name from returning.
 
