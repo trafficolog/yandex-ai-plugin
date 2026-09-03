@@ -139,6 +139,14 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertIn('Draft release $tag targets $release_target_commitish, expected $RELEASE_TARGET_SHA', function)
         self.assertIn('Reusing exact-target draft release $tag.', function)
 
+    def test_reused_draft_reapplies_canonical_title_and_notes_before_publish(self):
+        function = self._publish_function()
+        publish = function.index('gh release edit "$tag"')
+        published_state = function.index('published_state=', publish)
+        edit_segment = function[publish:published_state]
+        self.assertIn('--title "$title"', edit_segment)
+        self.assertIn('--notes-file "$notes_file"', edit_segment)
+
     def test_tag_only_state_is_not_converted_without_draft_reservation(self):
         function = self._publish_function()
         self.assertIn('Standalone tag $tag exists without a GitHub Release; refusing unsafe recovery without a draft reservation.', function)
@@ -158,6 +166,20 @@ class Opus113PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, function)
 
+    def test_rollback_is_armed_before_publish_and_always_checks_residue(self):
+        function = self._publish_function()
+        cleanup = function.index('cleanup_published_release() {')
+        arm = function.index('rollback_armed=true', cleanup)
+        trap = function.index('trap cleanup_published_release ERR', arm)
+        publish = function.index('gh release edit "$tag"', trap)
+        self.assertLess(cleanup, arm)
+        self.assertLess(arm, trap)
+        self.assertLess(trap, publish)
+        self.assertIn('gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || cleanup_delete_status=$?', function)
+        self.assertIn('if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then', function)
+        self.assertIn('if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then', function)
+        self.assertIn('trap - ERR', function)
+
     def test_non_immutable_publication_is_rolled_back_fail_closed(self):
         function = self._publish_function()
         for token in (
@@ -168,7 +190,7 @@ class Opus113PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, function)
         immutable_guard = function.index('if [[ "$published_is_immutable" != "true" ]]')
-        rollback = function.index('gh release delete "$tag"', immutable_guard)
+        rollback = function.index('cleanup_published_release', immutable_guard)
         self.assertLess(immutable_guard, rollback)
 
     def test_published_release_requires_github_immutability_and_exact_tag_sha(self):
