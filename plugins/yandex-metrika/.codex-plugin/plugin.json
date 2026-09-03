@@ -1,7 +1,7 @@
 {
   "name": "yandex-metrika",
   "description": "Skills for auditing, reporting on, and safely managing Yandex Metrika using current 2026 API behavior.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "metrika", "analytics", "web analytics", "ecommerce", "logs", "attribution"],
