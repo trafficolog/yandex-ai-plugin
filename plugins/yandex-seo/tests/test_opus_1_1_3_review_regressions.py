@@ -78,6 +78,34 @@ class Opus113ReviewRegressionTests(unittest.TestCase):
         self.assertNotIn("root", orphan_pages)
         self.assertIn("child", orphan_pages)
 
+    def test_parentless_explicit_non_root_role_is_not_legacy_root_exempt(self):
+        for page_role in ("HUB", "SUPPORT", "UTILITY", "OTHER"):
+            with self.subTest(page_role=page_role):
+                architecture = {
+                    "schema": "seo-topical-architecture/v1",
+                    "structural_tree": {
+                        "nodes": [
+                            {
+                                "page_id": "node",
+                                "canonical_parent_id": None,
+                                "page_role": page_role,
+                            }
+                        ],
+                        "edges": [],
+                    },
+                    "semantic_graph": {"nodes": [{"page_id": "node"}], "edges": []},
+                }
+                audit = seo_internal_linking.audit_link_inventory(
+                    architecture=architecture,
+                    existing_links=[],
+                )
+                orphan_pages = {
+                    finding["page_id"]
+                    for finding in audit["findings"]
+                    if finding["type"] == "ORPHAN_PAGE"
+                }
+                self.assertIn("node", orphan_pages)
+
     def test_every_empirical_boundary_decision_requires_search_owned_provenance(self):
         boundary_decisions = (
             "CREATE",
