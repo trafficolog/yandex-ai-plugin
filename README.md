@@ -8,7 +8,7 @@
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.2` закрывает остаточный Opus 5 audit tail. Metrika `1.0.3` fail-closed обрабатывает Direct expense CSV без UTM через `TrafficSource` / `TrafficSourceDetail` provenance; shared runtime code не переносится в root `packages/` без безопасного installability/distribution contract. Wordstat `1.1.1`, SEO `1.1.1`, Search `1.0.2`, Direct `1.0.1`, Webmaster `1.0.3`, Marketing `1.1.0` не меняются.
+> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.3` закрывает новый Opus 5 audit hardening по Phase 7. SEO `1.1.2` требует Search-owned provenance для empirical boundary changes, валидирует Search cluster ingress, различает неоценённые и пустые evaluated artifacts, поддерживает qualitative `METHODOLOGY` evidence и аудирует inbound/duplicate/bridge internal links. Wordstat `1.1.2` унифицирует topic-map query normalization через Unicode NFKC. Direct `1.0.1`, Metrika `1.0.3`, Webmaster `1.0.3`, Search `1.0.2`, Marketing `1.1.0` не меняются.
 
 ## Быстрый обзор
 
@@ -17,9 +17,9 @@
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.3 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.1 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.2 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.1.1 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.1.2 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition и reconciliation | delegated preview only |
 
 Подробности: [`docs/SERVICE_MATRIX.md`](docs/SERVICE_MATRIX.md) · [English](docs/SERVICE_MATRIX.en.md).
@@ -85,13 +85,14 @@ flowchart LR
   L --> P[preview-only plan / audit]
 ```
 
-- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, только candidate topics/relations; Wordstat не доказывает финальные page boundaries.
+- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, только candidate topics/relations; Wordstat не доказывает финальные page boundaries. Query identity нормализуется через Unicode NFKC + casefold + whitespace folding.
 - `yandex-search-clustering` остаётся владельцем реального SERP overlap; альтернативный fuzzy-text clusterer не вводится.
 - `yandex-seo-topical-architecture` → `seo-topical-architecture/v1`, `GREENFIELD|EXISTING_SITE`, page decisions + отдельные `structural_tree` и `semantic_graph`.
-- `yandex-seo-internal-linking` → preview-only link plan/audit без CMS writes.
-- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` не смешиваются; semantic-cocoon/TGA/QBST methodology не объявляется подтверждённым ranking mechanism.
-- Без Search evidence обязательно `SERP_VALIDATION_MISSING`; границы страниц остаются гипотезами.
-- Patch `1.0.1` не меняет эту архитектуру: он только закрывает четыре post-release integrity findings в Wordstat/SEO data contracts.
+- Empirical boundary-changing decisions требуют Search-owned reason/evidence; `MERGE`/`REDIRECT` также требуют evidence существующей страницы/URL. `coverage.search=MISSING|PARTIAL` раскрывается явными limitations.
+- Search cluster ingress валидируется перед использованием; bridge/association/source limitations не теряются downstream.
+- `yandex-seo-internal-linking` → preview-only link plan/audit без CMS writes; orphan определяется отсутствием inbound links, duplicates не схлопываются бесследно, rootless `BRIDGE` без inbound link считается orphan/broken bridge, а `ROOT` остаётся exempt.
+- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` не смешиваются; `METHODOLOGY` допустим как qualitative Evidence Bundle item, но не как quantitative metric evidence.
+- Неоценённые `link_plan`/`audits` сериализуются как `null`; evaluated-empty results присоединяются explicit attachment helpers и остаются `[]`.
 
 ## Оркестрация Marketing
 
@@ -152,13 +153,13 @@ python scripts/check_reference_freshness.py
 yandex-direct        1.0.1
 yandex-metrika       1.0.3
 yandex-webmaster     1.0.3
-yandex-wordstat      1.1.1
+yandex-wordstat      1.1.2
 yandex-search        1.0.2
-yandex-seo           1.1.1
+yandex-seo           1.1.2
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
 
 ## Документация
 
