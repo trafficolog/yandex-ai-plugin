@@ -189,7 +189,7 @@ jobs:
           - partial Search coverage is explicit and Search cluster ingress is validated with downstream limitation propagation;
           - METHODOLOGY is first-class qualitative SEO evidence but cannot masquerade as a quantitative metric;
           - not-evaluated link/audit stages are distinct from evaluated empty results;
-          - internal-link orphaning is inbound-aware, duplicates are preserved/flagged, and rootless BRIDGE pages without inbound links are treated as orphan/broken bridge while ROOT remains exempt;
+          - internal-link orphaning is inbound-aware, duplicates are preserved/flagged, rootless BRIDGE pages without inbound links are treated as orphan/broken bridge, explicit ROOT and legacy role-less parentless roots remain exempt, explicit non-root roles remain audited, and SELF_LINK findings do not satisfy valid/inbound reachability;
           - Wordstat topic-map query identity now uses Unicode NFKC + casefold + whitespace normalization;
           - all literal publisher repository guards use the canonical post-rename repository identity.
 
@@ -220,7 +220,7 @@ jobs:
           - Search bridge/source limitations propagate downstream;
           - METHODOLOGY is accepted as qualitative evidence only;
           - not-evaluated link/audit stages serialize distinctly from evaluated empty results;
-          - orphan detection uses inbound connectivity, duplicate links are flagged, and rootless BRIDGE pages without inbound links are broken bridges.
+          - orphan detection uses inbound connectivity, duplicate links are flagged, rootless BRIDGE pages without inbound links are broken bridges, explicit ROOT and legacy role-less parentless roots remain exempt, explicit non-root roles remain audited, and SELF_LINK findings are excluded from valid/inbound reachability counts.
           EOF
 
           publish_release "opus-1.1.3" "OPUS 1.1.3 — Phase 7 Audit Hardening" /tmp/opus-1.1.3.md
