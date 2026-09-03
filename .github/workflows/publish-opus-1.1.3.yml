@@ -89,16 +89,6 @@ jobs:
               exit 1
             fi
 
-            if ! GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases" >/dev/null 2>&1; then
-              echo "Unable to enable repository immutable releases. Configure RELEASE_ADMIN_TOKEN with repository Administration:write or enable immutability before publication." >&2
-              exit 1
-            fi
-            immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled')"
-            if [[ "$immutable_enabled" != "true" ]]; then
-              echo "Repository immutable releases must be enabled before OPUS 1.1.3 publication." >&2
-              exit 1
-            fi
-
             echo "already_published=false" >> "$GITHUB_OUTPUT"
             echo "partial_release=false" >> "$GITHUB_OUTPUT"
             echo "initial_publication=true" >> "$GITHUB_OUTPUT"
@@ -183,21 +173,6 @@ jobs:
           (cd "$RELEASE_WORKTREE/plugins/yandex-wordstat" && python -m unittest discover -s tests -v)
           (cd "$RELEASE_WORKTREE/plugins/yandex-seo" && python -m unittest discover -s tests -v)
 
-      - name: Ensure immutable release enforcement before publication
-        if: steps.release_state.outputs.already_published != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases" >/dev/null 2>&1; then
-            echo "Unable to enable repository immutable releases. Configure RELEASE_ADMIN_TOKEN with repository Administration:write or enable immutability before publication." >&2
-            exit 1
-          fi
-          immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled')"
-          if [[ "$immutable_enabled" != "true" ]]; then
-            echo "Repository immutable releases must be enabled before OPUS 1.1.3 publication." >&2
-            exit 1
-          fi
-
       - name: Publish repository and plugin releases
         if: steps.release_state.outputs.already_published != 'true'
         env:
@@ -206,6 +181,19 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --tags --force
+
+          immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled' 2>/dev/null || true)"
+          if [[ "$immutable_enabled" != "true" ]]; then
+            if ! GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases" >/dev/null 2>&1; then
+              echo "Unable to enable repository immutable releases. Configure RELEASE_ADMIN_TOKEN with repository Administration:write or enable immutability before publication." >&2
+              exit 1
+            fi
+            immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled')"
+          fi
+          if [[ "$immutable_enabled" != "true" ]]; then
+            echo "Repository immutable releases must be enabled before OPUS 1.1.3 publication." >&2
+            exit 1
+          fi
 
           publish_release() {
             local tag="$1"
@@ -222,6 +210,7 @@ jobs:
                 echo "Published release $tag is not immutable." >&2
                 exit 1
               fi
+              git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
               if ! git show-ref --verify --quiet "refs/tags/$tag"; then
                 echo "Published release $tag exists but its tag is unavailable after fetch." >&2
                 exit 1
@@ -235,31 +224,37 @@ jobs:
               return 0
             fi
 
-            if git show-ref --verify --quiet "refs/tags/$tag"; then
-              existing_sha="$(git rev-list -n 1 "$tag")"
-              if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]; then
-                echo "Existing tag $tag points to $existing_sha, expected $RELEASE_TARGET_SHA" >&2
-                exit 1
+            if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+              if ! gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f ref="refs/tags/$tag" \
+                -f sha="$RELEASE_TARGET_SHA" >/dev/null 2>&1; then
+                echo "Tag $tag was created concurrently or could not be created; verifying the remote ref."
               fi
-              gh release create "$tag" \
-                --repo "$GITHUB_REPOSITORY" \
-                --verify-tag \
-                --title "$title" \
-                --notes-file "$notes_file"
-            else
-              gh release create "$tag" \
-                --repo "$GITHUB_REPOSITORY" \
-                --target "$RELEASE_TARGET_SHA" \
-                --title "$title" \
-                --notes-file "$notes_file"
             fi
+
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
+            if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+              echo "Target tag $tag is unavailable after atomic creation/fetch." >&2
+              exit 1
+            fi
+            existing_sha="$(git rev-list -n 1 "$tag")"
+            if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]; then
+              echo "Existing tag $tag points to $existing_sha, expected $RELEASE_TARGET_SHA" >&2
+              exit 1
+            fi
+
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "$title" \
+              --notes-file "$notes_file"
 
             created_is_immutable="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isImmutable --jq '.isImmutable')"
             if [[ "$created_is_immutable" != "true" ]]; then
               echo "New release $tag was published without GitHub immutability." >&2
               exit 1
             fi
-            git fetch --tags --force
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
             created_sha="$(git rev-list -n 1 "$tag")"
             if [[ "$created_sha" != "$RELEASE_TARGET_SHA" ]]; then
               echo "New immutable release $tag points to $created_sha, expected $RELEASE_TARGET_SHA" >&2
