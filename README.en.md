@@ -8,7 +8,7 @@
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** Phases 1–7 are implemented. The functional baseline remains `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.2` closes the residual Opus 5 audit tail. Metrika `1.0.3` fails closed for Direct expense CSVs without UTM by using `TrafficSource` / `TrafficSourceDetail` provenance; shared runtime code is not moved into root `packages/` without a safe installability/distribution contract. Wordstat `1.1.1`, SEO `1.1.1`, Search `1.0.2`, Direct `1.0.1`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
+> **Status:** Phases 1–7 are implemented. The functional baseline remains `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.3` closes the new Opus 5 Phase 7 audit hardening. SEO `1.1.2` requires Search-owned provenance for empirical boundary changes, validates Search cluster ingress, distinguishes not-evaluated from evaluated-empty artifacts, accepts qualitative `METHODOLOGY` evidence, and audits inbound/duplicate/bridge internal links. Wordstat `1.1.2` aligns topic-map query normalization through Unicode NFKC. Direct `1.0.1`, Metrika `1.0.3`, Webmaster `1.0.3`, Search `1.0.2`, and Marketing `1.1.0` are unchanged.
 
 ## Quick overview
 
@@ -17,9 +17,9 @@ A marketplace monorepo of independent AI plugins for working with Yandex service
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | campaigns, reports, audit, keywords, budgets | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.3 | service | analytics, goals, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.1 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.2 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.1.1 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.1.2 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition and reconciliation | delegated preview only |
 
 Details: [`docs/SERVICE_MATRIX.en.md`](docs/SERVICE_MATRIX.en.md) · [Русский](docs/SERVICE_MATRIX.md).
@@ -85,13 +85,14 @@ flowchart LR
   L --> P[preview-only plan / audit]
 ```
 
-- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, candidate topics/relations only; Wordstat does not prove final page boundaries.
+- `yandex-wordstat-topic-map` → `wordstat-topic-map/v1`, candidate topics/relations only; Wordstat does not prove final page boundaries. Query identity is normalized with Unicode NFKC + casefold + whitespace folding.
 - `yandex-search-clustering` remains the owner of real SERP overlap; no competing fuzzy-text clusterer is added.
 - `yandex-seo-topical-architecture` → `seo-topical-architecture/v1`, `GREENFIELD|EXISTING_SITE`, page decisions plus separate `structural_tree` and `semantic_graph`.
-- `yandex-seo-internal-linking` → preview-only link plan/audit with no CMS writes.
-- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` stay distinct; semantic-cocoon/TGA/QBST methodology is not represented as a verified ranking mechanism.
-- Without Search evidence, `SERP_VALIDATION_MISSING` is mandatory and page boundaries remain hypotheses.
-- Patch `1.0.1` does not change this architecture; it closes four post-release integrity findings in the Wordstat/SEO data contracts only.
+- Empirical boundary-changing decisions require Search-owned reason/evidence; `MERGE`/`REDIRECT` also require existing-page/URL evidence. `coverage.search=MISSING|PARTIAL` is exposed through explicit limitations.
+- Search cluster ingress is validated before use; bridge/association/source limitations are preserved downstream.
+- `yandex-seo-internal-linking` → preview-only link plan/audit with no CMS writes; orphaning is based on missing inbound links, duplicates are preserved and flagged, a rootless `BRIDGE` without inbound links is orphan/broken bridge, while `ROOT` remains exempt.
+- Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` stay distinct; `METHODOLOGY` is valid qualitative Evidence Bundle evidence but not quantitative metric evidence.
+- Not-evaluated `link_plan`/`audits` serialize as `null`; evaluated-empty results are attached explicitly and remain `[]`.
 
 ## Marketing orchestration
 
@@ -143,13 +144,13 @@ python scripts/check_reference_freshness.py
 yandex-direct        1.0.1
 yandex-metrika       1.0.3
 yandex-webmaster     1.0.3
-yandex-wordstat      1.1.1
+yandex-wordstat      1.1.2
 yandex-search        1.0.2
-yandex-seo           1.1.1
+yandex-seo           1.1.2
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`) do not imply synchronized plugin bumps.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`) do not imply synchronized plugin bumps.
 
 ## Documentation
 
