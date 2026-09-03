@@ -11,15 +11,19 @@ permissions:
 
 jobs:
   validate:
-    name: Validate marketplace
+    name: Validate marketplace (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.13']
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
       - name: Compute validation change scope
         shell: bash
         run: |
@@ -142,7 +146,7 @@ jobs:
       - name: Run Direct regression tests
         run: python -m unittest discover -s tests -v
       - name: Compile Direct helpers
-        run: python -m py_compile scripts/yd_api.py scripts/yd_report.py
+        run: python -m compileall -q scripts
 
   metrika:
     name: Yandex Metrika plugin
@@ -160,7 +164,7 @@ jobs:
       - name: Run Metrika tests
         run: python -m unittest discover -s tests -v
       - name: Compile Metrika helpers
-        run: python -m py_compile scripts/_http.py scripts/ym_api.py scripts/ym_report.py scripts/ym_logs.py scripts/ym_import.py
+        run: python -m compileall -q scripts
 
   webmaster:
     name: Yandex Webmaster plugin
@@ -178,7 +182,7 @@ jobs:
       - name: Run Webmaster tests
         run: python -m unittest discover -s tests -v
       - name: Compile Webmaster helpers
-        run: python -m py_compile scripts/_http.py scripts/yw_api.py scripts/yw_queries.py scripts/yw_indexing.py scripts/yw_recrawl.py scripts/yw_sitemaps.py scripts/yw_feeds.py scripts/yw_export.py
+        run: python -m compileall -q scripts
 
   wordstat:
     name: Yandex Wordstat plugin
@@ -196,7 +200,7 @@ jobs:
       - name: Run Wordstat tests
         run: python -m unittest discover -s tests -v
       - name: Compile Wordstat helpers
-        run: python -m py_compile scripts/_http.py scripts/ywstat_api.py scripts/ywstat_top.py scripts/ywstat_semantics.py scripts/ywstat_dynamics.py scripts/ywstat_regions.py scripts/ywstat_trends.py
+        run: python -m compileall -q scripts
 
   search:
     name: Yandex Search plugin
@@ -214,7 +218,7 @@ jobs:
       - name: Run Search tests
         run: python -m unittest discover -s tests -v
       - name: Compile Search helpers
-        run: python -m py_compile scripts/_http.py scripts/ys_api.py scripts/ys_request.py scripts/ys_parse.py scripts/ys_async.py scripts/ys_batch.py scripts/ys_serp.py scripts/ys_overlap.py scripts/ys_compare.py
+        run: python -m compileall -q scripts
 
   seo:
     name: Yandex SEO plugin
@@ -232,7 +236,7 @@ jobs:
       - name: Run SEO tests
         run: python -m unittest discover -s tests -v
       - name: Compile SEO helpers
-        run: python -m py_compile scripts/seo_context.py scripts/seo_bundle.py scripts/seo_join.py scripts/seo_quality.py scripts/seo_opportunities.py scripts/seo_cannibalization.py scripts/seo_prioritize.py
+        run: python -m compileall -q scripts
 
   marketing:
     name: Yandex Marketing plugin
@@ -250,4 +254,4 @@ jobs:
       - name: Run Marketing tests
         run: python -m unittest discover -s tests -v
       - name: Compile Marketing helpers
-        run: python -m py_compile scripts/marketing_context.py scripts/marketing_bundle.py scripts/marketing_join.py scripts/marketing_quality.py scripts/marketing_performance.py scripts/marketing_demand.py scripts/marketing_opportunities.py scripts/marketing_prioritize.py
+        run: python -m compileall -q scripts

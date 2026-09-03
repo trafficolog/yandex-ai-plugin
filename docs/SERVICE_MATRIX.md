@@ -11,9 +11,9 @@
 | Yandex Direct | 1 | **available** | 2.0.0 | campaigns, audit, reports, optimization, keywords, budget; exact-preview write approval | bundled API helper; future MCP/app adapter |
 | Yandex Metrika | 1 | **available** | 2.0.0 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; provenance-aware Direct expense duplication guard; exact-preview write approval | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 2.0.0 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports; verified indexing archive `state` contract; exact-preview write approval | bundled API helpers; optional MCP/app backend |
-| Yandex Wordstat | 1 | **available** | 1.1.1 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
+| Yandex Wordstat | 1 | **available** | 1.1.2 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
 | Yandex Search | 1 | **available** | 1.0.2 | web SERP, batch, rankings, competitors, URL-overlap clustering; 250-result depth | bundled Search API v2 helpers; optional MCP/app backend |
-| Yandex SEO | X | **available** | 1.1.1 | cross-service demand, visibility, performance, gaps, cannibalization, topical architecture, internal-link planning, prioritization; hardened structural/link artifact validation | pure-data orchestration over Wordstat + Search + Webmaster + Metrika |
+| Yandex SEO | X | **available** | 1.1.2 | cross-service demand, visibility, performance, gaps, cannibalization, topical architecture, internal-link planning, prioritization; hardened structural/link artifact validation | pure-data orchestration over Wordstat + Search + Webmaster + Metrika |
 | Yandex Marketing | X | **available** | 1.1.0 | paid performance, KPI reconciliation, evidence roles, demand/query intelligence, landing/budget opportunities | pure-data orchestration over Direct + Metrika + Wordstat with optional Search context |
 | Yandex Tracker | 2 | backlog | — | issues, queues, permissions, worklogs, boards | official API first |
 | Yandex 360 | 2 | backlog | — | mail, calendar, disk, organization | official APIs first |
@@ -24,7 +24,7 @@
 
 ## Cross-service workflows
 
-- `yandex-seo`: **available 1.1.1** — Wordstat + Search + Webmaster + Metrika; Topical Architecture и Internal Linking; no own transport, delegated previews only.
+- `yandex-seo`: **available 1.1.2** — Wordstat + Search + Webmaster + Metrika; Topical Architecture и Internal Linking; no own transport, delegated previews only.
 - `yandex-marketing`: **available 1.1.0** — Direct + Metrika + Wordstat, Search optional; `canonical` / `reconciliation_only` / `enrichment` roles explicit.
 - `yandex-ecommerce`, `yandex-mobile-growth`, `yandex-growth`: backlog ideas only.
 

@@ -115,4 +115,6 @@ Shared runtime package допустим только если одновреме
 
 ## 12. CI contract
 
+Repository Python support floor для validator и root tests — **Python 3.10+**. CI обязан проверять root validation минимум на Python 3.10 и текущем Python 3.13; функциональные jobs отдельных plugins могут оставаться на 3.13, пока plugin-specific contract не требует более широкой matrix.
+
 Validator проверяет оба marketplace format, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, cross-service no-transport boundary, bilingual documentation pairs и changelog release-marker parity. Path-aware CI моделирует producer → consumer dependencies. Freshness age в PR/push scoped к изменённым controlled references; scheduled workflow выполняет strict whole-repository freshness check.

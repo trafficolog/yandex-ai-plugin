@@ -1,6 +1,6 @@
 # Sources and donor attribution
 
-Verified against current Yandex documentation on 2026-09-01:
+Verified: 2026-09-01
 
 - https://aistudio.yandex.ru/en/docs/search-api/api-ref/Wordstat/
 - https://aistudio.yandex.ru/en/docs/search-api/api-ref/Wordstat/getTop

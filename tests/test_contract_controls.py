@@ -11,6 +11,9 @@ from scripts.validate_repo import (
     validate_reference_freshness,
 )
 
+ROOT = Path(__file__).resolve().parents[1]
+WORDSTAT_SOURCES = "plugins/yandex-wordstat/references/sources.md"
+
 
 class FreshnessContractTests(unittest.TestCase):
     def test_max_reference_age_is_90_days(self):
@@ -25,6 +28,12 @@ class FreshnessContractTests(unittest.TestCase):
         ]:
             with self.subTest(text=text):
                 self.assertEqual(parse_verified_date(text), expected)
+
+    def test_wordstat_sources_use_canonical_marker_contract(self):
+        legacy = "Verified against current Yandex documentation on 2026-09-01:"
+        with self.assertRaises(ValueError):
+            parse_verified_date(legacy)
+        self.assertEqual(parse_verified_date("Verified: 2026-09-01"), date(2026, 9, 1))
 
     def test_malformed_or_missing_verified_date_fails(self):
         for text in ["Verified: 2026-13-40", "Verified: yesterday", "no marker"]:
@@ -85,6 +94,15 @@ class ContractMatrixTests(unittest.TestCase):
             validate_contract_matrix(root, matrix, known_plugins={"yandex-direct"}, today=date(2026, 9, 2)),
             [],
         )
+
+    def test_repository_freshness_contract_tracks_wordstat_sources(self):
+        matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))
+        contract = next(
+            item for item in matrix["contracts"]
+            if item["id"] == "repository.api-reference-freshness"
+        )
+        self.assertIn(WORDSTAT_SOURCES, contract["references"])
+        self.assertIn(WORDSTAT_SOURCES, contract["freshness_controlled_references"])
 
     def test_duplicate_contract_id_is_rejected(self):
         tmp, root, matrix = self.make_tree()
