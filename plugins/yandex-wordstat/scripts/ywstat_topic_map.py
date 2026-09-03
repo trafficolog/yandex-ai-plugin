@@ -149,6 +149,8 @@ def build_topic_map(
         relation_type = relation.get("relation")
         if source not in topic_ids or target not in topic_ids:
             raise ValueError("candidate relation references unknown topic")
+        if source == target:
+            raise ValueError("candidate relation source and target must differ")
         if relation_type not in TOPIC_RELATIONS:
             raise ValueError(f"candidate relation must be one of {sorted(TOPIC_RELATIONS)}")
         normalized_relations.append(
