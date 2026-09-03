@@ -18,11 +18,13 @@ The deterministic helper emits `wordstat-topic-map/v1` with:
 - candidate topic relations with `status: HYPOTHESIS`;
 - explicit limitations.
 
+Each `seeds[].seed` identifier is unique within one topic-map bundle. Duplicate seed names are rejected so every phrase `source_seed` resolves to exactly one seed record and therefore to one unambiguous operators/filters/coverage context.
+
 `query_id` is a provenance identifier. Reusing one `query_id` is allowed only when all occurrences resolve to the same normalized query text; the helper rejects one identifier that points to different normalized queries. Different identifiers may still collapse into one normalized query, but the complete ordered alias set is serialized in `query_ids` so downstream joins do not lose provenance.
 
 Every phrase record's `source_seed` must exactly reference a declared input `seeds[].seed`. Undeclared or misspelled source seeds are rejected, preventing dangling provenance that cannot be joined back to the seed's operators, filters or coverage metadata.
 
-Allowed topic relation labels are `RELATED`, `NARROWER`, `BROADER`, and `COMPLEMENTARY`. These are information-organization hypotheses, not Yandex ranking or page-boundary contracts.
+Allowed topic relation labels are `RELATED`, `NARROWER`, `BROADER`, and `COMPLEMENTARY`. These are information-organization hypotheses, not Yandex ranking or page-boundary contracts. Candidate relations must connect two distinct topic IDs; self-relations such as `t1 -> t1` are invalid.
 
 Confidence values are `LOW`, `MEDIUM`, `HIGH`. They describe evidence quality and must not be presented as calibrated probabilities.
 
