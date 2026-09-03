@@ -63,8 +63,8 @@ class Phase7ContractTests(unittest.TestCase):
             self.assertIn("Topical Architecture", text)
             self.assertIn("Internal Linking", text)
             self.assertIn("SERP", text)
-            self.assertIn("yandex-wordstat      1.1.0", text)
-            self.assertIn("yandex-seo           1.1.0", text)
+            self.assertIn("yandex-wordstat      1.1.1", text)
+            self.assertIn("yandex-seo           1.1.1", text)
 
     def test_phase7_publisher_targets_exact_main_ci_commit_and_only_expected_tags(self):
         workflow = ROOT / ".github/workflows/publish-phase-7-topical-architecture.yml"
