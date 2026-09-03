@@ -4,7 +4,7 @@
 
 ## [2.0.0] — 2026-09-03
 
-- Breaking safety contract: `--execute` is no longer sufficient authorization for a consequential write; the exact `preview_id` must be supplied with `--approve` after a separate later-turn user approval.
+- Breaking safety contract: `--execute` is no longer sufficient authorization for a consequential write; after a separate later-turn user approval, the exact preview requires `--execute --approve <preview_id>`.
 - Management API writes, Logs `create`/`clean`, and imports now fail closed on missing or mismatched approval.
 - Import approval is bound to the SHA-256 digest of the exact file bytes, so changed content requires a new preview and a new approval.
 - API/account/file content is treated as untrusted data rather than instructions; generic permission does not carry over to a different payload.
