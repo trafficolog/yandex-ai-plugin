@@ -113,7 +113,7 @@ class BilingualDocumentationTests(unittest.TestCase):
     def test_current_plugin_semver_matrix(self):
         expected = {
             "yandex-direct": "1.0.1",
-            "yandex-metrika": "1.0.2",
+            "yandex-metrika": "1.0.3",
             "yandex-webmaster": "1.0.3",
             "yandex-wordstat": "1.1.1",
             "yandex-search": "1.0.2",
