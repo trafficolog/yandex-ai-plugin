@@ -76,6 +76,19 @@ class Opus112PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, text)
 
+    def test_partial_recovery_validates_release_target_tree(self):
+        text = self._text()
+        for token in (
+            'RELEASE_WORKTREE="$(mktemp -d)"',
+            'git worktree add --detach "$RELEASE_WORKTREE" "$RELEASE_TARGET_SHA"',
+            '(cd "$RELEASE_WORKTREE"',
+            'python scripts/validate_repo.py',
+            'python -m unittest discover -s tests -v',
+            'python scripts/check_reference_freshness.py',
+        ):
+            self.assertIn(token, text)
+        self.assertIn('trap \'git worktree remove --force "$RELEASE_WORKTREE" >/dev/null 2>&1 || true\' EXIT', text)
+
     def test_existing_tags_and_releases_are_verified_against_immutable_target(self):
         text = self._text()
         for token in (
