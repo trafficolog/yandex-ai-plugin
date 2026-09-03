@@ -4,6 +4,22 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.2] — 2026-09-03
+
+Maintenance release уровня репозитория для hardening release-инфраструктуры после Phase 7.
+
+### Исправлено
+
+- Legacy publisher `OPUS 1.1.1` теперь распознаёт полностью опубликованный исторический release set на одном ancestor SHA и завершает последующие `main` runs как verified no-op.
+- Partial OPUS release set восстанавливается на уже опубликованном общем SHA, а не переносится на текущий `main`.
+- Inconsistent/multi-SHA historical release state остаётся hard failure; исторические теги не retarget/mutate.
+- Добавлен regression contract `tests/test_opus_publisher_idempotency.py` для immutable/no-op/partial-recovery semantics.
+- Добавлен repository release publisher `1.0.2`, gated на успешный `CI` push точного SHA ветки `main`.
+
+### Версии плагинов не изменены
+
+Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Wordstat `1.1.1`, Search `1.0.2`, SEO `1.1.1`, Marketing `1.1.0`.
+
 ## [PHASE 7 1.0.1] — 2026-09-03
 
 Post-release hardening patch для Topical Architecture / Semantic Cocoons baseline.
