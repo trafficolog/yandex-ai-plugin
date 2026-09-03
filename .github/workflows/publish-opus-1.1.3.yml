@@ -218,6 +218,40 @@ jobs:
             local published_target_commitish=""
             local existing_sha=""
             local published_sha=""
+            local rollback_armed=false
+            local cleanup_delete_status=0
+
+            cleanup_published_release() {
+              local cleanup_status=0
+              local cleanup_release_immutable=""
+              trap - ERR
+
+              if [[ "$rollback_armed" != "true" ]]; then
+                return 0
+              fi
+              rollback_armed=false
+
+              cleanup_release_immutable="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isImmutable --jq '.isImmutable' 2>/dev/null || true)"
+              if [[ "$cleanup_release_immutable" == "true" ]]; then
+                echo "Release $tag is already immutable; rollback is neither required nor safe." >&2
+                return 0
+              fi
+
+              cleanup_delete_status=0
+              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || cleanup_delete_status=$?
+              if [[ "$cleanup_delete_status" -ne 0 ]]; then
+                echo "Rollback delete command for $tag returned status $cleanup_delete_status; verifying residue explicitly." >&2
+              fi
+              if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                echo "Rollback failed: release $tag still exists." >&2
+                cleanup_status=1
+              fi
+              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+                echo "Rollback failed: tag $tag still exists." >&2
+                cleanup_status=1
+              fi
+              return "$cleanup_status"
+            }
 
             if release_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv' 2>/dev/null)"; then
               IFS=$'\t' read -r release_is_draft release_is_immutable release_target_commitish <<< "$release_state"
@@ -278,34 +312,42 @@ jobs:
               fi
             fi
 
+            rollback_armed=true
+            trap cleanup_published_release ERR
+
             gh release edit "$tag" \
               --repo "$GITHUB_REPOSITORY" \
               --draft=false \
-              --target "$RELEASE_TARGET_SHA"
+              --target "$RELEASE_TARGET_SHA" \
+              --title "$title" \
+              --notes-file "$notes_file"
 
             published_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
             IFS=$'\t' read -r published_is_draft published_is_immutable published_target_commitish <<< "$published_state"
 
             if [[ "$published_is_draft" == "true" ]]; then
               echo "Release $tag remained a draft after publication." >&2
-              exit 1
-            fi
-            if [[ "$published_target_commitish" != "$RELEASE_TARGET_SHA" ]]; then
-              echo "Published release $tag targets $published_target_commitish, expected $RELEASE_TARGET_SHA" >&2
+              trap - ERR
+              if ! cleanup_published_release; then
+                echo "Rollback left release/tag residue for $tag." >&2
+              fi
               exit 1
             fi
             if [[ "$published_is_immutable" != "true" ]]; then
               echo "Published release $tag is not immutable; rolling it back before failing closed." >&2
-              gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
-              if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-                echo "Rollback failed: release $tag still exists." >&2
-                exit 1
-              fi
-              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
-                echo "Rollback failed: tag $tag still exists." >&2
-                exit 1
+              trap - ERR
+              if ! cleanup_published_release; then
+                echo "Rollback left release/tag residue for $tag." >&2
               fi
               echo "GitHub release immutability is not enabled. Enable it in repository Settings > Releases, then rerun the publisher." >&2
+              exit 1
+            fi
+
+            rollback_armed=false
+            trap - ERR
+
+            if [[ "$published_target_commitish" != "$RELEASE_TARGET_SHA" ]]; then
+              echo "Published immutable release $tag targets $published_target_commitish, expected $RELEASE_TARGET_SHA" >&2
               exit 1
             fi
 
