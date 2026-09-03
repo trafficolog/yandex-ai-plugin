@@ -113,4 +113,6 @@ Without such a mechanism, a small service-local adapter may remain duplicated. I
 
 ## 12. CI contract
 
+The repository Python support floor for the validator and root tests is **Python 3.10+**. CI must run root validation on at least Python 3.10 and the current Python 3.13; functional plugin jobs may remain on 3.13 unless a plugin-specific contract requires a wider matrix.
+
 Validation covers both marketplace formats, manifest families, SemVer consistency, capability matrices, evals, secrets/paths, the cross-service no-transport boundary, bilingual documentation pairs, and changelog release-marker parity. Path-aware CI models producer → consumer dependencies. Freshness age is scoped to changed controlled references on PR/push; the scheduled workflow performs the strict whole-repository freshness check.
