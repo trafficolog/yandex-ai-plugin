@@ -2,6 +2,13 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [2.0.0] — 2026-09-03
+
+- Breaking safety contract: consequential POST/PUT/PATCH/DELETE больше не выполняются только по `--execute`; требуется exact `preview_id` через `--approve` после отдельного later-turn user approval.
+- Live write boundary `yw_api.py` связывает approval с method/path/query/body/API version и fail-closed при missing/mismatched approval.
+- Embedded URL basic-auth credentials редактируются из preview; их SHA-256 fingerprint входит в approval binding, поэтому изменение credentials инвалидирует старый approval.
+- API/account/file content считается untrusted data, а не инструкциями; generic permission не переносится на новый payload.
+
 ## [1.0.3] — 2026-09-02
 
 - Официально перепроверен indexing archive status contract: response использует `state`, значения `IN_PROGRESS`, `DONE`, `FAILED`, а `download_url` относится к completed `DONE` state.
