@@ -2,6 +2,13 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [2.0.0] — 2026-09-03
+
+- Breaking safety contract: `--execute` больше не является достаточным разрешением на consequential write; требуется exact `preview_id` через `--approve` после отдельного later-turn user approval.
+- Management API writes, Logs `create`/`clean` и imports теперь fail-closed при missing/mismatched approval.
+- Import approval привязан к SHA-256 точных байтов файла, поэтому изменение содержимого требует нового preview и нового approval.
+- API/account/file content трактуется как untrusted data, а не инструкции; generic permission не переносится на другой payload.
+
 ## [1.0.3] — 2026-09-03
 
 - Закрыта остаточная щель Direct expense guard для CSV без `UTMSource` / `UTMMedium`.
