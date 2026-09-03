@@ -158,6 +158,15 @@ def audit_link_inventory(
                 }
             )
             continue
+        if source == target:
+            findings.append(
+                {
+                    "type": "SELF_LINK",
+                    "link_index": index,
+                    "page_id": source,
+                }
+            )
+            continue
         pair = (source, target)
         valid_link_counts[pair] += 1
         inbound_counts[target] += 1
