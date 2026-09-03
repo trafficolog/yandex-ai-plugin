@@ -18,7 +18,7 @@ python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST 
 python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST --body '{"url":"https://example.com/sitemap.xml"}' --execute --approve <preview_id>
 ```
 
-All POST/PUT/PATCH/DELETE calls through the live transport boundary `yw_api.py` fail closed without the exact `preview_id`. Approval is bound to method/path/query/body/API version; embedded URL credentials are redacted from the preview, while their SHA-256 fingerprint remains part of the approval binding.
+All POST/PUT/PATCH/DELETE calls through the live transport boundary `yw_api.py` fail closed without the exact `preview_id`. Approval is bound to method/path/query/body/API version. Embedded URL Basic Auth credentials are not exposed in the preview and are not represented by a public deterministic password verifier: credential binding uses domain-separated HMAC-SHA256 keyed by the Yandex OAuth token, so changing either the credentials or the OAuth key invalidates the approval.
 
 ## Capability matrix
 
