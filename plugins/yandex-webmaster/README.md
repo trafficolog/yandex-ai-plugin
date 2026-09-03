@@ -18,7 +18,7 @@ python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST 
 python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST --body '{"url":"https://example.com/sitemap.xml"}' --execute --approve <preview_id>
 ```
 
-Все POST/PUT/PATCH/DELETE через live transport boundary `yw_api.py` fail-closed без exact `preview_id`. Approval связан с method/path/query/body/API version; embedded URL credentials не раскрываются в preview, но их SHA-256 fingerprint входит в approval binding.
+Все POST/PUT/PATCH/DELETE через live transport boundary `yw_api.py` fail-closed без exact `preview_id`. Approval связан с method/path/query/body/API version. Embedded URL Basic Auth credentials не раскрываются в preview и не хэшируются открытым deterministic verifier: credential binding использует domain-separated HMAC-SHA256 с Yandex OAuth token как ключом, поэтому смена credentials или OAuth key инвалидирует approval.
 
 ## Capability matrix
 
