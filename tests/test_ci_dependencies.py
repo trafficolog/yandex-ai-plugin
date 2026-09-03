@@ -19,6 +19,11 @@ class CIDependencyTests(unittest.TestCase):
         self.assertIn("python-version: ['3.10', '3.13']", content)
         self.assertIn('python-version: ${{ matrix.python-version }}', content)
 
+    def test_all_plugin_jobs_compile_complete_script_trees(self):
+        content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        self.assertEqual(content.count('run: python -m compileall -q scripts'), 7)
+        self.assertNotIn('python -m py_compile', content)
+
     def test_shared_changes_include_workflows_contract_controls_and_specs(self):
         content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
         self.assertIn('\\.github/workflows/', content)
