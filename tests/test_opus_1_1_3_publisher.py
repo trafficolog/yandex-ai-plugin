@@ -46,6 +46,19 @@ class Opus113PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, text)
 
+    def test_initial_publication_rejects_stale_main_workflow_run(self):
+        text = self._text()
+        no_tags = text.index('if [[ "$tag_count" -eq 0 ]]')
+        fetch_current_main = text.index('git fetch origin main --prune', no_tags)
+        read_current_main = text.index('current_main_sha="$(git rev-parse origin/main)"', fetch_current_main)
+        stale_guard = text.index('if [[ "$current_main_sha" != "$TARGET_SHA" ]]', read_current_main)
+        target_selection = text.index('release_target_sha=$TARGET_SHA', stale_guard)
+        self.assertLess(no_tags, fetch_current_main)
+        self.assertLess(fetch_current_main, read_current_main)
+        self.assertLess(read_current_main, stale_guard)
+        self.assertLess(stale_guard, target_selection)
+        self.assertIn('Stale main CI run: current main is $current_main_sha, target is $TARGET_SHA.', text)
+
     def test_publisher_supports_noop_partial_recovery_and_rejects_multi_sha_state(self):
         text = self._text()
         for token in (
