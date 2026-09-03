@@ -101,10 +101,12 @@ jobs:
 
             echo "already_published=false" >> "$GITHUB_OUTPUT"
             echo "partial_release=false" >> "$GITHUB_OUTPUT"
+            echo "initial_publication=true" >> "$GITHUB_OUTPUT"
             echo "release_target_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          echo "initial_publication=false" >> "$GITHUB_OUTPUT"
           immutable_sha="${immutable_shas[0]}"
           for sha in "${immutable_shas[@]}"; do
             if [[ "$sha" != "$immutable_sha" ]]; then
@@ -178,6 +180,8 @@ jobs:
             python -m unittest discover -s tests -v
             python scripts/check_reference_freshness.py
           )
+          (cd "$RELEASE_WORKTREE/plugins/yandex-wordstat" && python -m unittest discover -s tests -v)
+          (cd "$RELEASE_WORKTREE/plugins/yandex-seo" && python -m unittest discover -s tests -v)
 
       - name: Ensure immutable release enforcement before publication
         if: steps.release_state.outputs.already_published != 'true'
@@ -305,6 +309,14 @@ jobs:
           - orphan detection uses inbound connectivity, duplicate links are flagged, rootless BRIDGE pages without inbound links are broken bridges, explicit ROOT and legacy role-less parentless roots remain exempt, explicit non-root roles remain audited, and SELF_LINK findings are excluded from valid/inbound reachability counts.
           EOF
 
+          if [[ "${{ steps.release_state.outputs.initial_publication }}" == "true" ]]; then
+            git fetch origin main --prune
+            current_main_sha="$(git rev-parse origin/main)"
+            if [[ "$current_main_sha" != "$TARGET_SHA" ]]; then
+              echo "Late stale main CI run: current main is $current_main_sha, target is $TARGET_SHA." >&2
+              exit 1
+            fi
+          fi
           publish_release "opus-1.1.3" "OPUS 1.1.3 — Phase 7 Audit Hardening" /tmp/opus-1.1.3.md
           publish_release "yandex-wordstat-v1.1.2" "Yandex Wordstat 1.1.2" /tmp/wordstat-1.1.2.md
           publish_release "yandex-seo-v1.1.2" "Yandex SEO 1.1.2" /tmp/seo-1.1.2.md
