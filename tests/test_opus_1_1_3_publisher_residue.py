@@ -7,6 +7,12 @@ WORKFLOW = ROOT / ".github/workflows/publish-opus-1.1.3.yml"
 
 
 class Opus113PublisherResidueTests(unittest.TestCase):
+    def _publish_function(self) -> str:
+        text = WORKFLOW.read_text(encoding="utf-8")
+        start = text.index("publish_release() {")
+        end = text.index("          cat > /tmp/opus-1.1.3.md", start)
+        return text[start:end]
+
     def test_rollback_distinguishes_confirmed_absence_from_probe_failure(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         start = text.index("cleanup_published_release() {")
@@ -33,6 +39,25 @@ class Opus113PublisherResidueTests(unittest.TestCase):
         self.assertNotIn(
             'if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then',
             cleanup,
+        )
+
+    def test_prepublication_tag_probes_require_confirmed_absence(self):
+        function = self._publish_function()
+        publish = function.index('rollback_armed=true')
+        prepublish = function[:publish]
+
+        self.assertGreaterEqual(prepublish.count('prepublish_tag_probe_status=0'), 3)
+        self.assertGreaterEqual(
+            prepublish.count(
+                'git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || prepublish_tag_probe_status=$?'
+            ),
+            3,
+        )
+        self.assertGreaterEqual(prepublish.count('[[ "$prepublish_tag_probe_status" -eq 2 ]]'), 3)
+        self.assertIn('Unable to verify pre-publication tag state for $tag.', prepublish)
+        self.assertNotIn(
+            'if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then',
+            prepublish,
         )
 
 
