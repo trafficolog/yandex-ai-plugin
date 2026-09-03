@@ -15,7 +15,7 @@ except ImportError:
         classify_search_alignment,
     )
 
-ALLOWED_KINDS = {"OBSERVED", "DERIVED", "HYPOTHESIS"}
+ALLOWED_KINDS = {"OBSERVED", "DERIVED", "HYPOTHESIS", "METHODOLOGY"}
 REQUIRED_CONTEXT_FIELDS = ("site", "analysis_period", "search_region_id")
 
 
@@ -62,8 +62,13 @@ def new_bundle(context: dict, coverage: dict) -> dict:
 
 
 def add_evidence(bundle: dict, evidence: dict) -> dict:
-    if evidence.get("kind") not in ALLOWED_KINDS:
-        raise ValueError("evidence kind must be OBSERVED, DERIVED, or HYPOTHESIS")
+    kind = evidence.get("kind")
+    if kind not in ALLOWED_KINDS:
+        raise ValueError(f"evidence kind must be one of {sorted(ALLOWED_KINDS)}")
+    if kind == "METHODOLOGY" and (
+        evidence.get("metric") is not None or evidence.get("value") is not None
+    ):
+        raise ValueError("METHODOLOGY evidence must be qualitative and cannot carry metric/value")
     if evidence.get("metric") == "demand":
         raise ValueError("ambiguous demand metric is forbidden; use source-specific metric name")
     if not evidence.get("source"):
