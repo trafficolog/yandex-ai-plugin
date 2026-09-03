@@ -4,6 +4,22 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [PHASE 7 1.0.1] — 2026-09-03
+
+Post-release hardening patch для Topical Architecture / Semantic Cocoons baseline.
+
+### Исправлено
+
+- Yandex Wordstat `1.1.1` отклоняет duplicate `seeds[].seed`, сохраняя `source_seed` однозначным provenance key.
+- Yandex Wordstat `1.1.1` отклоняет candidate topic self-relations (`from_topic_id == to_topic_id`).
+- Yandex SEO `1.1.1` нормализует `structural_tree.nodes` через explicit field whitelist и не переносит caller execution/recommendation state (`decision`, `status`, `write`, `execution_id`).
+- Yandex SEO `1.1.1` требует list-typed candidate-link `evidence`; scalar/object payload отклоняется до preview serialization.
+- Service ownership, Search `1.0.2`, transport-free SEO boundary и preview-only internal-link semantics не меняются.
+
+### Published plugin matrix
+
+Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Wordstat `1.1.1`, Search `1.0.2`, SEO `1.1.1`, Marketing `1.1.0`.
+
 ## [PHASE 7 1.0.0] — 2026-09-02
 
 Evidence-first Topical Architecture / Semantic Cocoons release.
