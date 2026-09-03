@@ -4,6 +4,24 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [OPUS 1.1.3] — 2026-09-03
+
+Hardening Phase 7 contracts по новому Opus 5 audit.
+
+### Исправлено
+
+- Yandex SEO `1.1.2`: empirical boundary-changing decisions требуют Search-owned provenance; empirical `MERGE`/`REDIRECT` дополнительно требуют evidence существующей страницы/URL.
+- `coverage.search=PARTIAL` теперь раскрывается как `SERP_VALIDATION_PARTIAL`; Search cluster ingress валидируется, bridge/source limitations автоматически propagируются downstream.
+- `METHODOLOGY` стал first-class qualitative Evidence Bundle kind, но не может маскироваться под quantitative metric evidence.
+- Неоценённые `link_plan`/`audits` теперь различаются от evaluated-empty результатов (`null` vs explicit attached `[]`).
+- Internal-link audit считает orphan по отсутствию inbound links, сохраняет/флагирует duplicate links и считает rootless `BRIDGE` без inbound link orphan/broken bridge. Explicit `ROOT` и legacy parentless node без `page_role` остаются exempt; explicit non-root roles проверяются на orphan. Self-links публикуются как `SELF_LINK` и исключаются из valid/inbound reachability counts.
+- Yandex Wordstat `1.1.2`: topic-map query normalization использует Unicode NFKC + casefold + whitespace folding без invented demand summation.
+- Legacy OPUS 1.1.0 publisher переведён на canonical repository guard `trafficolog/yandex-ai-plugins-skills`; repository-level regression не допускает возврата старого имени.
+
+### Published plugin matrix
+
+Direct `1.0.1`, Metrika `1.0.3`, Webmaster `1.0.3`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [OPUS 1.1.2] — 2026-09-03
 
 Residual hardening по оставшимся замечаниям финального Opus 5 audit.

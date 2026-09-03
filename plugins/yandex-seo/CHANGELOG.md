@@ -2,6 +2,15 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [1.1.2] — 2026-09-03
+
+- Empirical boundary-changing decisions (`CREATE|MERGE|SPLIT|REDIRECT|SECTION_ONLY|BRIDGE|NO_PAGE`) теперь требуют Search-owned provenance; `MERGE`/`REDIRECT` дополнительно требуют evidence существующего URL/страницы.
+- `coverage.search=PARTIAL` теперь явно добавляет `SERP_VALIDATION_PARTIAL`; Search cluster ingress валидируется и автоматически переносит bridge/source limitations downstream.
+- `METHODOLOGY` стал first-class qualitative kind в SEO Evidence Bundle, но не может маскироваться под quantitative metric evidence.
+- Topical Architecture различает неоценённые `link_plan`/`audits` (`null`) и реально выполненные пустые результаты через explicit attachment helpers.
+- Internal-link audit считает orphan по отсутствию inbound links, сохраняет и флагирует duplicate links, а rootless `BRIDGE` без inbound link отмечает как orphan/broken bridge. Explicit `ROOT` и legacy parentless node без `page_role` остаются exempt; explicit non-root roles проверяются на orphan. Self-links публикуются как `SELF_LINK` и не участвуют в valid/inbound reachability counts.
+- Transport-free, preview-only и Search-owned clustering boundaries не меняются.
+
 ## [1.1.1] — 2026-09-03
 
 - `structural_tree.nodes` теперь нормализуются через explicit field whitelist; caller `decision/status/write/execution_id` не попадают в transport-free structural artifact.

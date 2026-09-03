@@ -1,0 +1,371 @@
+name: Publish OPUS 1.1.3 releases
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish verified OPUS 1.1.3 releases
+    if: >-
+      github.repository == 'trafficolog/yandex-ai-plugins-skills' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
+      IMMUTABILITY_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Detect immutable OPUS 1.1.3 release state
+        id: release_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          tags=(
+            "opus-1.1.3"
+            "yandex-wordstat-v1.1.2"
+            "yandex-seo-v1.1.2"
+          )
+          published_release_count=0
+          tag_count=0
+          immutable_shas=()
+
+          for tag in "${tags[@]}"; do
+            if release_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable --jq '[.isDraft,.isImmutable] | @tsv' 2>/dev/null)"; then
+              IFS=$'\t' read -r release_is_draft release_is_immutable <<< "$release_state"
+              if [[ "$release_is_draft" == "true" ]]; then
+                echo "Draft release $tag is mutable and cannot count as published." >&2
+                exit 1
+              fi
+              if [[ "$release_is_immutable" != "true" ]]; then
+                echo "Published release $tag is not immutable." >&2
+                exit 1
+              fi
+              published_release_count=$((published_release_count + 1))
+              if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+                echo "Published release $tag exists but its tag is unavailable after fetch." >&2
+                exit 1
+              fi
+            fi
+
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              tag_sha="$(git rev-list -n 1 "$tag")"
+              immutable_shas+=("$tag_sha")
+              tag_count=$((tag_count + 1))
+            fi
+          done
+
+          echo "published_release_count=$published_release_count" >> "$GITHUB_OUTPUT"
+          echo "tag_count=$tag_count" >> "$GITHUB_OUTPUT"
+          printf 'immutable_shas=%s\n' "$(IFS=,; echo "${immutable_shas[*]}")" >> "$GITHUB_OUTPUT"
+
+          if [[ "$tag_count" -eq 0 ]]; then
+            if [[ "$published_release_count" -ne 0 ]]; then
+              echo "Published OPUS 1.1.3 release state has no immutable Git tags." >&2
+              exit 1
+            fi
+            git fetch origin main --prune
+            current_main_sha="$(git rev-parse origin/main)"
+            if [[ "$current_main_sha" != "$TARGET_SHA" ]]; then
+              echo "Stale main CI run: current main is $current_main_sha, target is $TARGET_SHA." >&2
+              exit 1
+            fi
+
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "partial_release=false" >> "$GITHUB_OUTPUT"
+            echo "initial_publication=true" >> "$GITHUB_OUTPUT"
+            echo "release_target_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "initial_publication=false" >> "$GITHUB_OUTPUT"
+          immutable_sha="${immutable_shas[0]}"
+          for sha in "${immutable_shas[@]}"; do
+            if [[ "$sha" != "$immutable_sha" ]]; then
+              echo "Existing OPUS 1.1.3 tags/releases point to multiple commits: ${immutable_shas[*]}" >&2
+              exit 1
+            fi
+          done
+
+          git fetch origin main --prune
+          live_main_sha="$(git rev-parse origin/main)"
+          if ! git merge-base --is-ancestor "$immutable_sha" "$live_main_sha"; then
+            echo "Existing OPUS 1.1.3 immutable commit $immutable_sha is not an ancestor of live main $live_main_sha" >&2
+            exit 1
+          fi
+
+          echo "released_sha=$immutable_sha" >> "$GITHUB_OUTPUT"
+          echo "release_target_sha=$immutable_sha" >> "$GITHUB_OUTPUT"
+
+          if [[ "$published_release_count" -eq "${#tags[@]}" ]]; then
+            if [[ "$tag_count" -ne "${#tags[@]}" ]]; then
+              echo "Complete published release set is missing one or more immutable tags." >&2
+              exit 1
+            fi
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            echo "partial_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+            echo "partial_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report already-published release set
+        if: steps.release_state.outputs.already_published == 'true'
+        shell: bash
+        run: |
+          echo "OPUS 1.1.3 release set already published; no-op."
+          echo "Published commit: ${{ steps.release_state.outputs.released_sha }}"
+
+      - name: Report partial release recovery
+        if: steps.release_state.outputs.partial_release == 'true'
+        shell: bash
+        run: |
+          echo "Partial OPUS 1.1.3 release/tag set detected; resuming at immutable commit."
+          echo "Release target: ${{ steps.release_state.outputs.release_target_sha }}"
+          echo "Workflow main SHA: $TARGET_SHA"
+
+      - name: Verify exact release target
+        if: steps.release_state.outputs.already_published != 'true'
+        env:
+          RELEASE_TARGET_SHA: ${{ steps.release_state.outputs.release_target_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git cat-file -e "$RELEASE_TARGET_SHA^{commit}"
+
+          if [[ "${{ steps.release_state.outputs.initial_publication }}" == "true" ]]; then
+            test "$RELEASE_TARGET_SHA" = "$TARGET_SHA"
+          else
+            git fetch origin main --prune
+            live_main_sha="$(git rev-parse origin/main)"
+            if ! git merge-base --is-ancestor "$RELEASE_TARGET_SHA" "$live_main_sha"; then
+              echo "Release target $RELEASE_TARGET_SHA is not an ancestor of live main $live_main_sha." >&2
+              exit 1
+            fi
+          fi
+
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-direct/.codex-plugin/plugin.json" | grep -F '"version": "1.0.1"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-metrika/.codex-plugin/plugin.json" | grep -F '"version": "1.0.3"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-webmaster/.codex-plugin/plugin.json" | grep -F '"version": "1.0.3"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-wordstat/.codex-plugin/plugin.json" | grep -F '"version": "1.1.2"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-search/.codex-plugin/plugin.json" | grep -F '"version": "1.0.2"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-seo/.codex-plugin/plugin.json" | grep -F '"version": "1.1.2"'
+          git show "$RELEASE_TARGET_SHA:plugins/yandex-marketing/.codex-plugin/plugin.json" | grep -F '"version": "1.1.0"'
+          git show "$RELEASE_TARGET_SHA:CHANGELOG.md" | grep -F '## [OPUS 1.1.3] — 2026-09-03'
+          git show "$RELEASE_TARGET_SHA:CHANGELOG.en.md" | grep -F '## [OPUS 1.1.3] — 2026-09-03'
+          git show "$RELEASE_TARGET_SHA:docs/superpowers/specs/2026-09-03-opus-1.1.3-phase7-audit-hardening-amendment.md" >/dev/null
+
+          RELEASE_WORKTREE="$(mktemp -d)"
+          trap 'git worktree remove --force "$RELEASE_WORKTREE" >/dev/null 2>&1 || true' EXIT
+          git worktree add --detach "$RELEASE_WORKTREE" "$RELEASE_TARGET_SHA"
+          (cd "$RELEASE_WORKTREE"
+            python scripts/validate_repo.py
+            python -m unittest discover -s tests -v
+            python scripts/check_reference_freshness.py
+          )
+          (cd "$RELEASE_WORKTREE/plugins/yandex-wordstat" && python -m unittest discover -s tests -v)
+          (cd "$RELEASE_WORKTREE/plugins/yandex-seo" && python -m unittest discover -s tests -v)
+
+      - name: Publish repository and plugin releases
+        if: steps.release_state.outputs.already_published != 'true'
+        env:
+          RELEASE_TARGET_SHA: ${{ steps.release_state.outputs.release_target_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled' 2>/dev/null || true)"
+          if [[ "$immutable_enabled" != "true" ]]; then
+            if ! GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases" >/dev/null 2>&1; then
+              echo "Unable to enable repository immutable releases. Configure RELEASE_ADMIN_TOKEN with repository Administration:write or enable immutability before publication." >&2
+              exit 1
+            fi
+            immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq '.enabled')"
+          fi
+          if [[ "$immutable_enabled" != "true" ]]; then
+            echo "Repository immutable releases must be enabled before OPUS 1.1.3 publication." >&2
+            exit 1
+          fi
+
+          release_tag_ruleset_name="OPUS 1.1.3 immutable release tags"
+          ruleset_list="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/rulesets?includes_parents=false" 2>/dev/null || true)"
+          release_tag_ruleset_count="$(jq --arg name "$release_tag_ruleset_name" '[.[] | select(.name == $name)] | length' <<< "$ruleset_list" 2>/dev/null || echo 0)"
+          if [[ "$release_tag_ruleset_count" -gt 1 ]]; then
+            echo "Multiple repository rulesets named $release_tag_ruleset_name exist; refusing ambiguous release protection." >&2
+            exit 1
+          fi
+          release_tag_ruleset_id="$(jq -r --arg name "$release_tag_ruleset_name" '.[] | select(.name == $name) | .id' <<< "$ruleset_list" 2>/dev/null || true)"
+          if [[ -z "$release_tag_ruleset_id" ]]; then
+            cat > /tmp/opus-1.1.3-tag-ruleset.json <<'EOF'
+          {"name":"OPUS 1.1.3 immutable release tags","target":"tag","enforcement":"active","bypass_actors":[],"conditions":{"ref_name":{"include":["refs/tags/opus-1.1.3","refs/tags/yandex-wordstat-v1.1.2","refs/tags/yandex-seo-v1.1.2"],"exclude":[]}},"rules":[{"type":"update"},{"type":"deletion"}]}
+          EOF
+            if ! release_tag_ruleset_id="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" --input - < /tmp/opus-1.1.3-tag-ruleset.json --jq '.id' 2>/dev/null)"; then
+              echo "Unable to create OPUS 1.1.3 immutable release tag ruleset. Configure RELEASE_ADMIN_TOKEN with repository Administration:write." >&2
+              exit 1
+            fi
+          fi
+
+          release_tag_ruleset_json="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/rulesets/$release_tag_ruleset_id" 2>/dev/null || true)"
+          if ! jq -e '
+            .name == "OPUS 1.1.3 immutable release tags" and
+            .target == "tag" and
+            .enforcement == "active" and
+            ((.bypass_actors // []) | length == 0) and
+            ((.conditions.ref_name.include | sort) == (["refs/tags/opus-1.1.3","refs/tags/yandex-wordstat-v1.1.2","refs/tags/yandex-seo-v1.1.2"] | sort)) and
+            ((.conditions.ref_name.exclude // []) | length == 0) and
+            (([.rules[].type] | sort) == (["update","deletion"] | sort))
+          ' <<< "$release_tag_ruleset_json" >/dev/null; then
+            echo "OPUS 1.1.3 release tag ruleset does not match the required no-bypass update/deletion lock." >&2
+            exit 1
+          fi
+          release_tag_ruleset_verified=true
+          echo "Release tag ruleset verified: $release_tag_ruleset_verified"
+
+          publish_release() {
+            local tag="$1"
+            local title="$2"
+            local notes_file="$3"
+
+            if release_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable --jq '[.isDraft,.isImmutable] | @tsv' 2>/dev/null)"; then
+              IFS=$'\t' read -r release_is_draft release_is_immutable <<< "$release_state"
+              if [[ "$release_is_draft" == "true" ]]; then
+                echo "Draft release $tag is mutable and cannot count as published." >&2
+                exit 1
+              fi
+              if [[ "$release_is_immutable" != "true" ]]; then
+                echo "Published release $tag is not immutable." >&2
+                exit 1
+              fi
+              git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
+              if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+                echo "Published release $tag exists but its tag is unavailable after fetch." >&2
+                exit 1
+              fi
+              existing_sha="$(git rev-list -n 1 "$tag")"
+              if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]; then
+                echo "Existing release $tag points to $existing_sha, expected $RELEASE_TARGET_SHA" >&2
+                exit 1
+              fi
+              echo "Release $tag already exists at the expected immutable commit."
+              return 0
+            fi
+
+            if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+              if ! gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f ref="refs/tags/$tag" \
+                -f sha="$RELEASE_TARGET_SHA" >/dev/null 2>&1; then
+                echo "Tag $tag was created concurrently or could not be created; verifying the protected remote ref."
+              fi
+            fi
+
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
+            if ! git show-ref --verify --quiet "refs/tags/$tag"; then
+              echo "Target tag $tag is unavailable after atomic creation/fetch." >&2
+              exit 1
+            fi
+            existing_sha="$(git rev-list -n 1 "$tag")"
+            if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]; then
+              echo "Existing tag $tag points to $existing_sha, expected $RELEASE_TARGET_SHA" >&2
+              exit 1
+            fi
+
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "$title" \
+              --notes-file "$notes_file"
+
+            created_is_immutable="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isImmutable --jq '.isImmutable')"
+            if [[ "$created_is_immutable" != "true" ]]; then
+              echo "New release $tag was published without GitHub immutability." >&2
+              exit 1
+            fi
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
+            created_sha="$(git rev-list -n 1 "$tag")"
+            if [[ "$created_sha" != "$RELEASE_TARGET_SHA" ]]; then
+              echo "New immutable release $tag points to $created_sha, expected $RELEASE_TARGET_SHA" >&2
+              exit 1
+            fi
+          }
+
+          cat > /tmp/opus-1.1.3.md <<'EOF'
+          OPUS 1.1.3 hardens the Phase 7 evidence and internal-link contracts from the follow-up Opus 5 audit.
+
+          Highlights:
+          - empirical SEO page-boundary changes require Search-owned provenance; empirical MERGE/REDIRECT also require existing-page evidence;
+          - partial Search coverage is explicit and Search cluster ingress is validated with downstream limitation propagation;
+          - METHODOLOGY is first-class qualitative SEO evidence but cannot masquerade as a quantitative metric;
+          - not-evaluated link/audit stages are distinct from evaluated empty results;
+          - internal-link orphaning is inbound-aware, duplicates are preserved/flagged, rootless BRIDGE pages without inbound links are treated as orphan/broken bridge, explicit ROOT and legacy role-less parentless roots remain exempt, explicit non-root roles remain audited, and SELF_LINK findings do not satisfy valid/inbound reachability;
+          - Wordstat topic-map query identity now uses Unicode NFKC + casefold + whitespace normalization;
+          - all literal publisher repository guards use the canonical post-rename repository identity.
+
+          Published plugin matrix:
+          - Yandex Direct 1.0.1 (unchanged)
+          - Yandex Metrika 1.0.3 (unchanged)
+          - Yandex Webmaster 1.0.3 (unchanged)
+          - Yandex Wordstat 1.1.2
+          - Yandex Search 1.0.2 (unchanged)
+          - Yandex SEO 1.1.2
+          - Yandex Marketing 1.1.0 (unchanged)
+          EOF
+
+          cat > /tmp/wordstat-1.1.2.md <<'EOF'
+          Yandex Wordstat 1.1.2 aligns topic-map query identity with the repository's cross-service normalization contract:
+          - Unicode compatibility forms are normalized through NFKC;
+          - casefold and whitespace folding remain deterministic;
+          - equivalent query variants merge without inventing summed demand;
+          - provenance, aliases and individual demand observations remain preserved;
+          - Wordstat remains candidate-only and does not claim final SERP clusters or page boundaries.
+          EOF
+
+          cat > /tmp/seo-1.1.2.md <<'EOF'
+          Yandex SEO 1.1.2 hardens Phase 7 evidence and internal-link semantics:
+          - empirical page-boundary changes require Search-owned provenance;
+          - empirical MERGE/REDIRECT requires evidence that the existing page/URL is real;
+          - PARTIAL Search coverage is explicit and Search cluster records are validated before use;
+          - Search bridge/source limitations propagate downstream;
+          - METHODOLOGY is accepted as qualitative evidence only;
+          - not-evaluated link/audit stages serialize distinctly from evaluated empty results;
+          - orphan detection uses inbound connectivity, duplicate links are flagged, rootless BRIDGE pages without inbound links are broken bridges, explicit ROOT and legacy role-less parentless roots remain exempt, explicit non-root roles remain audited, and SELF_LINK findings are excluded from valid/inbound reachability counts.
+          EOF
+
+          if [[ "${{ steps.release_state.outputs.initial_publication }}" == "true" ]]; then
+            git fetch origin main --prune
+            current_main_sha="$(git rev-parse origin/main)"
+            if [[ "$current_main_sha" != "$TARGET_SHA" ]]; then
+              echo "Late stale main CI run: current main is $current_main_sha, target is $TARGET_SHA." >&2
+              exit 1
+            fi
+          else
+            git fetch origin main --prune
+            live_main_sha="$(git rev-parse origin/main)"
+            if ! git merge-base --is-ancestor "$RELEASE_TARGET_SHA" "$live_main_sha"; then
+              echo "Late recovery guard: release target $RELEASE_TARGET_SHA is not an ancestor of live main $live_main_sha." >&2
+              exit 1
+            fi
+          fi
+
+          publish_release "opus-1.1.3" "OPUS 1.1.3 — Phase 7 Audit Hardening" /tmp/opus-1.1.3.md
+          publish_release "yandex-wordstat-v1.1.2" "Yandex Wordstat 1.1.2" /tmp/wordstat-1.1.2.md
+          publish_release "yandex-seo-v1.1.2" "Yandex SEO 1.1.2" /tmp/seo-1.1.2.md

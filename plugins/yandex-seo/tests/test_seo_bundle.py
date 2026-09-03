@@ -65,6 +65,25 @@ class BundleTests(unittest.TestCase):
         add_evidence(bundle, {"kind": "OBSERVED", "metric": "webmaster_demand", "value": 80, "source": "yandex-webmaster"})
         self.assertEqual([item["metric"] for item in bundle["evidence"]], ["wordstat_count", "webmaster_demand"])
 
+    def test_methodology_is_first_class_qualitative_evidence(self):
+        bundle = new_bundle(VALID_CONTEXT, {})
+        add_evidence(bundle, {
+            "kind": "METHODOLOGY",
+            "source": "semantic-cocoon-methodology",
+            "claim": "Use contextual links as an information-architecture heuristic.",
+        })
+        self.assertEqual(bundle["evidence"][0]["kind"], "METHODOLOGY")
+
+    def test_methodology_cannot_masquerade_as_quantitative_metric_evidence(self):
+        bundle = new_bundle(VALID_CONTEXT, {})
+        with self.assertRaises(ValueError):
+            add_evidence(bundle, {
+                "kind": "METHODOLOGY",
+                "metric": "traffic_uplift",
+                "value": 30,
+                "source": "secondary-methodology",
+            })
+
     def test_ambiguous_demand_is_rejected(self):
         bundle = new_bundle(VALID_CONTEXT, {})
         with self.assertRaises(ValueError):

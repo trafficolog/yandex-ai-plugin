@@ -1,7 +1,7 @@
 {
   "name": "yandex-seo",
   "description": "Cross-service Yandex SEO evidence analysis, topical architecture and internal-link planning over Wordstat, Search, Webmaster and Metrika outputs.",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": {"name": "Trafficolog"},
   "license": "MIT",
   "keywords": ["yandex", "seo", "wordstat", "search", "webmaster", "metrika", "topical-architecture", "semantic-cocoon", "internal-linking"],

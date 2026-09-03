@@ -7,7 +7,7 @@ description: Use when the user needs a demand-oriented topic map, seed-to-topic 
 
 Build a **candidate** demand/topic map from Wordstat evidence. Reuse seed expansion, GetTop nested phrases and associations, frequency, dynamics and regional evidence where available. Preserve every source seed, query expression, filter, period and coverage limitation.
 
-The normalized artifact is `wordstat-topic-map/v1`. Deduplicate equivalent query text without summing overlapping demand observations. Keep all source seeds and relation types attached to the normalized query.
+The normalized artifact is `wordstat-topic-map/v1`. Normalize query join keys with Unicode `NFKC`, then case-fold and collapse whitespace so compatibility/full-width forms join consistently with downstream SEO/Marketing normalization. Deduplicate equivalent query text without summing overlapping demand observations. Keep all source seeds and relation types attached to the normalized query.
 
 Candidate topic assignments and relations are hypotheses supplied by the reasoning layer and validated by the deterministic helper. Use confidence classes `LOW`, `MEDIUM`, `HIGH` as evidence-quality labels, not probabilities.
 

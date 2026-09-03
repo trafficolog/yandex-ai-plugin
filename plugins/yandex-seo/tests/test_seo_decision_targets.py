@@ -38,13 +38,26 @@ NODES = [
     },
 ]
 
+BOUNDARY_DECISIONS = {"CREATE", "MERGE", "SPLIT", "REDIRECT", "SECTION_ONLY", "BRIDGE", "NO_PAGE"}
+EMPIRICAL_CLAIMS = {"OBSERVED", "DERIVED"}
+
 
 def build_with_decisions(decisions):
+    normalized = []
+    for decision in decisions:
+        item = dict(decision)
+        if (
+            item.get("decision") in BOUNDARY_DECISIONS
+            and item.get("claim_class") in EMPIRICAL_CLAIMS
+            and "reason_codes" not in item
+        ):
+            item["reason_codes"] = ["SERP_OVERLAP", "WEBMASTER_EXISTING_URL"]
+        normalized.append(item)
     return seo_topical_architecture.build_topical_architecture(
         mode="EXISTING_SITE",
         coverage=COVERAGE,
         clusters=[],
-        page_decisions=decisions,
+        page_decisions=normalized,
         structural_nodes=NODES,
         semantic_edges=[],
     )
@@ -114,25 +127,14 @@ class TestSeoDecisionTargets(unittest.TestCase):
     def test_target_page_id_and_known_target_url_must_resolve_to_same_page(self):
         with self.assertRaises(ValueError):
             build_with({
-                "page_id": "legacy",
-                "decision": "REDIRECT",
-                "target_page_id": "target",
-                "target_url": "/other/",
-                "cluster_ids": [],
-                "evidence": ["WEBMASTER_EXISTING_URL"],
-                "confidence": "MEDIUM",
-                "claim_class": "DERIVED",
+                "page_id": "legacy", "decision": "REDIRECT", "target_page_id": "target",
+                "target_url": "/other/", "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM", "claim_class": "DERIVED",
             })
-
         result = build_with({
-            "page_id": "legacy",
-            "decision": "REDIRECT",
-            "target_page_id": "target",
-            "target_url": "/target/",
-            "cluster_ids": [],
-            "evidence": ["WEBMASTER_EXISTING_URL"],
-            "confidence": "MEDIUM",
-            "claim_class": "DERIVED",
+            "page_id": "legacy", "decision": "REDIRECT", "target_page_id": "target",
+            "target_url": "/target/", "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+            "confidence": "MEDIUM", "claim_class": "DERIVED",
         })
         self.assertEqual(result["page_decisions"][0]["target_page_id"], "target")
         self.assertEqual(result["page_decisions"][0]["target_url"], "/target/")
@@ -140,23 +142,14 @@ class TestSeoDecisionTargets(unittest.TestCase):
     def test_target_page_id_must_reference_known_architecture_page(self):
         with self.assertRaises(ValueError):
             build_with({
-                "page_id": "legacy",
-                "decision": "MERGE",
-                "target_page_id": "missing",
-                "cluster_ids": [],
-                "evidence": ["WEBMASTER_EXISTING_URL"],
-                "confidence": "MEDIUM",
-                "claim_class": "DERIVED",
+                "page_id": "legacy", "decision": "MERGE", "target_page_id": "missing",
+                "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM", "claim_class": "DERIVED",
             })
-
         result = build_with({
-            "page_id": "legacy",
-            "decision": "MERGE",
-            "target_page_id": "target",
-            "cluster_ids": [],
-            "evidence": ["WEBMASTER_EXISTING_URL"],
-            "confidence": "MEDIUM",
-            "claim_class": "DERIVED",
+            "page_id": "legacy", "decision": "MERGE", "target_page_id": "target",
+            "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+            "confidence": "MEDIUM", "claim_class": "DERIVED",
         })
         self.assertEqual(result["page_decisions"][0]["target_page_id"], "target")
 
@@ -165,25 +158,17 @@ class TestSeoDecisionTargets(unittest.TestCase):
             with self.subTest(decision=decision):
                 with self.assertRaises(ValueError):
                     build_with({
-                        "page_id": "legacy",
-                        "decision": decision,
-                        "target_page_id": "legacy",
-                        "cluster_ids": [],
-                        "evidence": ["WEBMASTER_EXISTING_URL"],
-                        "confidence": "MEDIUM",
-                        "claim_class": "DERIVED",
+                        "page_id": "legacy", "decision": decision, "target_page_id": "legacy",
+                        "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+                        "confidence": "MEDIUM", "claim_class": "DERIVED",
                     })
 
     def test_redirect_cannot_target_its_source_url(self):
         with self.assertRaises(ValueError):
             build_with({
-                "page_id": "legacy",
-                "decision": "REDIRECT",
-                "target_url": "/legacy/",
-                "cluster_ids": [],
-                "evidence": ["WEBMASTER_EXISTING_URL"],
-                "confidence": "MEDIUM",
-                "claim_class": "DERIVED",
+                "page_id": "legacy", "decision": "REDIRECT", "target_url": "/legacy/",
+                "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+                "confidence": "MEDIUM", "claim_class": "DERIVED",
             })
 
     def test_target_url_must_be_nonempty_string_when_supplied(self):
@@ -191,36 +176,23 @@ class TestSeoDecisionTargets(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     build_with({
-                        "page_id": "legacy",
-                        "decision": "REDIRECT",
-                        "target_url": invalid,
-                        "cluster_ids": [],
-                        "evidence": ["WEBMASTER_EXISTING_URL"],
-                        "confidence": "MEDIUM",
-                        "claim_class": "DERIVED",
+                        "page_id": "legacy", "decision": "REDIRECT", "target_url": invalid,
+                        "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+                        "confidence": "MEDIUM", "claim_class": "DERIVED",
                     })
-
         result = build_with({
-            "page_id": "legacy",
-            "decision": "REDIRECT",
-            "target_url": "/target/",
-            "cluster_ids": [],
-            "evidence": ["WEBMASTER_EXISTING_URL"],
-            "confidence": "MEDIUM",
-            "claim_class": "DERIVED",
+            "page_id": "legacy", "decision": "REDIRECT", "target_url": "/target/",
+            "cluster_ids": [], "evidence": ["WEBMASTER_EXISTING_URL"],
+            "confidence": "MEDIUM", "claim_class": "DERIVED",
         })
         self.assertEqual(result["page_decisions"][0]["target_url"], "/target/")
 
     def test_page_decision_rejects_unknown_reason_code(self):
         with self.assertRaises(ValueError):
             build_with({
-                "page_id": "legacy",
-                "decision": "REDIRECT",
-                "target_page_id": "target",
-                "reason_codes": ["SERP_OVELRAP"],
-                "cluster_ids": [],
-                "evidence": ["WEBMASTER_EXISTING_URL"],
-                "confidence": "MEDIUM",
+                "page_id": "legacy", "decision": "REDIRECT", "target_page_id": "target",
+                "reason_codes": ["SERP_OVELRAP"], "cluster_ids": [],
+                "evidence": ["WEBMASTER_EXISTING_URL"], "confidence": "MEDIUM",
                 "claim_class": "OBSERVED",
             })
 
@@ -229,24 +201,16 @@ class TestSeoDecisionTargets(unittest.TestCase):
             with self.subTest(claim_class=claim_class):
                 with self.assertRaises(ValueError):
                     build_with({
-                        "page_id": "legacy",
-                        "decision": "REDIRECT",
-                        "target_page_id": "target",
-                        "reason_codes": ["METHODOLOGY_HEURISTIC"],
-                        "cluster_ids": [],
-                        "evidence": [],
-                        "confidence": "MEDIUM",
-                        "claim_class": claim_class,
+                        "page_id": "legacy", "decision": "REDIRECT", "target_page_id": "target",
+                        "reason_codes": ["METHODOLOGY_HEURISTIC"], "cluster_ids": [],
+                        "evidence": [], "confidence": "MEDIUM", "claim_class": claim_class,
                     })
 
     def test_page_decision_preserves_valid_reason_codes(self):
         result = build_with({
-            "page_id": "legacy",
-            "decision": "PRESERVE",
-            "reason_codes": ["WEBMASTER_EXISTING_URL"],
-            "cluster_ids": [],
-            "evidence": ["WEBMASTER_EXISTING_URL"],
-            "confidence": "MEDIUM",
+            "page_id": "legacy", "decision": "PRESERVE",
+            "reason_codes": ["WEBMASTER_EXISTING_URL"], "cluster_ids": [],
+            "evidence": ["WEBMASTER_EXISTING_URL"], "confidence": "MEDIUM",
             "claim_class": "OBSERVED",
         })
         self.assertEqual(result["page_decisions"][0]["reason_codes"], ["WEBMASTER_EXISTING_URL"])
