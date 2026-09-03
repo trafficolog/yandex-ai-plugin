@@ -89,7 +89,11 @@ Validator проверяет структуру matrix, уникальность
 
 ## 11. Shared code rule
 
-Не выносить код в `packages/` только из-за сходства. Shared package появляется, когда одинаковая responsibility реализована минимум в двух plugins и interface стабилен.
+Не выносить код в `packages/` только из-за сходства. Повторение одной responsibility минимум в двух plugins и стабильный interface — **необходимые, но не достаточные** условия promotion.
+
+Shared runtime package допустим только если одновременно определён installability/distribution contract: каждый независимо устанавливаемый plugin должен гарантированно получить эту dependency во всех поддерживаемых runtime либо через versioned dependency mechanism, либо через reproducible build/vendor step без скрытой зависимости от корня monorepo.
+
+Если такого механизма нет, небольшой service-local adapter может оставаться продублированным. Независимая installability важнее формального DRY. В частности, существующие `_http.py` не переносятся в root `packages/` до появления безопасного способа поставлять общий runtime-код вместе с отдельно установленным plugin.
 
 ## 12. CI contract
 
