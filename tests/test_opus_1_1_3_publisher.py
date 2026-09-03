@@ -59,6 +59,28 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(stale_guard, target_selection)
         self.assertIn('Stale main CI run: current main is $current_main_sha, target is $TARGET_SHA.', text)
 
+    def test_initial_publication_rechecks_main_immediately_before_first_release(self):
+        text = self._text()
+        for token in (
+            'initial_publication=true',
+            'initial_publication=false',
+            "steps.release_state.outputs.initial_publication == 'true'",
+            'Late stale main CI run: current main is $current_main_sha, target is $TARGET_SHA.',
+        ):
+            self.assertIn(token, text)
+        first_publish = text.index('publish_release "opus-1.1.3"')
+        publish_step = text.rfind('- name: Publish repository and plugin releases', 0, first_publish)
+        late_gate = text.index("if [[ \"${{ steps.release_state.outputs.initial_publication }}\" == \"true\" ]]", publish_step)
+        late_fetch = text.index('git fetch origin main --prune', late_gate)
+        late_read = text.index('current_main_sha="$(git rev-parse origin/main)"', late_fetch)
+        late_guard = text.index('if [[ "$current_main_sha" != "$TARGET_SHA" ]]', late_read)
+        self.assertLess(publish_step, late_gate)
+        self.assertLess(late_gate, late_fetch)
+        self.assertLess(late_fetch, late_read)
+        self.assertLess(late_read, late_guard)
+        self.assertLess(late_guard, first_publish)
+        self.assertNotIn('publish_release "', text[late_gate:late_guard])
+
     def test_initial_publication_requires_repository_release_immutability_before_target_selection(self):
         text = self._text()
         self.assertIn("IMMUTABILITY_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}", text)
@@ -151,7 +173,7 @@ class Opus113PublisherTests(unittest.TestCase):
         for token in expected_checks:
             self.assertIn(token, text)
 
-    def test_partial_recovery_validates_release_target_tree(self):
+    def test_partial_recovery_validates_release_target_tree_and_released_plugin_suites(self):
         text = self._text()
         for token in (
             'RELEASE_WORKTREE="$(mktemp -d)"',
@@ -160,6 +182,8 @@ class Opus113PublisherTests(unittest.TestCase):
             'python scripts/validate_repo.py',
             'python -m unittest discover -s tests -v',
             'python scripts/check_reference_freshness.py',
+            '(cd "$RELEASE_WORKTREE/plugins/yandex-wordstat" && python -m unittest discover -s tests -v)',
+            '(cd "$RELEASE_WORKTREE/plugins/yandex-seo" && python -m unittest discover -s tests -v)',
         ):
             self.assertIn(token, text)
         self.assertIn('trap \'git worktree remove --force "$RELEASE_WORKTREE" >/dev/null 2>&1 || true\' EXIT', text)
