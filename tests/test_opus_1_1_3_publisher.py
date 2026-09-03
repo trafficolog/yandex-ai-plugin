@@ -176,8 +176,8 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(arm, trap)
         self.assertLess(trap, publish)
         self.assertIn('gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || cleanup_delete_status=$?', function)
-        self.assertIn('if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then', function)
-        self.assertIn('if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then', function)
+        self.assertIn('release_probe_output="$(gh api --include "repos/$GITHUB_REPOSITORY/releases/tags/$tag" 2>&1)" || release_probe_status=$?', function)
+        self.assertIn('git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || tag_probe_status=$?', function)
         self.assertIn('trap - ERR', function)
 
     def test_non_immutable_publication_is_rolled_back_fail_closed(self):
