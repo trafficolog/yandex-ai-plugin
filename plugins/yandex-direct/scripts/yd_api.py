@@ -15,6 +15,11 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+try:
+    from ._approval import preview_id, require_approval
+except ImportError:  # CLI execution from scripts directory
+    from _approval import preview_id, require_approval
+
 API_BASE = "https://api.direct.yandex.com/json/v501"
 READ_METHODS = {
     "check",
@@ -60,6 +65,28 @@ class YandexDirectClient:
     def body(method: str, params: Mapping[str, Any] | None) -> dict[str, Any]:
         return {"method": method, "params": dict(params or {})}
 
+    def approval_envelope(
+        self,
+        service: str,
+        method: str,
+        params: Mapping[str, Any] | None,
+    ) -> dict[str, Any]:
+        normalized_service = service.strip().lower()
+        normalized_method = method.strip().lower()
+        return {
+            "schema": "yandex-ai-approval/v1",
+            "plugin": "yandex-direct",
+            "operation": f"{normalized_service}.{normalized_method}",
+            "method": "POST",
+            "target": {
+                "environment": "production",
+                "client_login": self.client_login,
+            },
+            "url": self.endpoint(service),
+            "body": self.body(method, params),
+            "artifacts": [],
+        }
+
     def request(
         self,
         service: str,
@@ -67,17 +94,23 @@ class YandexDirectClient:
         params: Mapping[str, Any] | None = None,
         *,
         dry_run: bool = False,
+        approve: str | None = None,
     ) -> dict[str, Any]:
         body = self.body(method, params)
+        envelope = self.approval_envelope(service, method, params)
         if dry_run:
             safe_headers = self.headers()
             safe_headers["Authorization"] = "Bearer ***REDACTED***"
             return {
                 "dry_run": True,
+                "preview_id": preview_id(envelope),
                 "endpoint": self.endpoint(service),
                 "headers": safe_headers,
                 "body": body,
             }
+
+        if not is_read_method(method):
+            require_approval(envelope, approve)
 
         payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
         req = urllib.request.Request(
@@ -121,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
+    parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
     args = parser.parse_args(argv)
 
@@ -134,11 +168,19 @@ def main(argv: list[str] | None = None) -> int:
     dry_run = args.dry_run or (is_write and not args.execute)
 
     client = YandexDirectClient(args.token, client_login=args.client_login)
-    result = client.request(args.service, args.method, params, dry_run=dry_run)
+    result = client.request(
+        args.service,
+        args.method,
+        params,
+        dry_run=dry_run,
+        approve=args.approve,
+    )
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
     if is_write and dry_run:
-        sys.stderr.write("Preview only. Re-run with --execute after reviewing the payload.\n")
+        sys.stderr.write(
+            "Preview only. Re-run with --execute --approve <preview_id> after the user approves this exact payload.\n"
+        )
     return 0
 
 
