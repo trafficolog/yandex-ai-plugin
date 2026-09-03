@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any, Iterable
+import unicodedata
 
 
 SCHEMA = "wordstat-topic-map/v1"
@@ -13,7 +14,8 @@ ASSOCIATION_CAP_LIMITATION = "WORDSTAT_ASSOCIATIONS_CAPPED"
 def _normalize_text(value: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError("query text must be a non-empty string")
-    return " ".join(value.split()).casefold()
+    normalized = unicodedata.normalize("NFKC", value)
+    return " ".join(normalized.casefold().split())
 
 
 def _unique(values: Iterable[Any]) -> list[Any]:
@@ -90,6 +92,7 @@ def build_topic_map(
                 "query_id": query_id,
                 "query_ids": [query_id],
                 "text": " ".join(text.split()),
+                "normalized_query": key,
                 "source_seeds": [],
                 "relations": [],
                 "demand_observations": [],
