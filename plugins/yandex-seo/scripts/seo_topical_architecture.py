@@ -9,100 +9,47 @@ MODES = {"GREENFIELD", "EXISTING_SITE"}
 COVERAGE_STATES = {"COMPLETE", "PARTIAL", "MISSING"}
 COVERAGE_KEYS = {"wordstat", "search", "webmaster", "metrika", "site_inventory"}
 PAGE_ROLES = {
-    "ROOT",
-    "HUB",
-    "SUPPORT",
-    "DETAIL",
-    "COMPARISON",
-    "TRANSACTIONAL",
-    "DEFINITION",
-    "EVIDENCE",
-    "BRIDGE",
-    "UTILITY",
-    "OTHER",
+    "ROOT", "HUB", "SUPPORT", "DETAIL", "COMPARISON", "TRANSACTIONAL",
+    "DEFINITION", "EVIDENCE", "BRIDGE", "UTILITY", "OTHER",
 }
 ROOT_PAGE_ROLES = {"ROOT", "BRIDGE"}
 STRUCTURAL_NODE_FIELDS = {
-    "page_id",
-    "url",
-    "proposed_url",
-    "title",
-    "page_role",
-    "canonical_parent_id",
-    "breadcrumbs",
-    "cluster_ids",
-    "evidence",
-    "confidence",
+    "page_id", "url", "proposed_url", "title", "page_role", "canonical_parent_id",
+    "breadcrumbs", "cluster_ids", "evidence", "confidence",
 }
 PAGE_DECISIONS = {
-    "PRESERVE",
-    "CREATE",
-    "EXPAND",
-    "MERGE",
-    "SPLIT",
-    "REDIRECT",
-    "SECTION_ONLY",
-    "BRIDGE",
-    "NO_PAGE",
-    "MANUAL_REVIEW",
+    "PRESERVE", "CREATE", "EXPAND", "MERGE", "SPLIT", "REDIRECT",
+    "SECTION_ONLY", "BRIDGE", "NO_PAGE", "MANUAL_REVIEW",
 }
 PAGE_DECISION_OPTIONAL_FIELDS = {
-    "reason_codes",
-    "target_page_id",
-    "target_url",
-    "notes",
-    "methodology_source",
-    "limitations",
+    "reason_codes", "target_page_id", "target_url", "notes", "methodology_source", "limitations",
 }
 SEARCH_REQUIRED_BOUNDARY_DECISIONS = {
-    "CREATE",
-    "MERGE",
-    "SPLIT",
-    "REDIRECT",
-    "SECTION_ONLY",
-    "BRIDGE",
-    "NO_PAGE",
+    "CREATE", "MERGE", "SPLIT", "REDIRECT", "SECTION_ONLY", "BRIDGE", "NO_PAGE",
 }
 CLAIM_CLASSES = {"OBSERVED", "DERIVED", "HYPOTHESIS", "METHODOLOGY"}
 CONFIDENCE_LEVELS = {"LOW", "MEDIUM", "HIGH"}
 SEMANTIC_RELATIONS = {
-    "PARENT_CONTEXT",
-    "CHILD_DETAIL",
-    "SIBLING",
-    "SUPPORT",
-    "DEFINITION",
-    "COMPARISON",
-    "ALTERNATIVE",
-    "EVIDENCE",
-    "USE_CASE",
-    "NEXT_STEP",
-    "TRANSACTIONAL_PATH",
-    "BRIDGE",
-    "COMPLIANCE",
+    "PARENT_CONTEXT", "CHILD_DETAIL", "SIBLING", "SUPPORT", "DEFINITION",
+    "COMPARISON", "ALTERNATIVE", "EVIDENCE", "USE_CASE", "NEXT_STEP",
+    "TRANSACTIONAL_PATH", "BRIDGE", "COMPLIANCE",
 }
 REASON_CODES = {
-    "SERP_OVERLAP",
-    "SERP_BRIDGE_RISK",
-    "WORDSTAT_NESTED_RELATION",
-    "WORDSTAT_ASSOCIATION",
-    "WORDSTAT_DEMAND_CONTEXT",
-    "WORDSTAT_REGION_CONTEXT",
-    "WORDSTAT_SEASONAL_CONTEXT",
-    "WEBMASTER_QUERY_VISIBILITY",
-    "WEBMASTER_EXISTING_URL",
-    "METRIKA_LANDING_TRAFFIC",
-    "METRIKA_CONVERSION_CONTEXT",
-    "EXISTING_INTERNAL_LINK",
-    "EXISTING_BREADCRUMB",
-    "USER_BUSINESS_CONSTRAINT",
-    "MANUAL_ENTITY_RELATION",
-    "SEMANTIC_HYPOTHESIS",
-    "METHODOLOGY_HEURISTIC",
+    "SERP_OVERLAP", "SERP_BRIDGE_RISK", "WORDSTAT_NESTED_RELATION",
+    "WORDSTAT_ASSOCIATION", "WORDSTAT_DEMAND_CONTEXT", "WORDSTAT_REGION_CONTEXT",
+    "WORDSTAT_SEASONAL_CONTEXT", "WEBMASTER_QUERY_VISIBILITY", "WEBMASTER_EXISTING_URL",
+    "METRIKA_LANDING_TRAFFIC", "METRIKA_CONVERSION_CONTEXT", "EXISTING_INTERNAL_LINK",
+    "EXISTING_BREADCRUMB", "USER_BUSINESS_CONSTRAINT", "MANUAL_ENTITY_RELATION",
+    "SEMANTIC_HYPOTHESIS", "METHODOLOGY_HEURISTIC",
 }
 SEARCH_REASON_CODES = {"SERP_OVERLAP", "SERP_BRIDGE_RISK"}
+EXISTING_PAGE_REASON_CODES = {"WEBMASTER_EXISTING_URL", "METRIKA_LANDING_TRAFFIC"}
 NON_EMPIRICAL_REASON_CODES = {"METHODOLOGY_HEURISTIC", "SEMANTIC_HYPOTHESIS"}
 EMPIRICAL_CLAIM_CLASSES = {"OBSERVED", "DERIVED"}
 SERP_VALIDATION_MISSING = "SERP_VALIDATION_MISSING"
+SERP_VALIDATION_PARTIAL = "SERP_VALIDATION_PARTIAL"
+SEARCH_BRIDGE_RISK = "SEARCH_BRIDGE_RISK"
+WORDSTAT_TOPIC_MAP_SCHEMA = "wordstat-topic-map/v1"
 
 
 def _unique(values: list[str]) -> list[str]:
@@ -161,25 +108,86 @@ def _validate_coverage(coverage: dict[str, Any]) -> dict[str, str]:
     return normalized
 
 
+def _normalize_clusters(clusters: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+    if not isinstance(clusters, list):
+        raise ValueError("clusters must be a list")
+    normalized: list[dict[str, Any]] = []
+    limitations: list[str] = []
+    seen_ids: set[str] = set()
+    for raw in clusters:
+        if not isinstance(raw, dict):
+            raise ValueError("each Search cluster must be an object")
+        cluster_id = _require_nonempty_string(raw.get("cluster_id"), "cluster.cluster_id")
+        if cluster_id in seen_ids:
+            raise ValueError(f"duplicate cluster_id: {cluster_id}")
+        queries = raw.get("queries")
+        if not isinstance(queries, list) or not queries:
+            raise ValueError("cluster.queries must be a non-empty list")
+        normalized_queries = [
+            _require_nonempty_string(query, "cluster.queries[]") for query in queries
+        ]
+        if len(set(normalized_queries)) != len(normalized_queries):
+            raise ValueError("cluster.queries must be unique")
+        min_shared_urls = raw.get("min_shared_urls")
+        if isinstance(min_shared_urls, bool) or not isinstance(min_shared_urls, int) or min_shared_urls < 1:
+            raise ValueError("cluster.min_shared_urls must be a positive integer")
+        bridge_risk = raw.get("bridge_risk")
+        if not isinstance(bridge_risk, bool):
+            raise ValueError("cluster.bridge_risk must be boolean")
+        raw_limitations = raw.get("limitations", [])
+        if not isinstance(raw_limitations, list):
+            raise ValueError("cluster.limitations must be a list")
+        normalized_limitations = [
+            _require_nonempty_string(item, "cluster.limitations[]") for item in raw_limitations
+        ]
+        item = deepcopy(raw)
+        item["cluster_id"] = cluster_id
+        item["queries"] = normalized_queries
+        item["min_shared_urls"] = min_shared_urls
+        item["bridge_risk"] = bridge_risk
+        item["limitations"] = _unique(normalized_limitations)
+        normalized.append(item)
+        seen_ids.add(cluster_id)
+        if bridge_risk:
+            limitations.append(SEARCH_BRIDGE_RISK)
+        limitations.extend(item["limitations"])
+    return normalized, _unique(limitations)
+
+
+def _source_artifact_limitations(source_artifacts: list[dict[str, Any]] | None) -> list[str]:
+    if source_artifacts is None:
+        return []
+    if not isinstance(source_artifacts, list):
+        raise ValueError("source_artifacts must be a list")
+    limitations: list[str] = []
+    for artifact in source_artifacts:
+        if not isinstance(artifact, dict):
+            raise ValueError("each source artifact must be an object")
+        schema = artifact.get("schema")
+        if schema != WORDSTAT_TOPIC_MAP_SCHEMA:
+            raise ValueError(f"unsupported source artifact schema: {schema!r}")
+        raw_limitations = artifact.get("limitations", [])
+        if not isinstance(raw_limitations, list):
+            raise ValueError("source artifact limitations must be a list")
+        limitations.extend(
+            _require_nonempty_string(item, "source_artifact.limitations[]")
+            for item in raw_limitations
+        )
+    return _unique(limitations)
+
+
 def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
     if not isinstance(structural_nodes, list):
         raise ValueError("structural_nodes must be a list")
-
     by_id: dict[str, dict[str, Any]] = {}
     seen_locations: dict[str, str] = {}
     normalized: list[dict[str, Any]] = []
     breadcrumbs_supplied: set[str] = set()
-
     for raw in structural_nodes:
         page_id = _require_nonempty_string(raw.get("page_id"), "page_id")
         if page_id in by_id:
             raise ValueError(f"duplicate page_id: {page_id}")
-
-        node = {
-            key: deepcopy(raw[key])
-            for key in STRUCTURAL_NODE_FIELDS
-            if key in raw
-        }
+        node = {key: deepcopy(raw[key]) for key in STRUCTURAL_NODE_FIELDS if key in raw}
         node["page_id"] = page_id
         node["confidence"] = _validate_confidence(raw.get("confidence"))
         node.setdefault("canonical_parent_id", None)
@@ -188,13 +196,11 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         node.setdefault("breadcrumbs", [])
         node.setdefault("cluster_ids", [])
         node.setdefault("evidence", [])
-
         if node.get("page_role") is not None:
             page_role = _require_nonempty_string(node.get("page_role"), "page_role")
             if page_role not in PAGE_ROLES:
                 raise ValueError(f"page_role must be one of {sorted(PAGE_ROLES)}")
             node["page_role"] = page_role
-
         for field in ("url", "proposed_url"):
             location = node.get(field)
             if location is None:
@@ -206,10 +212,8 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
                     f"duplicate page location {location!r} for {page_id} and {seen_locations[location]}"
                 )
             seen_locations[location] = page_id
-
         by_id[page_id] = node
         normalized.append(node)
-
     for node in normalized:
         parent = node.get("canonical_parent_id")
         if parent is None:
@@ -222,9 +226,7 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
             raise ValueError(f"unknown canonical parent {parent!r} for {node['page_id']}")
         if parent == node["page_id"]:
             raise ValueError("a page cannot be its own canonical parent")
-
     state: dict[str, int] = {}
-
     def visit(page_id: str) -> None:
         marker = state.get(page_id, 0)
         if marker == 1:
@@ -236,10 +238,8 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         if parent is not None:
             visit(parent)
         state[page_id] = 2
-
     for page_id in by_id:
         visit(page_id)
-
     for page_id in breadcrumbs_supplied:
         breadcrumbs = by_id[page_id].get("breadcrumbs")
         if not isinstance(breadcrumbs, list):
@@ -250,7 +250,6 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
             if normalized_id not in by_id:
                 raise ValueError(f"unknown breadcrumb page: {normalized_id}")
             normalized_breadcrumbs.append(normalized_id)
-
         ancestors: list[str] = []
         parent = by_id[page_id].get("canonical_parent_id")
         while parent is not None:
@@ -260,14 +259,10 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         if normalized_breadcrumbs != expected:
             raise ValueError("breadcrumbs must match canonical parent chain")
         by_id[page_id]["breadcrumbs"] = normalized_breadcrumbs
-
     return normalized, by_id
 
 
-def _normalize_page_decisions(
-    page_decisions: list[dict[str, Any]],
-    page_index: dict[str, dict[str, Any]],
-) -> list[dict[str, Any]]:
+def _normalize_page_decisions(page_decisions: list[dict[str, Any]], page_index: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     if not isinstance(page_decisions, list):
         raise ValueError("page_decisions must be a list")
     known_pages = set(page_index)
@@ -292,71 +287,50 @@ def _normalize_page_decisions(
         evidence = raw.get("evidence", [])
         if not isinstance(evidence, list):
             raise ValueError("page_decision.evidence must be a list")
-        evidence = deepcopy(evidence)
         reason_codes: list[str] = []
-
         item = {
             "page_id": page_id,
             "decision": decision,
             "cluster_ids": deepcopy(raw.get("cluster_ids", [])),
-            "evidence": evidence,
+            "evidence": deepcopy(evidence),
             "confidence": _validate_confidence(raw.get("confidence")),
             "claim_class": claim_class,
             "status": "PREVIEW",
         }
-
         if "reason_codes" in raw:
-            reason_codes = _normalize_reason_codes(
-                raw.get("reason_codes"), "page_decision.reason_codes"
-            )
-            if (
-                reason_codes
-                and set(reason_codes).issubset(NON_EMPIRICAL_REASON_CODES)
-                and claim_class in EMPIRICAL_CLAIM_CLASSES
-            ):
-                raise ValueError(
-                    "methodology/hypothesis-only page decision reasons cannot use an empirical claim_class"
-                )
+            reason_codes = _normalize_reason_codes(raw.get("reason_codes"), "page_decision.reason_codes")
+            if reason_codes and set(reason_codes).issubset(NON_EMPIRICAL_REASON_CODES) and claim_class in EMPIRICAL_CLAIM_CLASSES:
+                raise ValueError("methodology/hypothesis-only page decision reasons cannot use an empirical claim_class")
             item["reason_codes"] = reason_codes
-
         if claim_class in EMPIRICAL_CLAIM_CLASSES and not reason_codes and not evidence:
             raise ValueError("empirical page decisions require reason_codes or evidence provenance")
-
+        if decision in SEARCH_REQUIRED_BOUNDARY_DECISIONS and claim_class in EMPIRICAL_CLAIM_CLASSES:
+            if not set(reason_codes) & SEARCH_REASON_CODES:
+                raise ValueError("empirical boundary-changing page decisions require Search-owned reason_codes")
+            if decision in {"MERGE", "REDIRECT"} and not set(reason_codes) & EXISTING_PAGE_REASON_CODES:
+                raise ValueError("empirical MERGE/REDIRECT requires existing-page evidence")
         if "target_page_id" in raw:
-            target_page_id = _require_nonempty_string(
-                raw.get("target_page_id"), "page_decision.target_page_id"
-            )
+            target_page_id = _require_nonempty_string(raw.get("target_page_id"), "page_decision.target_page_id")
             if target_page_id not in known_pages:
                 raise ValueError(f"page decision references unknown target page: {target_page_id}")
             if decision in {"MERGE", "REDIRECT"} and target_page_id == page_id:
                 raise ValueError(f"{decision} target_page_id must differ from page_id")
             item["target_page_id"] = target_page_id
-
         if "target_url" in raw:
-            target_url = _require_nonempty_string(
-                raw.get("target_url"), "page_decision.target_url"
-            )
+            target_url = _require_nonempty_string(raw.get("target_url"), "page_decision.target_url")
             source_node = page_index[page_id]
-            source_locations = {
-                location
-                for location in (source_node.get("url"), source_node.get("proposed_url"))
-                if location is not None
-            }
+            source_locations = {location for location in (source_node.get("url"), source_node.get("proposed_url")) if location is not None}
             if decision in {"MERGE", "REDIRECT"} and target_url in source_locations:
                 raise ValueError(f"{decision} target_url must differ from the source page location")
             if "target_page_id" in item:
                 target_url_owner = location_owners.get(target_url)
                 if target_url_owner is not None and target_url_owner != item["target_page_id"]:
-                    raise ValueError(
-                        "target_page_id and target_url must resolve to the same known page"
-                    )
+                    raise ValueError("target_page_id and target_url must resolve to the same known page")
             item["target_url"] = target_url
-
         for field in PAGE_DECISION_OPTIONAL_FIELDS - {"reason_codes", "target_page_id", "target_url"}:
             if field in raw:
                 item[field] = deepcopy(raw[field])
         result.append(item)
-
     destructive_targets: dict[str, str] = {}
     for item in result:
         if item["decision"] not in {"MERGE", "REDIRECT"}:
@@ -366,9 +340,7 @@ def _normalize_page_decisions(
             target_page_id = location_owners.get(item["target_url"])
         if target_page_id is not None:
             destructive_targets[item["page_id"]] = target_page_id
-
     destructive_state: dict[str, int] = {}
-
     def visit_destructive(page_id: str) -> None:
         marker = destructive_state.get(page_id, 0)
         if marker == 1:
@@ -380,17 +352,12 @@ def _normalize_page_decisions(
         if target_page_id in destructive_targets:
             visit_destructive(target_page_id)
         destructive_state[page_id] = 2
-
     for page_id in destructive_targets:
         visit_destructive(page_id)
-
     return result
 
 
-def _normalize_semantic_edges(
-    semantic_edges: list[dict[str, Any]],
-    known_pages: set[str],
-) -> list[dict[str, Any]]:
+def _normalize_semantic_edges(semantic_edges: list[dict[str, Any]], known_pages: set[str]) -> list[dict[str, Any]]:
     if not isinstance(semantic_edges, list):
         raise ValueError("semantic_edges must be a list")
     result: list[dict[str, Any]] = []
@@ -416,19 +383,13 @@ def _normalize_semantic_edges(
             raise ValueError("semantic edge requires at least one reason code")
         item["reason_codes"] = reason_codes
         item.setdefault("evidence", [])
-        if (
-            set(item["reason_codes"]).issubset(NON_EMPIRICAL_REASON_CODES)
-            and item["claim_class"] in EMPIRICAL_CLAIM_CLASSES
-        ):
+        if set(reason_codes).issubset(NON_EMPIRICAL_REASON_CODES) and item["claim_class"] in EMPIRICAL_CLAIM_CLASSES:
             raise ValueError("methodology/hypothesis-only semantic reasons cannot use an empirical claim_class")
         result.append(item)
     return result
 
 
-def _normalize_fact_sets(
-    fact_sets: list[dict[str, Any]] | None,
-    known_pages: set[str],
-) -> list[dict[str, Any]]:
+def _normalize_fact_sets(fact_sets: list[dict[str, Any]] | None, known_pages: set[str]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     for raw in fact_sets or []:
@@ -452,6 +413,47 @@ def _normalize_fact_sets(
     return result
 
 
+def _require_architecture(architecture: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(architecture, dict) or architecture.get("schema") != SCHEMA:
+        raise ValueError(f"architecture must use schema {SCHEMA}")
+    return deepcopy(architecture)
+
+
+def attach_link_plan(architecture: dict[str, Any], link_plan: list[dict[str, Any]]) -> dict[str, Any]:
+    result = _require_architecture(architecture)
+    if not isinstance(link_plan, list):
+        raise ValueError("link_plan must be a list")
+    result["link_plan"] = deepcopy(link_plan)
+    return result
+
+
+def attach_audit(architecture: dict[str, Any], audit: dict[str, Any]) -> dict[str, Any]:
+    result = _require_architecture(architecture)
+    if not isinstance(audit, dict):
+        raise ValueError("audit must be an object")
+    audits = result.get("audits")
+    if audits is None:
+        audits = []
+    if not isinstance(audits, list):
+        raise ValueError("architecture.audits must be null or a list")
+    result["audits"] = [*deepcopy(audits), deepcopy(audit)]
+    return result
+
+
+def attach_consistency_results(
+    architecture: dict[str, Any], *, navigation_conflicts: list[Any], parity_checks: list[Any]
+) -> dict[str, Any]:
+    result = _require_architecture(architecture)
+    if not isinstance(navigation_conflicts, list) or not isinstance(parity_checks, list):
+        raise ValueError("navigation_conflicts and parity_checks must be lists")
+    consistency = result.get("consistency")
+    if not isinstance(consistency, dict):
+        raise ValueError("architecture.consistency must be an object")
+    consistency["navigation_conflicts"] = deepcopy(navigation_conflicts)
+    consistency["parity_checks"] = deepcopy(parity_checks)
+    return result
+
+
 def build_topical_architecture(
     *,
     mode: str,
@@ -462,71 +464,61 @@ def build_topical_architecture(
     semantic_edges: list[dict[str, Any]],
     fact_sets: list[dict[str, Any]] | None = None,
     limitations: list[str] | None = None,
+    source_artifacts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Validate and assemble an evidence-first topical architecture artifact.
-
-    The helper never chooses page boundaries or clustering thresholds. Those
-    decisions are supplied by the orchestration layer and checked here.
-    """
-
+    """Validate and assemble an evidence-first topical architecture artifact."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {sorted(MODES)}")
-    if not isinstance(clusters, list):
-        raise ValueError("clusters must be a list")
-
     normalized_coverage = _validate_coverage(coverage)
+    normalized_clusters, cluster_limitations = _normalize_clusters(clusters)
     nodes, node_index = _validate_structural_nodes(structural_nodes)
     known_pages = set(node_index)
     decisions = _normalize_page_decisions(page_decisions, node_index)
     edges = _normalize_semantic_edges(semantic_edges, known_pages)
     mutable_fact_sets = _normalize_fact_sets(fact_sets, known_pages)
 
-    output_limitations = _unique(list(limitations or []))
-    if normalized_coverage["search"] == "MISSING":
+    output_limitations = _unique([
+        *list(limitations or []),
+        *cluster_limitations,
+        *_source_artifact_limitations(source_artifacts),
+    ])
+    search_state = normalized_coverage["search"]
+    if search_state == "MISSING":
         output_limitations = _unique([*output_limitations, SERP_VALIDATION_MISSING])
-        if clusters:
+        if normalized_clusters:
             raise ValueError("Search clusters cannot be supplied when Search coverage is missing")
         for decision in decisions:
             if set(decision.get("reason_codes", [])) & SEARCH_REASON_CODES:
-                raise ValueError(
-                    "Search-owned page decision provenance cannot be supplied when Search coverage is missing"
-                )
-            if (
-                decision["decision"] in SEARCH_REQUIRED_BOUNDARY_DECISIONS
-                and decision["claim_class"] != "HYPOTHESIS"
-            ):
-                raise ValueError(
-                    "boundary-changing page decisions must remain HYPOTHESIS when Search evidence is missing"
-                )
+                raise ValueError("Search-owned page decision provenance cannot be supplied when Search coverage is missing")
+            if decision["decision"] in SEARCH_REQUIRED_BOUNDARY_DECISIONS and decision["claim_class"] != "HYPOTHESIS":
+                raise ValueError("boundary-changing page decisions must remain HYPOTHESIS when Search evidence is missing")
         for edge in edges:
             if set(edge.get("reason_codes", [])) & SEARCH_REASON_CODES:
-                raise ValueError(
-                    "Search-owned semantic provenance cannot be supplied when Search coverage is missing"
-                )
+                raise ValueError("Search-owned semantic provenance cannot be supplied when Search coverage is missing")
+    elif search_state == "PARTIAL":
+        output_limitations = _unique([*output_limitations, SERP_VALIDATION_PARTIAL])
 
     structural_edges = [
         {"parent_page_id": node["canonical_parent_id"], "child_page_id": node["page_id"]}
-        for node in nodes
-        if node.get("canonical_parent_id") is not None
+        for node in nodes if node.get("canonical_parent_id") is not None
     ]
-
     return {
         "schema": SCHEMA,
         "mode": mode,
         "coverage": normalized_coverage,
-        "clusters": deepcopy(clusters),
+        "clusters": normalized_clusters,
         "page_decisions": decisions,
         "structural_tree": {"nodes": nodes, "edges": structural_edges},
         "semantic_graph": {
             "nodes": [{"page_id": page_id} for page_id in node_index],
             "edges": edges,
         },
-        "link_plan": [],
+        "link_plan": None,
         "consistency": {
             "mutable_fact_sets": mutable_fact_sets,
-            "navigation_conflicts": [],
-            "parity_checks": [],
+            "navigation_conflicts": None,
+            "parity_checks": None,
         },
-        "audits": [],
+        "audits": None,
         "limitations": output_limitations,
     }
