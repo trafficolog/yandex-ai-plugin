@@ -7,6 +7,8 @@ method is treated as consequential by default and is previewed first.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import os
 import sys
@@ -28,6 +30,7 @@ READ_METHODS = {
     "get",
     "getchanges",
 }
+AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v1"
 
 
 class YandexDirectError(RuntimeError):
@@ -36,6 +39,15 @@ class YandexDirectError(RuntimeError):
 
 def is_read_method(method: str) -> bool:
     return method.strip().casefold() in READ_METHODS
+
+
+def auth_principal_binding(token: str) -> str:
+    """Return a stable token-sensitive pseudonymous principal binding."""
+    return hmac.new(
+        token.encode("utf-8"),
+        AUTH_PRINCIPAL_DOMAIN,
+        hashlib.sha256,
+    ).hexdigest()
 
 
 @dataclass
@@ -81,6 +93,7 @@ class YandexDirectClient:
             "target": {
                 "environment": "production",
                 "client_login": self.client_login,
+                "auth_principal_hmac_sha256": auth_principal_binding(self.token),
             },
             "url": self.endpoint(service),
             "body": self.body(method, params),
