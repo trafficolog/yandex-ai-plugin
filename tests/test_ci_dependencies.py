@@ -14,6 +14,11 @@ def changed_files_condition(content: str, output_name: str) -> str:
 
 
 class CIDependencyTests(unittest.TestCase):
+    def test_validate_job_tests_supported_python_floor_and_current(self):
+        content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        self.assertIn("python-version: ['3.10', '3.13']", content)
+        self.assertIn('python-version: ${{ matrix.python-version }}', content)
+
     def test_shared_changes_include_workflows_contract_controls_and_specs(self):
         content = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
         self.assertIn('\\.github/workflows/', content)
