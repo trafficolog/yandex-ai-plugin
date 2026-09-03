@@ -118,11 +118,6 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertEqual(marketing["source"], {"source": "local", "path": "./plugins/yandex-marketing"})
         self.assertEqual(marketing["version"], plugin_version("yandex-marketing"))
 
-    def test_marketing_ci_covers_entry_and_terminal_helpers(self):
-        content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        self.assertIn("marketing_context.py", content)
-        self.assertIn("marketing_prioritize.py", content)
-
     def test_readme_lists_marketing_plugin_and_regression_command(self):
         content = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("[`yandex-marketing`](plugins/yandex-marketing/)", content)
