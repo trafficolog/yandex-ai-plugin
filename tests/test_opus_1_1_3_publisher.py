@@ -51,17 +51,41 @@ class Opus113PublisherTests(unittest.TestCase):
         for token in (
             "Detect immutable OPUS 1.1.3 release state",
             "id: release_state",
-            "release_count=0",
-            "release_shas=()",
+            "published_release_count=0",
+            "tag_count=0",
+            "immutable_shas=()",
             "already_published=true",
             "partial_release=true",
-            "Existing OPUS 1.1.3 releases point to multiple commits",
-            'git merge-base --is-ancestor "$released_sha" "$TARGET_SHA"',
-            "release_target_sha=$released_sha",
+            "Existing OPUS 1.1.3 tags/releases point to multiple commits",
+            'git merge-base --is-ancestor "$immutable_sha" "$TARGET_SHA"',
+            "release_target_sha=$immutable_sha",
             "steps.release_state.outputs.already_published == 'true'",
             "steps.release_state.outputs.partial_release == 'true'",
             "steps.release_state.outputs.already_published != 'true'",
             "RELEASE_TARGET_SHA: ${{ steps.release_state.outputs.release_target_sha }}",
+        ):
+            self.assertIn(token, text)
+
+    def test_draft_release_is_rejected_as_mutable_not_published_state(self):
+        text = self._text()
+        for token in (
+            '--json isDraft --jq \'.isDraft\'',
+            'if [[ "$release_is_draft" == "true" ]]',
+            'Draft release $tag is mutable and cannot count as published.',
+        ):
+            self.assertIn(token, text)
+        self.assertGreaterEqual(text.count('--json isDraft --jq \'.isDraft\''), 2)
+
+    def test_tag_only_state_contributes_to_immutable_recovery_target(self):
+        text = self._text()
+        for token in (
+            'if git show-ref --verify --quiet "refs/tags/$tag"; then',
+            'tag_sha="$(git rev-list -n 1 "$tag")"',
+            'immutable_shas+=("$tag_sha")',
+            'tag_count=$((tag_count + 1))',
+            'if [[ "$tag_count" -eq 0 ]]',
+            'immutable_sha="${immutable_shas[0]}"',
+            'release_target_sha=$immutable_sha',
         ):
             self.assertIn(token, text)
 
@@ -98,7 +122,7 @@ class Opus113PublisherTests(unittest.TestCase):
     def test_existing_tags_and_releases_are_verified_against_immutable_target(self):
         text = self._text()
         for token in (
-            'if gh release view "$tag"',
+            'release_is_draft="$(gh release view "$tag"',
             'existing_sha="$(git rev-list -n 1 "$tag")"',
             'if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]',
             '--verify-tag',
