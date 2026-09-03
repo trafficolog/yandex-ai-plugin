@@ -10,8 +10,10 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 try:
+    from ._approval import preview_id, require_approval
     from ._http import oauth_headers, redact_headers, request_json
 except ImportError:
+    from _approval import preview_id, require_approval
     from _http import oauth_headers, redact_headers, request_json
 
 BASE = "https://api-metrika.yandex.net/management/v1"
@@ -70,6 +72,36 @@ def _query_url(url: str, query: dict[str, Any] | None) -> str:
     return url + "?" + urlencode(normalized)
 
 
+def logs_approval_envelope(
+    counter_id: int,
+    action: str,
+    *,
+    request_id: int | None = None,
+    part_number: int | None = None,
+    query: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    method = "POST" if action in CONSEQUENTIAL_ACTIONS else "GET"
+    url = _query_url(
+        logs_endpoint(counter_id, action, request_id=request_id, part_number=part_number),
+        query,
+    )
+    return {
+        "schema": "yandex-ai-approval/v1",
+        "plugin": "yandex-metrika",
+        "operation": f"logs.{action}",
+        "method": method,
+        "target": {
+            "counter_id": int(counter_id),
+            "action": action,
+            "request_id": request_id,
+            "part_number": part_number,
+        },
+        "url": url,
+        "body": None,
+        "artifacts": [],
+    }
+
+
 def prepare_logs_request(
     counter_id: int,
     action: str,
@@ -82,17 +114,22 @@ def prepare_logs_request(
     if action in {"evaluate", "create"} and query:
         if query.get("date1") and query.get("date2"):
             validate_period(str(query["date1"]), str(query["date2"]))
-    method = "POST" if action in CONSEQUENTIAL_ACTIONS else "GET"
-    url = _query_url(
-        logs_endpoint(counter_id, action, request_id=request_id, part_number=part_number),
-        query,
+    envelope = logs_approval_envelope(
+        counter_id,
+        action,
+        request_id=request_id,
+        part_number=part_number,
+        query=query,
     )
-    return {
-        "method": method,
-        "url": url,
+    result = {
+        "method": envelope["method"],
+        "url": envelope["url"],
         "headers": redact_headers(oauth_headers(token, content_type="")),
         "consequential": action in CONSEQUENTIAL_ACTIONS,
     }
+    if result["consequential"]:
+        result["preview_id"] = preview_id(envelope)
+    return result
 
 
 def execute_json_action(
@@ -102,6 +139,29 @@ def execute_json_action(
     token: str,
     request_id: int | None = None,
     query: dict[str, Any] | None = None,
+    approve: str | None = None,
+) -> Any:
+    envelope = logs_approval_envelope(
+        counter_id,
+        action,
+        request_id=request_id,
+        query=query,
+    )
+    if action in CONSEQUENTIAL_ACTIONS:
+        require_approval(envelope, approve)
+    _, payload = request_json(envelope["method"], envelope["url"], token)
+    return payload
+
+
+def run_json_action(
+    counter_id: int,
+    action: str,
+    *,
+    token: str,
+    request_id: int | None = None,
+    query: dict[str, Any] | None = None,
+    execute: bool = False,
+    approve: str | None = None,
 ) -> Any:
     preview = prepare_logs_request(
         counter_id,
@@ -110,8 +170,16 @@ def execute_json_action(
         request_id=request_id,
         query=query,
     )
-    _, payload = request_json(preview["method"], preview["url"], token)
-    return payload
+    if preview["consequential"] and not execute:
+        return {"dry_run": True, **preview}
+    return execute_json_action(
+        counter_id,
+        action,
+        token=token,
+        request_id=request_id,
+        query=query,
+        approve=approve,
+    )
 
 
 def download_part(
@@ -134,7 +202,7 @@ def download_part(
     return output
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Yandex Metrika Logs API helper")
     parser.add_argument("action", choices=["evaluate", "create", "status", "download", "clean"])
     parser.add_argument("counter", type=int)
@@ -147,7 +215,8 @@ def main() -> int:
     parser.add_argument("--attribution")
     parser.add_argument("--output")
     parser.add_argument("--execute", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
+    args = parser.parse_args(argv)
 
     token = os.environ.get("YANDEX_METRIKA_TOKEN", "")
     query = None
@@ -170,22 +239,14 @@ def main() -> int:
         print(json.dumps({"output": str(path)}, ensure_ascii=False))
         return 0
 
-    preview = prepare_logs_request(
+    payload = run_json_action(
         args.counter,
         args.action,
         token=token,
         request_id=args.request_id,
         query=query,
-    )
-    if preview["consequential"] and not args.execute:
-        print(json.dumps({"dry_run": True, **preview}, ensure_ascii=False, indent=2))
-        return 0
-    payload = execute_json_action(
-        args.counter,
-        args.action,
-        token=token,
-        request_id=args.request_id,
-        query=query,
+        execute=args.execute,
+        approve=args.approve,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
