@@ -2,13 +2,27 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.1`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API v501 workflows.
-
-> `DOCS 1.0.0` adds bilingual documentation; the plugin version is unchanged.
+Version `2.0.0`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API v501 workflows.
 
 ## Execution model
 
 Preference: compatible connected MCP/app → bundled Python helper → export/file fallback. Consequential changes follow `read → analyze → preview → explicit approval → write → verify`.
+
+### Migration 1.x → 2.0.0
+
+`2.0.0` introduces a breaking write-safety contract. The old `--execute`-only invocation is no longer sufficient authorization:
+
+```bash
+# 1.x — old contract
+python scripts/yd_api.py campaigns update --params-file update.json --execute
+
+# 2.0.0 — preview first
+python scripts/yd_api.py campaigns update --params-file update.json
+# then, only after the exact preview is approved in a later user turn
+python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
+```
+
+The `preview_id` binds service, method, `Client-Login`, environment and body. A payload change requires a fresh preview/approval.
 
 ## Capability matrix
 
@@ -33,6 +47,7 @@ Preference: compatible connected MCP/app → bundled Python helper → export/fi
 - report artifacts preserve goal/attribution/VAT provenance and do not invent currency;
 - autotargeting and keyword criteria stay distinct;
 - unknown/mutating methods are safe-by-default and preview before execute;
+- consequential writes require exact `preview_id` approval;
 - no universal CPA/CPC/CTR/ROAS kill rules;
 - campaign creation is distinct from activation.
 
@@ -41,7 +56,8 @@ Preference: compatible connected MCP/app → bundled Python helper → export/fi
 ```bash
 export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns get --params '{"SelectionCriteria":{},"FieldNames":["Id","Name","Status"]}'
-python scripts/yd_api.py campaigns update --params-file update.json
+python scripts/yd_api.py campaigns update --params-file update.json # preview
+python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
 python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
 ```
 
