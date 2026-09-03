@@ -1,4 +1,4 @@
-name: Verify draft release tag materialization
+name: Verify draft release tag reservation
 
 on:
   push:
@@ -10,20 +10,21 @@ permissions:
 
 jobs:
   verify:
-    name: Verify draft release tag behavior
+    name: Verify draft release tag reservation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Probe draft and publish behavior, then clean up
+      - name: Probe whether a draft reserves its future tag name, then clean up
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          tag="__opus-1.1.3-publish-canary-${GITHUB_RUN_ID}"
+          tag="__opus-1.1.3-reservation-canary-${GITHUB_RUN_ID}"
+          alternate_sha="$(git rev-parse HEAD^)"
           cleanup() {
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
             gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" >/dev/null 2>&1 || true
@@ -34,28 +35,16 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --draft \
             --target "$GITHUB_SHA" \
-            --title "Draft/publish immutability canary" \
+            --title "Draft tag reservation canary" \
             --notes "Temporary canary for OPUS 1.1.3 publisher runtime hardening."
 
-          draft_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
-          echo "draft_state=$draft_state"
-
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --silent >/dev/null 2>&1; then
-            echo "DRAFT_TAG_MATERIALIZED=true"
-            exit 1
+          if gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$tag" \
+            -f sha="$alternate_sha" >/dev/null 2>&1; then
+            echo "DRAFT_TAG_RESERVED=false"
+            observed_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+            echo "INJECTED_TAG_SHA=$observed_sha"
+            test "$observed_sha" = "$alternate_sha"
+          else
+            echo "DRAFT_TAG_RESERVED=true"
           fi
-          echo "DRAFT_TAG_MATERIALIZED=false"
-
-          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false
-
-          published_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
-          echo "published_state=$published_state"
-          published_immutable="$(cut -f2 <<< "$published_state")"
-          published_target="$(cut -f3 <<< "$published_state")"
-          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
-          echo "PUBLISHED_IMMUTABLE=$published_immutable"
-          echo "PUBLISHED_TARGET=$published_target"
-          echo "PUBLISHED_TAG_SHA=$tag_sha"
-
-          test "$published_target" = "$GITHUB_SHA"
-          test "$tag_sha" = "$GITHUB_SHA"
