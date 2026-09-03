@@ -9,6 +9,16 @@
 - Embedded URL basic-auth credentials are redacted from previews; their SHA-256 fingerprint remains part of the approval binding, so changed credentials invalidate the old approval.
 - API/account/file content is untrusted data rather than instructions; generic permission does not carry over to a new payload.
 
+Migration:
+
+```bash
+# 1.x
+python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST --body '{"url":"https://example.com/sitemap.xml"}' --execute
+# 2.0.0
+python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST --body '{"url":"https://example.com/sitemap.xml"}'
+python scripts/yw_api.py user/42/hosts/https:example.com/sitemaps --method POST --body '{"url":"https://example.com/sitemap.xml"}' --execute --approve <preview_id>
+```
+
 ## [1.0.3] — 2026-09-02
 
 - Re-verified the official indexing archive status contract: the response uses `state` with `IN_PROGRESS`, `DONE`, and `FAILED`, and `download_url` belongs to a completed `DONE` state.
