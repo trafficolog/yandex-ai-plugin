@@ -78,6 +78,47 @@ class TestMetrikaImport(unittest.TestCase):
             )
             self.assertIn("DIRECT_DUPLICATION_RISK", preview["warnings"])
 
+    def test_direct_traffic_source_detail_without_utm_requires_explicit_override(self):
+        content = "Date,TrafficSource,TrafficSourceDetail,Expenses\n2026-08-01,ad,yandex_direct_star,100\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, content)
+            with self.assertRaisesRegex(ValueError, "DIRECT_DUPLICATION_RISK"):
+                prepare_import("expenses", 123, path, "secret", source="agency")
+
+            preview = prepare_import(
+                "expenses",
+                123,
+                path,
+                "secret",
+                source="agency",
+                allow_direct_risk=True,
+            )
+            self.assertIn("DIRECT_DUPLICATION_RISK", preview["warnings"])
+
+    def test_unverifiable_expense_source_requires_explicit_override(self):
+        content = "Date,TrafficSource,Expenses\n2026-08-01,ad,100\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, content)
+            with self.assertRaisesRegex(ValueError, "DIRECT_SOURCE_UNVERIFIED"):
+                prepare_import("expenses", 123, path, "secret", source="MyDirect")
+
+            preview = prepare_import(
+                "expenses",
+                123,
+                path,
+                "secret",
+                source="MyDirect",
+                allow_direct_risk=True,
+            )
+            self.assertIn("DIRECT_SOURCE_UNVERIFIED", preview["warnings"])
+
+    def test_non_direct_traffic_source_detail_is_allowed_without_utm(self):
+        content = "Date,TrafficSource,TrafficSourceDetail,Expenses\n2026-08-01,ad,google_adwords,100\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, content)
+            preview = prepare_import("expenses", 123, path, "secret", source="agency")
+            self.assertEqual(preview.get("warnings"), [])
+
     def test_non_direct_expense_csv_is_not_flagged(self):
         content = "Date,UTMSource,UTMMedium,Expenses\n2026-08-01,newsletter,email,100\n"
         with tempfile.TemporaryDirectory() as tmp:
