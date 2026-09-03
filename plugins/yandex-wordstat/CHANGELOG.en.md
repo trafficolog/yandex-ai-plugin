@@ -2,6 +2,12 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
+## [1.1.2] — 2026-09-03
+
+- `wordstat-topic-map/v1` now normalizes query text with Unicode NFKC + casefold + whitespace folding, matching conservative cross-service SEO query joining.
+- Unicode compatibility variants no longer create separate query keys; provenance, aliases, and separate demand observations remain preserved without invented summation.
+- Candidate-only ownership is unchanged: Wordstat still does not claim final SERP clusters, page boundaries, or internal links.
+
 ## [1.1.1] — 2026-09-03
 
 - Hardened `wordstat-topic-map/v1` provenance: duplicate `seeds[].seed` identifiers are rejected before phrase normalization.
