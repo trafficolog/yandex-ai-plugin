@@ -76,6 +76,12 @@ jobs:
               echo "Published OPUS 1.1.3 release state has no immutable Git tags." >&2
               exit 1
             fi
+            git fetch origin main --prune
+            current_main_sha="$(git rev-parse origin/main)"
+            if [[ "$current_main_sha" != "$TARGET_SHA" ]]; then
+              echo "Stale main CI run: current main is $current_main_sha, target is $TARGET_SHA." >&2
+              exit 1
+            fi
             echo "already_published=false" >> "$GITHUB_OUTPUT"
             echo "partial_release=false" >> "$GITHUB_OUTPUT"
             echo "release_target_sha=$TARGET_SHA" >> "$GITHUB_OUTPUT"
