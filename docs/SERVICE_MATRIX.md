@@ -7,7 +7,7 @@
 | Service plugin | Tier | Status | Version | Primary scope | Execution sources to evaluate |
 |---|---:|---|---|---|---|
 | Yandex Direct | 1 | **available** | 1.0.1 | campaigns, audit, reports, optimization, keywords, budget | bundled API helper; future MCP/app adapter |
-| Yandex Metrika | 1 | **available** | 1.0.2 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; two-layer Direct expense duplication guard | bundled API helpers; optional MCP/app backend |
+| Yandex Metrika | 1 | **available** | 1.0.3 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; provenance-aware Direct expense duplication guard | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 1.0.3 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports; verified indexing archive `state` contract and hardened PRO export contract | bundled API helpers; optional MCP/app backend |
 | Yandex Wordstat | 1 | **available** | 1.1.1 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
 | Yandex Search | 1 | **available** | 1.0.2 | web SERP, batch, rankings, competitors, URL-overlap clustering; 250-result depth | bundled Search API v2 helpers; optional MCP/app backend |
@@ -56,5 +56,7 @@ Ownership contract:
 ## Repository controls
 
 High-risk contracts привязаны к реальным skills/helpers/tests в [`CONTRACT_MATRIX.json`](CONTRACT_MATRIX.json). Матрица является traceability index, а не semantic proof. В PR/push 90-day age блокирует изменённый controlled reference; weekly scheduled strict check проверяет весь контролируемый набор и синхронизирует freshness issue.
+
+Shared runtime promotion требует не только повторения и стабильного interface, но и безопасного installability/distribution contract для независимо устанавливаемых plugins; hidden repo-root dependencies запрещены.
 
 См. [`ROADMAP.md`](ROADMAP.md) · [English](ROADMAP.en.md).
