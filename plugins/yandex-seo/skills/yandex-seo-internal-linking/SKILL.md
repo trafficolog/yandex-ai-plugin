@@ -11,11 +11,16 @@ Each proposed link must identify source page, target page, semantic relation, us
 
 Do not impose universal link-count, anchor-density, word-distance or exact-match requirements. Reject instructions that require an exact-match anchor as a ranking rule.
 
-Audit mode may report deterministic findings such as:
+Audit mode uses directed inbound connectivity. An outgoing link does not prevent `ORPHAN_PAGE`; explicit `ROOT` is exempt, while a parentless `BRIDGE` without inbound links is still an orphan. Duplicate source→target links remain counted rather than silently collapsing.
+
+Deterministic findings include:
 
 - `ORPHAN_PAGE`;
 - `STRUCTURAL_PARENT_LINK_MISSING`;
 - `MISSING_JUSTIFIED_LINK`;
+- `BROKEN_SEMANTIC_BRIDGE`;
+- `DUPLICATE_LINK`;
+- `UNJUSTIFIED_LINK`;
 - `UNKNOWN_LINK_ENDPOINT`.
 
 A semantic graph may contain legitimate cycles (for example overview → detail → overview). Do not label graph cycles as errors unless a separate UX/navigation analysis proves a concrete problem.
