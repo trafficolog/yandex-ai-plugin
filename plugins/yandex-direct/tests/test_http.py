@@ -1,4 +1,5 @@
 import io
+import json
 import unittest
 from urllib.error import HTTPError
 
@@ -23,6 +24,21 @@ class RaisingOpener:
     def __call__(self, request, *, timeout):
         self.calls += 1
         raise self.exc
+
+
+class FakeResponse:
+    def __init__(self, payload: dict, headers: dict[str, str]):
+        self._raw = json.dumps(payload).encode("utf-8")
+        self.headers = headers
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return self._raw
 
 
 class DirectHTTPTests(unittest.TestCase):
@@ -67,6 +83,46 @@ class DirectHTTPTests(unittest.TestCase):
         self.assertEqual(redacted["Authorization"], "Bearer ***")
         self.assertEqual(redacted["Client-Login"], "client-login")
         self.assertNotIn("super-secret-token", str(redacted))
+
+    def test_response_payload_and_transport_metadata_are_separate(self):
+        api_payload = {"result": {"Campaigns": [{"Id": 123}]}}
+        response = FakeResponse(
+            api_payload,
+            {
+                "RequestId": "req-123",
+                "Units": "10/999/1000",
+                "Units-Used-Login": "7",
+                "Authorization": "must-not-leak",
+                "X-Other": "ignored",
+            },
+        )
+
+        payload, transport = request_json(
+            "https://example.invalid",
+            {"Authorization": "Bearer secret"},
+            {"method": "get", "params": {}},
+            opener=lambda request, timeout: response,
+        )
+
+        self.assertEqual(payload, api_payload)
+        self.assertEqual(
+            transport,
+            {
+                "request_id": "req-123",
+                "units": "10/999/1000",
+                "units_used_login": "7",
+            },
+        )
+
+    def test_absent_transport_headers_are_omitted(self):
+        response = FakeResponse({"result": {}}, {"X-Other": "ignored"})
+        _payload, transport = request_json(
+            "https://example.invalid",
+            {"Authorization": "Bearer secret"},
+            {"method": "get", "params": {}},
+            opener=lambda request, timeout: response,
+        )
+        self.assertEqual(transport, {})
 
 
 if __name__ == "__main__":
