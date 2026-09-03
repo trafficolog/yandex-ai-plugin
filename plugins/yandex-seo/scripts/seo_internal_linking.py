@@ -201,7 +201,7 @@ def audit_link_inventory(
         page_id = node["page_id"]
         parent = node.get("canonical_parent_id")
         page_role = node.get("page_role")
-        root_exempt = page_role == "ROOT" or (parent is None and page_role != "BRIDGE")
+        root_exempt = page_role == "ROOT" or (parent is None and page_role is None)
         if not root_exempt and inbound_counts[page_id] == 0:
             findings.append({"type": "ORPHAN_PAGE", "page_id": page_id})
 
