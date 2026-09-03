@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 from typing import Any, Callable
@@ -18,6 +19,7 @@ API_ROOT = "https://api.webmaster.yandex.net"
 ALLOWED_VERSIONS = {"v4", "v4.1"}
 READ_METHODS = {"GET", "HEAD", "OPTIONS"}
 APPROVAL_SCHEMA = "yandex-ai-approval/v1"
+BASIC_AUTH_BINDING_DOMAIN = b"yandex-webmaster-basic-auth/v1\0"
 
 
 def api_url(path: str, *, params: dict[str, Any] | None = None, version: str = "v4") -> str:
@@ -50,14 +52,16 @@ def redact_url_credentials(value: str) -> str:
     return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
 
 
-def _approval_url_credentials(value: str) -> str:
-    """Remove URL credentials from approval data while still binding their exact values."""
+def _approval_url_credentials(value: str, *, token: str | None) -> str:
+    """Bind URL credentials with an OAuth-keyed HMAC without exposing a password verifier."""
     try:
         parsed = urlsplit(value)
     except ValueError:
         return value
     if not parsed.scheme or not parsed.hostname or (parsed.username is None and parsed.password is None):
         return value
+    if not token:
+        raise ValueError("OAuth token is required to safely bind embedded URL credentials")
     host = parsed.hostname
     if ":" in host and not host.startswith("["):
         host = f"[{host}]"
@@ -65,10 +69,12 @@ def _approval_url_credentials(value: str) -> str:
         host = f"{host}:{parsed.port}"
     username = parsed.username or ""
     password = parsed.password or ""
-    credential_fingerprint = hashlib.sha256(
-        f"{username}\0{password}".encode("utf-8")
+    credential_binding = hmac.new(
+        token.encode("utf-8"),
+        BASIC_AUTH_BINDING_DOMAIN + f"{username}\0{password}".encode("utf-8"),
+        hashlib.sha256,
     ).hexdigest()
-    netloc = f"credential-sha256:{credential_fingerprint}@{host}"
+    netloc = f"credential-hmac-sha256:{credential_binding}@{host}"
     return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
 
 
@@ -84,15 +90,15 @@ def _redact_preview_value(value: Any) -> Any:
     return value
 
 
-def _approval_value(value: Any) -> Any:
+def _approval_value(value: Any, *, token: str | None) -> Any:
     if isinstance(value, str):
-        return _approval_url_credentials(value)
+        return _approval_url_credentials(value, token=token)
     if isinstance(value, list):
-        return [_approval_value(item) for item in value]
+        return [_approval_value(item, token=token) for item in value]
     if isinstance(value, tuple):
-        return [_approval_value(item) for item in value]
+        return [_approval_value(item, token=token) for item in value]
     if isinstance(value, dict):
-        return {key: _approval_value(item) for key, item in value.items()}
+        return {key: _approval_value(item, token=token) for key, item in value.items()}
     return value
 
 
@@ -103,9 +109,10 @@ def approval_envelope(
     params: dict[str, Any] | None = None,
     body: Any | None = None,
     version: str = "v4",
+    token: str | None = None,
 ) -> dict[str, Any]:
-    safe_params = _approval_value(params or {})
-    safe_body = _approval_value(body)
+    safe_params = _approval_value(params or {}, token=token)
+    safe_body = _approval_value(body, token=token)
     return {
         "schema": APPROVAL_SCHEMA,
         "plugin": "yandex-webmaster",
@@ -139,6 +146,7 @@ def prepare_request(
                 params=params,
                 body=body,
                 version=version,
+                token=token,
             )
         )
     return result
@@ -169,6 +177,7 @@ def run_request(
                 params=params,
                 body=body,
                 version=version,
+                token=token,
             ),
             approve,
         )
