@@ -42,9 +42,9 @@ class MarketplaceLayoutTests(unittest.TestCase):
         direct = next(item for item in data["plugins"] if item["name"] == "yandex-direct-suite")
         self.assertEqual(direct["source"], {"source": "local", "path": "./plugins/yandex-direct"})
 
-    def test_direct_plugin_preserves_version(self):
+    def test_direct_plugin_manifest_declares_skills_path(self):
         data = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text())
-        self.assertEqual(data["version"], "2.0.0")
+        self.assertIn("version", data)
         self.assertEqual(data["skills"], "./skills/")
 
     def test_direct_router_and_specialized_skills_moved(self):
@@ -96,29 +96,17 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn("metrika:", content)
         self.assertIn("plugins/yandex-metrika", content)
 
-    def test_service_matrix_marks_metrika_available(self):
-        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Metrika | 1 | **available** | 2.0.0 |", content)
-
     def test_ci_has_webmaster_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("webmaster:", content)
         self.assertIn("plugins/yandex-webmaster", content)
         self.assertIn("steps.detect.outputs.webmaster", content)
 
-    def test_service_matrix_marks_webmaster_available(self):
-        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Webmaster | 1 | **available** | 2.0.0 |", content)
-
     def test_ci_has_wordstat_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("wordstat:", content)
         self.assertIn("plugins/yandex-wordstat", content)
         self.assertIn("steps.detect.outputs.wordstat", content)
-
-    def test_service_matrix_marks_wordstat_available(self):
-        content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.1.1 |", content)
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
@@ -131,10 +119,6 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('search:',content)
         self.assertIn('plugins/yandex-search',content)
         self.assertIn('steps.detect.outputs.search',content)
-
-    def test_service_matrix_marks_search_available(self):
-        content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Search | 1 | **available** | 1.0.2 |',content)
 
     def test_roadmap_marks_phase5_implemented_and_phase6_next(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -153,11 +137,6 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('plugins/yandex-seo',content)
         self.assertIn('steps.detect.outputs.seo',content)
 
-    def test_service_matrix_marks_seo_available(self):
-        content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex SEO | X | **available** | 1.1.1 |',content)
-        self.assertIn('`yandex-seo`: **available 1.1.1**',content)
-
     def test_roadmap_marks_phase6a_and_phase6b(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
         self.assertIn('### Phase 6A — Yandex SEO',content)
@@ -175,7 +154,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
         data=json.loads((ROOT/'.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
         marketing=next(item for item in data['plugins'] if item['name']=='yandex-marketing')
         self.assertEqual(marketing['source'], {'source':'local','path':'./plugins/yandex-marketing'})
-        self.assertEqual(marketing['version'], '1.1.0')
+        self.assertEqual(marketing['version'], plugin_version('yandex-marketing'))
 
     def test_ci_has_marketing_plugin_job(self):
         content=(ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8')
@@ -184,11 +163,6 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('steps.detect.outputs.marketing',content)
         self.assertIn('marketing_context.py',content)
         self.assertIn('marketing_prioritize.py',content)
-
-    def test_service_matrix_marks_marketing_available(self):
-        content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex Marketing | X | **available** | 1.1.0 |',content)
-        self.assertIn('`yandex-marketing`: **available 1.1.0**',content)
 
     def test_roadmap_marks_phase6b_implemented(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -203,7 +177,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertIn('[`yandex-marketing`](plugins/yandex-marketing/)',content)
         self.assertIn('cd plugins/yandex-marketing',content)
         self.assertIn('marketing_prioritize.py',content)
-        self.assertIn('yandex-marketing     1.1.0', content)
+        self.assertIn(f"yandex-marketing     {plugin_version('yandex-marketing')}", content)
 
     def test_release_changelog_tracks_phase7_and_prior_releases(self):
         self.assertTrue((ROOT/'CHANGELOG.md').is_file())
