@@ -4,9 +4,39 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "yandex-direct"
+SERVICE_PLUGINS = {
+    "Yandex Direct": "yandex-direct",
+    "Yandex Metrika": "yandex-metrika",
+    "Yandex Webmaster": "yandex-webmaster",
+    "Yandex Wordstat": "yandex-wordstat",
+    "Yandex Search": "yandex-search",
+    "Yandex SEO": "yandex-seo",
+    "Yandex Marketing": "yandex-marketing",
+}
+
+
+def plugin_version(plugin_dir: str) -> str:
+    manifest = ROOT / "plugins" / plugin_dir / ".codex-plugin" / "plugin.json"
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    return data["version"]
+
+
+def matrix_version(service: str, content: str) -> str:
+    for line in content.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and cells[0] == service:
+            return cells[3]
+    raise AssertionError(f"missing service row: {service}")
 
 
 class MarketplaceLayoutTests(unittest.TestCase):
+    def test_service_matrix_versions_match_plugin_manifests(self):
+        for matrix_path in ["docs/SERVICE_MATRIX.md", "docs/SERVICE_MATRIX.en.md"]:
+            content = (ROOT / matrix_path).read_text(encoding="utf-8")
+            for service, plugin_dir in SERVICE_PLUGINS.items():
+                with self.subTest(matrix=matrix_path, service=service):
+                    self.assertEqual(matrix_version(service, content), plugin_version(plugin_dir))
+
     def test_root_marketplace_points_to_direct_plugin(self):
         data = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text())
         direct = next(item for item in data["plugins"] if item["name"] == "yandex-direct-suite")
