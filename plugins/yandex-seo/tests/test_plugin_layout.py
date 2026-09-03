@@ -15,7 +15,7 @@ class PluginLayoutTests(unittest.TestCase):
         p = ROOT / '.codex-plugin/plugin.json'
         data = json.loads(p.read_text(encoding='utf-8'))
         self.assertEqual(data['name'], 'yandex-seo')
-        self.assertEqual(data['version'], '1.1.1')
+        self.assertEqual(data['version'], '1.1.2')
         self.assertEqual(data['skills'], './skills/')
 
     def test_exact_skill_set(self):
@@ -34,12 +34,15 @@ class PluginLayoutTests(unittest.TestCase):
         self.assertIn('GREENFIELD', text)
         self.assertIn('EXISTING_SITE', text)
         self.assertIn('SERP_VALIDATION_MISSING', text)
+        self.assertIn('SERP_VALIDATION_PARTIAL', text)
         self.assertIn('METHODOLOGY', text)
 
     def test_internal_linking_contract(self):
         text = (ROOT/'skills/yandex-seo-internal-linking/SKILL.md').read_text(encoding='utf-8')
         self.assertIn('preview-only', text.lower())
         self.assertIn('ORPHAN_PAGE', text)
+        self.assertIn('DUPLICATE_LINK', text)
+        self.assertIn('BROKEN_SEMANTIC_BRIDGE', text)
         self.assertIn('MISSING_JUSTIFIED_LINK', text)
         self.assertIn('exact-match', text.lower())
 
