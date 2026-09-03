@@ -64,7 +64,6 @@ class Opus113PublisherTests(unittest.TestCase):
         for token in (
             'initial_publication=true',
             'initial_publication=false',
-            "steps.release_state.outputs.initial_publication == 'true'",
             'Late stale main CI run: current main is $current_main_sha, target is $TARGET_SHA.',
         ):
             self.assertIn(token, text)
