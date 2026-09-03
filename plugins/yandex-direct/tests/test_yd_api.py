@@ -40,6 +40,7 @@ class TestYandexDirectClient(unittest.TestCase):
         self.assertEqual(preview["headers"]["Authorization"], "Bearer ***REDACTED***")
         self.assertEqual(preview["body"]["method"], "update")
         self.assertEqual(preview["preview_id"], preview_id(client.approval_envelope("campaigns", "update", {"Campaigns": [{"Id": 123}]})))
+        self.assertNotIn("secret-token", str(client.approval_envelope("campaigns", "update", {})))
 
     def test_write_execute_requires_approval_before_transport(self):
         client = YandexDirectClient("token", client_login="client")
@@ -78,6 +79,26 @@ class TestYandexDirectClient(unittest.TestCase):
             with self.assertRaises(ValueError):
                 target.request("campaigns", "update", params, approve=approve)
         opener.assert_not_called()
+
+    def test_token_change_invalidates_approval_without_client_login(self):
+        params = {"Campaigns": [{"Id": 123}]}
+        source = YandexDirectClient("token-account-a")
+        approve = preview_id(source.approval_envelope("campaigns", "update", params))
+        target = YandexDirectClient("token-account-b")
+        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+            with self.assertRaises(ValueError):
+                target.request("campaigns", "update", params, approve=approve)
+        opener.assert_not_called()
+
+    def test_auth_principal_binding_is_stable_but_token_sensitive(self):
+        params = {"Campaigns": [{"Id": 123}]}
+        first = YandexDirectClient("secret-token-a").approval_envelope("campaigns", "update", params)
+        same = YandexDirectClient("secret-token-a").approval_envelope("campaigns", "update", params)
+        changed = YandexDirectClient("secret-token-b").approval_envelope("campaigns", "update", params)
+        self.assertEqual(first, same)
+        self.assertNotEqual(first, changed)
+        self.assertNotIn("secret-token-a", str(first))
+        self.assertNotIn("secret-token-b", str(changed))
 
     def test_service_change_invalidates_approval(self):
         client = YandexDirectClient("token", client_login="client")
