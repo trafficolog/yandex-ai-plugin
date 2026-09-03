@@ -9,6 +9,16 @@
 - Import approval привязан к SHA-256 точных байтов файла, поэтому изменение содержимого требует нового preview и нового approval.
 - API/account/file content трактуется как untrusted data, а не инструкции; generic permission не переносится на другой payload.
 
+Migration:
+
+```bash
+# 1.x
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute
+# 2.0.0
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}'
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute --approve <preview_id>
+```
+
 ## [1.0.3] — 2026-09-03
 
 - Закрыта остаточная щель Direct expense guard для CSV без `UTMSource` / `UTMMedium`.
