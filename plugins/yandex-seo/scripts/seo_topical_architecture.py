@@ -22,6 +22,18 @@ PAGE_ROLES = {
     "OTHER",
 }
 ROOT_PAGE_ROLES = {"ROOT", "BRIDGE"}
+STRUCTURAL_NODE_FIELDS = {
+    "page_id",
+    "url",
+    "proposed_url",
+    "title",
+    "page_role",
+    "canonical_parent_id",
+    "breadcrumbs",
+    "cluster_ids",
+    "evidence",
+    "confidence",
+}
 PAGE_DECISIONS = {
     "PRESERVE",
     "CREATE",
@@ -163,7 +175,11 @@ def _validate_structural_nodes(structural_nodes: list[dict[str, Any]]) -> tuple[
         if page_id in by_id:
             raise ValueError(f"duplicate page_id: {page_id}")
 
-        node = deepcopy(raw)
+        node = {
+            key: deepcopy(raw[key])
+            for key in STRUCTURAL_NODE_FIELDS
+            if key in raw
+        }
         node["page_id"] = page_id
         node["confidence"] = _validate_confidence(raw.get("confidence"))
         node.setdefault("canonical_parent_id", None)
