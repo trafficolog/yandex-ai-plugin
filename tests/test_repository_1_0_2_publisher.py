@@ -9,7 +9,7 @@ WORKFLOW = ROOT / ".github/workflows/publish-repository-1.0.2.yml"
 class Repository102PublisherTests(unittest.TestCase):
     def test_publisher_targets_only_repository_release_1_0_2(self):
         text = WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn('"1.0.2"', text)
+        self.assertIn('gh release create "1.0.2"', text)
         for forbidden in [
             "yandex-direct-v",
             "yandex-metrika-v",
@@ -34,21 +34,40 @@ class Repository102PublisherTests(unittest.TestCase):
         ]:
             self.assertIn(token, text)
 
-    def test_release_contract_is_idempotent_and_version_matrix_stays_unchanged(self):
+    def test_existing_release_is_verified_and_suppresses_publication(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         for token in [
             "Detect immutable repository 1.0.2 release state",
+            "id: release_state",
+            'git show-ref --verify --quiet "refs/tags/$tag"',
+            'released_sha="$(git rev-list -n 1 "$tag")"',
+            'git merge-base --is-ancestor "$released_sha" "$TARGET_SHA"',
             "already_published=true",
+            "steps.release_state.outputs.already_published == 'true'",
+            "steps.release_state.outputs.already_published != 'true'",
             "Repository release 1.0.2 already published; no-op.",
-            '"version": "1.0.1"',
-            '"version": "1.0.2"',
-            '"version": "1.0.3"',
-            '"version": "1.1.1"',
-            '"version": "1.1.0"',
-            "## [1.0.2] — 2026-09-03",
-            '--target "$TARGET_SHA"',
+            "Publish repository release",
         ]:
             self.assertIn(token, text)
+
+    def test_release_contract_checks_every_plugin_manifest_and_expected_version(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        expected = {
+            "plugins/yandex-direct/.codex-plugin/plugin.json": "1.0.1",
+            "plugins/yandex-metrika/.codex-plugin/plugin.json": "1.0.2",
+            "plugins/yandex-webmaster/.codex-plugin/plugin.json": "1.0.3",
+            "plugins/yandex-wordstat/.codex-plugin/plugin.json": "1.1.1",
+            "plugins/yandex-search/.codex-plugin/plugin.json": "1.0.2",
+            "plugins/yandex-seo/.codex-plugin/plugin.json": "1.1.1",
+            "plugins/yandex-marketing/.codex-plugin/plugin.json": "1.1.0",
+        }
+        for path, version in expected.items():
+            self.assertIn(
+                f"grep -F '\"version\": \"{version}\"' {path}",
+                text,
+            )
+        self.assertIn("## [1.0.2] — 2026-09-03", text)
+        self.assertIn('--target "$TARGET_SHA"', text)
 
 
 if __name__ == "__main__":
