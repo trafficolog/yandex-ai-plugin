@@ -34,6 +34,8 @@ The v1 reason-code vocabulary is finite and validated: `SERP_OVERLAP`, `SERP_BRI
 
 Each page has a unique `page_id` and at most one `canonical_parent_id`. The deterministic validator rejects unknown parents, cycles and duplicate URL/proposed-URL locations. No universal maximum depth is imposed.
 
+Structural nodes are normalized through an explicit field whitelist: `page_id`, `url`, `proposed_url`, `title`, `page_role`, `canonical_parent_id`, `breadcrumbs`, `cluster_ids`, `evidence`, `confidence`. Arbitrary recommendation/transport/execution metadata such as `decision`, `status`, `write` or `execution_id` is not serialized into `structural_tree.nodes`; page decisions are the dedicated recommendation-state surface.
+
 The normalized page-role vocabulary is `ROOT`, `HUB`, `SUPPORT`, `DETAIL`, `COMPARISON`, `TRANSACTIONAL`, `DEFINITION`, `EVIDENCE`, `BRIDGE`, `UTILITY`, `OTHER`. A **proposed** page with no `canonical_parent_id` must explicitly declare `page_role: ROOT` or `page_role: BRIDGE`; this prevents accidental orphan proposed roots. Existing-site observed URL roots are not retroactively forced to supply a proposed-page role.
 
 When `breadcrumbs` are supplied, they are treated as a structural assertion: every breadcrumb page must exist and the ordered list must exactly match the canonical ancestor chain from root to the node's parent. Omitting the `breadcrumbs` field remains allowed; the helper does not invent a breadcrumb contract that the caller did not supply.
