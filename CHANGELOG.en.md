@@ -4,6 +4,22 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.2] — 2026-09-03
+
+Repository-level maintenance release for release-infrastructure hardening after Phase 7.
+
+### Fixed
+
+- The legacy `OPUS 1.1.1` publisher now recognizes a fully published historical release set at one ancestor SHA and completes later `main` runs as a verified no-op.
+- A partial OPUS release set resumes against its already-published common SHA instead of being moved to current `main`.
+- Inconsistent or multi-SHA historical release state remains a hard failure; historical tags are never retargeted or mutated.
+- Added regression contract `tests/test_opus_publisher_idempotency.py` for immutable/no-op/partial-recovery semantics.
+- Added the repository `1.0.2` publisher, gated on a successful `CI` push for the exact `main` SHA.
+
+### Plugin versions unchanged
+
+Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Wordstat `1.1.1`, Search `1.0.2`, SEO `1.1.1`, Marketing `1.1.0`.
+
 ## [PHASE 7 1.0.1] — 2026-09-03
 
 Post-release hardening patch for the Topical Architecture / Semantic Cocoons baseline.
