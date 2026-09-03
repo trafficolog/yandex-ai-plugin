@@ -101,7 +101,7 @@ class ReviewFollowupTraceabilityTests(unittest.TestCase):
             self.assertIn("installability", text.lower())
             self.assertIn("distribution", text.lower())
             self.assertIn("_http.py", text)
-        self.assertIn("hidden repo-root", standard_en.lower())
+        self.assertIn("no hidden dependency on the monorepo root", standard_en.lower())
         self.assertIn("Independent installability", standard_en)
 
 
