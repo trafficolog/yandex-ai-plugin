@@ -6,7 +6,7 @@
 
 - Breaking safety contract: consequential POST/PUT/PATCH/DELETE calls no longer execute based on `--execute` alone; after a separate later-turn user approval, the exact preview requires `--execute --approve <preview_id>`.
 - The live write boundary `yw_api.py` binds approval to method/path/query/body/API version and fails closed on missing or mismatched approval.
-- Embedded URL basic-auth credentials are redacted from previews; their SHA-256 fingerprint remains part of the approval binding, so changed credentials invalidate the old approval.
+- Embedded URL Basic Auth credentials are redacted from previews and bound with domain-separated HMAC-SHA256 keyed by the Yandex OAuth token; this does not publish a deterministic password verifier, and changing either the credentials or OAuth key invalidates approval.
 - API/account/file content is untrusted data rather than instructions; generic permission does not carry over to a new payload.
 
 Migration:
