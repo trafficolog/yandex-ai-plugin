@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 from unittest.mock import Mock
 
@@ -50,6 +51,7 @@ class TestWebmasterApi(unittest.TestCase):
         envelope = yw_api.approval_envelope(
             method="POST",
             path="user/1/hosts/h/feeds/add/start",
+            token="secret",
             body={"url": "https://feeduser:feedpass@example.com/feed.yml"},
         )
         self.assertNotIn("feedpass", str(preview))
@@ -57,6 +59,32 @@ class TestWebmasterApi(unittest.TestCase):
         self.assertNotIn("feedpass", str(envelope))
         self.assertNotIn("feeduser", str(envelope))
         self.assertEqual(preview["body"]["url"], "https://***:***@example.com/feed.yml")
+
+    def test_basic_auth_binding_is_keyed_and_not_plain_credential_hash(self):
+        kwargs = {
+            "method": "POST",
+            "path": "user/1/hosts/h/feeds/add/start",
+            "body": {"url": "https://feeduser:feedpass@example.com/feed.yml"},
+        }
+        envelope = yw_api.approval_envelope(token="oauth-secret-a", **kwargs)
+        plain_fingerprint = hashlib.sha256(b"feeduser\0feedpass").hexdigest()
+        self.assertNotIn(plain_fingerprint, str(envelope))
+        self.assertNotIn("feeduser", str(envelope))
+        self.assertNotIn("feedpass", str(envelope))
+        changed_key = yw_api.approval_envelope(token="oauth-secret-b", **kwargs)
+        self.assertNotEqual(preview_id(envelope), preview_id(changed_key))
+
+    def test_basic_auth_preview_id_changes_with_oauth_binding_key(self):
+        kwargs = {
+            "method": "POST",
+            "path": "user/1/hosts/h/feeds/add/start",
+            "body": {"url": "https://feeduser:feedpass@example.com/feed.yml"},
+        }
+        first = yw_api.prepare_request(token="oauth-secret-a", **kwargs)
+        same = yw_api.prepare_request(token="oauth-secret-a", **kwargs)
+        changed = yw_api.prepare_request(token="oauth-secret-b", **kwargs)
+        self.assertEqual(first["preview_id"], same["preview_id"])
+        self.assertNotEqual(first["preview_id"], changed["preview_id"])
 
     def test_preview_does_not_execute_transport(self):
         calls = []
