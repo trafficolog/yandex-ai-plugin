@@ -14,7 +14,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_direct_plugin_preserves_version(self):
         data = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text())
-        self.assertEqual(data["version"], "1.0.1")
+        self.assertEqual(data["version"], "2.0.0")
         self.assertEqual(data["skills"], "./skills/")
 
     def test_direct_router_and_specialized_skills_moved(self):
@@ -68,7 +68,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_metrika_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Metrika | 1 | **available** | 1.0.3 |", content)
+        self.assertIn("| Yandex Metrika | 1 | **available** | 2.0.0 |", content)
 
     def test_ci_has_webmaster_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -78,7 +78,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_webmaster_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Webmaster | 1 | **available** | 1.0.3 |", content)
+        self.assertIn("| Yandex Webmaster | 1 | **available** | 2.0.0 |", content)
 
     def test_ci_has_wordstat_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
