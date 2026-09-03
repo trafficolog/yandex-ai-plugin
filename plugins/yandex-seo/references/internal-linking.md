@@ -13,6 +13,8 @@ Every proposed link records:
 - confidence class `LOW|MEDIUM|HIGH`;
 - claim class `OBSERVED|DERIVED|HYPOTHESIS|METHODOLOGY`.
 
+When `evidence` is supplied on a candidate link, it is list-typed. Scalar strings and objects are rejected before preview serialization so downstream list consumers never receive schema-invalid evidence payloads.
+
 `METHODOLOGY` edges remain methodology. An anchor concept is optional guidance, not a mandatory exact-match phrase.
 
 Reason codes are validated against the same finite v1 vocabulary used by Topical Architecture: `SERP_OVERLAP`, `SERP_BRIDGE_RISK`, `WORDSTAT_NESTED_RELATION`, `WORDSTAT_ASSOCIATION`, `WORDSTAT_DEMAND_CONTEXT`, `WORDSTAT_REGION_CONTEXT`, `WORDSTAT_SEASONAL_CONTEXT`, `WEBMASTER_QUERY_VISIBILITY`, `WEBMASTER_EXISTING_URL`, `METRIKA_LANDING_TRAFFIC`, `METRIKA_CONVERSION_CONTEXT`, `EXISTING_INTERNAL_LINK`, `EXISTING_BREADCRUMB`, `USER_BUSINESS_CONSTRAINT`, `MANUAL_ENTITY_RELATION`, `SEMANTIC_HYPOTHESIS`, `METHODOLOGY_HEURISTIC`. Unknown or misspelled codes are rejected instead of being treated as empirical evidence.
