@@ -13,7 +13,7 @@ jobs:
   publish:
     name: Publish GitHub releases
     runs-on: ubuntu-latest
-    if: github.repository == 'trafficolog/yandex-ai-plugin'
+    if: github.repository == 'trafficolog/yandex-ai-plugins-skills'
     steps:
       - uses: actions/checkout@v4
         with:
