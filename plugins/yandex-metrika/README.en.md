@@ -2,7 +2,23 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.3`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
+Version `2.0.0`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
+
+## Migration 1.x → 2.0.0
+
+`2.0.0` introduces a breaking exact-preview contract for consequential writes. The old `--execute` flag without approval is no longer sufficient:
+
+```bash
+# 1.x — old contract
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute
+
+# 2.0.0 — preview first
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}'
+# after approval of that exact preview in a later user turn
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute --approve <preview_id>
+```
+
+Management writes, Logs `create`/`clean`, and imports fail closed without exact approval. For imports, `preview_id` is bound to the SHA-256 digest of the exact file bytes; changing the file requires a new preview.
 
 ## Capability matrix
 
@@ -10,7 +26,7 @@ Version `1.0.3`. Service plugin for Yandex Metrika reporting, conversions, ecomm
 |---|---:|---:|---:|---:|---:|
 | Reporting / attribution / quality | yes | no | optional | yes | yes |
 | Goals management | yes | approval | optional | yes | preview |
-| Logs API lifecycle | yes | preview-first | optional | yes | yes |
+| Logs API lifecycle | yes | approval | optional | yes | yes |
 | Offline conversions / calls / expenses import | preview | approval | optional | yes | yes |
 | Raw Management API operations | yes | approval | optional | yes | preview |
 
@@ -20,11 +36,11 @@ Version `1.0.3`. Service plugin for Yandex Metrika reporting, conversions, ecomm
 - sampling, sample share, data lag and quality fields are part of the result contract;
 - Logs lifecycle is explicit: evaluate → create → status → download → clean;
 - imports guard against duplicate native Yandex Direct expenses;
-- the `1.0.3` expense guard classifies CSV provenance as `DIRECT`, `NON_DIRECT`, or `UNVERIFIED` from UTM and `TrafficSource` / `TrafficSourceDetail` evidence;
+- the expense guard classifies CSV provenance as `DIRECT`, `NON_DIRECT`, or `UNVERIFIED` from UTM and `TrafficSource` / `TrafficSourceDetail` evidence;
 - official `TrafficSourceDetail=yandex_direct_star` is blocked as `DIRECT_DUPLICATION_RISK` even when `UTMSource` / `UTMMedium` are absent;
 - generic advertising provenance without enough source detail is blocked as `DIRECT_SOURCE_UNVERIFIED` until explicit review/override;
 - an arbitrary substring such as `MyDirect` is not treated as proven Direct provenance by label alone;
-- goal mutations are preview-first;
+- consequential writes require later-turn approval of the exact `preview_id`;
 - cross-service consumers preserve quality limitations.
 
 ## Skills

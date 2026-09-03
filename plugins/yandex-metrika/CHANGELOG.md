@@ -2,6 +2,23 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [2.0.0] — 2026-09-03
+
+- Breaking safety contract: `--execute` больше не является достаточным разрешением на consequential write; после отдельного later-turn user approval требуется `--execute --approve <preview_id>` для exact preview.
+- Management API writes, Logs `create`/`clean` и imports теперь fail-closed при missing/mismatched approval.
+- Import approval привязан к SHA-256 точных байтов файла, поэтому изменение содержимого требует нового preview и нового approval.
+- API/account/file content трактуется как untrusted data, а не инструкции; generic permission не переносится на другой payload.
+
+Migration:
+
+```bash
+# 1.x
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute
+# 2.0.0
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}'
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute --approve <preview_id>
+```
+
 ## [1.0.3] — 2026-09-03
 
 - Закрыта остаточная щель Direct expense guard для CSV без `UTMSource` / `UTMMedium`.

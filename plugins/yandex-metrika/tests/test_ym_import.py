@@ -1,14 +1,31 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock
 
+from scripts._approval import preview_id
 from scripts.ym_import import (
     IMPORT_PATHS,
     build_multipart_file,
+    execute_import,
     guard_expense_source,
+    import_approval_envelope,
     inspect_csv,
     prepare_import,
+    run_import,
+    sha256_file,
 )
+
+
+class _JSONResponse:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def read(self):
+        return b'{"uploading":{"id":1}}'
 
 
 class TestMetrikaImport(unittest.TestCase):
@@ -30,6 +47,14 @@ class TestMetrikaImport(unittest.TestCase):
             self.assertEqual(info["columns"], ["ClientId", "Target", "DateTime"])
             self.assertEqual(info["encoding"], "utf-8")
             self.assertGreater(info["size_bytes"], 0)
+
+    def test_sha256_file_is_content_sensitive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, "A,B\n1,x\n")
+            first = sha256_file(path)
+            path.write_text("A,B\n2,y\n", encoding="utf-8")
+            second = sha256_file(path)
+            self.assertNotEqual(first, second)
 
     def test_non_utf8_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -126,14 +151,106 @@ class TestMetrikaImport(unittest.TestCase):
             preview = prepare_import("expenses", 123, path, "secret", source="agency")
             self.assertEqual(preview.get("warnings"), [])
 
-    def test_preview_redacts_token_and_keeps_file_metadata(self):
+    def test_preview_redacts_token_keeps_metadata_and_emits_content_bound_id(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = self._csv(tmp)
             preview = prepare_import("offline-conversions", 123, path, "secret", comment="batch")
             self.assertEqual(preview["headers"]["Authorization"], "OAuth ***")
             self.assertEqual(preview["file"]["rows"], 1)
+            self.assertEqual(preview["file"]["sha256"], sha256_file(path))
             self.assertNotIn("1,lead", str(preview))
             self.assertIn("comment=batch", preview["url"])
+            envelope = import_approval_envelope(
+                "offline-conversions",
+                123,
+                path,
+                comment="batch",
+            )
+            self.assertEqual(preview["preview_id"], preview_id(envelope))
+
+    def test_same_name_and_size_different_bytes_change_approval_id(self):
+        with tempfile.TemporaryDirectory() as left_tmp, tempfile.TemporaryDirectory() as right_tmp:
+            left = self._csv(left_tmp, "A,B\n1,x\n")
+            right = self._csv(right_tmp, "A,B\n2,y\n")
+            self.assertEqual(left.name, right.name)
+            self.assertEqual(left.stat().st_size, right.stat().st_size)
+            left_id = preview_id(import_approval_envelope("offline-conversions", 123, left))
+            right_id = preview_id(import_approval_envelope("offline-conversions", 123, right))
+            self.assertNotEqual(left_id, right_id)
+
+    def test_execute_without_approval_is_blocked_before_upload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp)
+            opener = Mock(return_value=_JSONResponse())
+            with self.assertRaises(ValueError):
+                execute_import("offline-conversions", 123, path, "secret", opener=opener)
+            opener.assert_not_called()
+
+    def test_wrong_approval_is_blocked_before_upload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp)
+            opener = Mock(return_value=_JSONResponse())
+            with self.assertRaises(ValueError):
+                execute_import(
+                    "offline-conversions",
+                    123,
+                    path,
+                    "secret",
+                    approve="0" * 64,
+                    opener=opener,
+                )
+            opener.assert_not_called()
+
+    def test_file_mutation_after_preview_invalidates_approval_before_upload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp, "A,B\n1,x\n")
+            approve = preview_id(import_approval_envelope("offline-conversions", 123, path))
+            path.write_text("A,B\n2,y\n", encoding="utf-8")
+            opener = Mock(return_value=_JSONResponse())
+            with self.assertRaises(ValueError):
+                execute_import(
+                    "offline-conversions",
+                    123,
+                    path,
+                    "secret",
+                    approve=approve,
+                    opener=opener,
+                )
+            opener.assert_not_called()
+
+    def test_exact_approval_uploads_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp)
+            approve = preview_id(import_approval_envelope("offline-conversions", 123, path))
+            opener = Mock(return_value=_JSONResponse())
+            result = execute_import(
+                "offline-conversions",
+                123,
+                path,
+                "secret",
+                approve=approve,
+                opener=opener,
+            )
+            opener.assert_called_once()
+            self.assertEqual(result, {"uploading": {"id": 1}})
+
+    def test_run_import_preview_then_exact_execute(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._csv(tmp)
+            preview = run_import("offline-conversions", 123, path, "secret")
+            self.assertTrue(preview["dry_run"])
+            opener = Mock(return_value=_JSONResponse())
+            result = run_import(
+                "offline-conversions",
+                123,
+                path,
+                "secret",
+                execute=True,
+                approve=preview["preview_id"],
+                opener=opener,
+            )
+            opener.assert_called_once()
+            self.assertEqual(result, {"uploading": {"id": 1}})
 
     def test_multipart_builder_contains_file(self):
         with tempfile.TemporaryDirectory() as tmp:

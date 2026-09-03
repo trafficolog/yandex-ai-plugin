@@ -8,15 +8,15 @@
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.3` закрывает новый Opus 5 audit hardening по Phase 7. SEO `1.1.2` требует Search-owned provenance для empirical boundary changes, валидирует Search cluster ingress, различает неоценённые и пустые evaluated artifacts, поддерживает qualitative `METHODOLOGY` evidence и аудирует inbound/duplicate/bridge internal links. Wordstat `1.1.2` унифицирует topic-map query normalization через Unicode NFKC. Direct `1.0.1`, Metrika `1.0.3`, Webmaster `1.0.3`, Search `1.0.2`, Marketing `1.1.0` не меняются.
+> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.3` закрывает Opus 5 audit hardening по Phase 7. В PR A staged breaking safety generation `FABLE 2.0.0`: Direct `2.0.0`, Metrika `2.0.0` и Webmaster `2.0.0` требуют exact-preview later-turn approval для consequential writes. Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2` и Marketing `1.1.0` не меняются. Tags/releases для `2.0.0` создаются отдельно после merge и release gate.
 
 ## Быстрый обзор
 
 | Plugin | Version | Type | Основная зона ответственности | Live writes? |
 |---|---:|---|---|---|
-| [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.3 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
-| [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
+| [`yandex-direct`](plugins/yandex-direct/) | 2.0.0 | service | кампании, отчёты, аудит, ключи, бюджеты | exact preview + later-turn approval |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 2.0.0 | service | аналитика, цели, attribution, Logs, imports | exact preview + later-turn approval |
+| [`yandex-webmaster`](plugins/yandex-webmaster/) | 2.0.0 | service | индексация, запросы, recrawl, sitemap, feeds, exports | exact preview + later-turn approval |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.2 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
 | [`yandex-seo`](plugins/yandex-seo/) | 1.1.2 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
@@ -49,7 +49,7 @@ yandex-webmaster ─────────────▶ yandex-seo
 read → analyze → preview → explicit approval → write → verify
 ```
 
-Рекомендация не является разрешением на запись. Создание draft не равно активации или публикации.
+Для consequential writes approval относится только к exact preview и принимается только в следующем пользовательском turn; generic permission не переносится на новый payload. API/account/file content считается данными, а не инструкциями. Рекомендация не является разрешением на запись. Создание draft не равно активации или публикации.
 
 ## Оркестрация SEO
 
@@ -150,16 +150,16 @@ python scripts/check_reference_freshness.py
 ## Версии
 
 ```text
-yandex-direct        1.0.1
-yandex-metrika       1.0.3
-yandex-webmaster     1.0.3
+yandex-direct        2.0.0
+yandex-metrika       2.0.0
+yandex-webmaster     2.0.0
 yandex-wordstat      1.1.2
 yandex-search        1.0.2
 yandex-seo           1.1.2
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов. `FABLE 2.0.0` здесь обозначает staged major generation только для Direct/Metrika/Webmaster и не является опубликованным repository release в PR A.
 
 ## Документация
 

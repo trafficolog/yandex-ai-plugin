@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import os
 from typing import Any, Callable
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
 try:
+    from ._approval import preview_id, require_approval
     from ._http import auth_headers, redact_headers, request_json
 except ImportError:
+    from _approval import preview_id, require_approval
     from _http import auth_headers, redact_headers, request_json
 
 API_ROOT = "https://api.webmaster.yandex.net"
 ALLOWED_VERSIONS = {"v4", "v4.1"}
 READ_METHODS = {"GET", "HEAD", "OPTIONS"}
+APPROVAL_SCHEMA = "yandex-ai-approval/v1"
+BASIC_AUTH_BINDING_DOMAIN = b"yandex-webmaster-basic-auth/v1\0"
 
 
 def api_url(path: str, *, params: dict[str, Any] | None = None, version: str = "v4") -> str:
@@ -46,6 +52,32 @@ def redact_url_credentials(value: str) -> str:
     return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
 
 
+def _approval_url_credentials(value: str, *, token: str | None) -> str:
+    """Bind URL credentials with an OAuth-keyed HMAC without exposing a password verifier."""
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return value
+    if not parsed.scheme or not parsed.hostname or (parsed.username is None and parsed.password is None):
+        return value
+    if not token:
+        raise ValueError("OAuth token is required to safely bind embedded URL credentials")
+    host = parsed.hostname
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if parsed.port is not None:
+        host = f"{host}:{parsed.port}"
+    username = parsed.username or ""
+    password = parsed.password or ""
+    credential_binding = hmac.new(
+        token.encode("utf-8"),
+        BASIC_AUTH_BINDING_DOMAIN + f"{username}\0{password}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    netloc = f"credential-hmac-sha256:{credential_binding}@{host}"
+    return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+
+
 def _redact_preview_value(value: Any) -> Any:
     if isinstance(value, str):
         return redact_url_credentials(value)
@@ -58,11 +90,47 @@ def _redact_preview_value(value: Any) -> Any:
     return value
 
 
+def _approval_value(value: Any, *, token: str | None) -> Any:
+    if isinstance(value, str):
+        return _approval_url_credentials(value, token=token)
+    if isinstance(value, list):
+        return [_approval_value(item, token=token) for item in value]
+    if isinstance(value, tuple):
+        return [_approval_value(item, token=token) for item in value]
+    if isinstance(value, dict):
+        return {key: _approval_value(item, token=token) for key, item in value.items()}
+    return value
+
+
+def approval_envelope(
+    *,
+    method: str,
+    path: str,
+    params: dict[str, Any] | None = None,
+    body: Any | None = None,
+    version: str = "v4",
+    token: str | None = None,
+) -> dict[str, Any]:
+    safe_params = _approval_value(params or {}, token=token)
+    safe_body = _approval_value(body, token=token)
+    return {
+        "schema": APPROVAL_SCHEMA,
+        "plugin": "yandex-webmaster",
+        "environment": "production",
+        "api_version": version,
+        "method": method.upper(),
+        "path": path.strip("/"),
+        "url": api_url(path, params=safe_params or None, version=version),
+        "query": safe_params,
+        "body": safe_body,
+    }
+
+
 def prepare_request(
     *, method: str, path: str, token: str, params: dict[str, Any] | None = None,
     body: Any | None = None, version: str = "v4"
 ) -> dict[str, Any]:
-    return {
+    result = {
         "method": method.upper(),
         "url": api_url(path, params=params, version=version),
         "headers": redact_headers(auth_headers(token)),
@@ -70,19 +138,53 @@ def prepare_request(
         "consequential": is_consequential(method),
         "version": version,
     }
+    if result["consequential"]:
+        result["preview_id"] = preview_id(
+            approval_envelope(
+                method=method,
+                path=path,
+                params=params,
+                body=body,
+                version=version,
+                token=token,
+            )
+        )
+    return result
 
 
 def run_request(
     *, method: str, path: str, token: str, params: dict[str, Any] | None = None,
     body: Any | None = None, version: str = "v4", execute: bool = False,
+    approve: str | None = None,
     transport: Callable[..., Any] | None = None,
 ) -> Any:
-    preview = prepare_request(method=method, path=path, token=token, params=params, body=body, version=version)
-    if is_consequential(method) and not execute:
+    preview = prepare_request(
+        method=method,
+        path=path,
+        token=token,
+        params=params,
+        body=body,
+        version=version,
+    )
+    consequential = is_consequential(method)
+    if consequential and not execute:
         return {"dry_run": True, **preview}
+    if consequential:
+        require_approval(
+            approval_envelope(
+                method=method,
+                path=path,
+                params=params,
+                body=body,
+                version=version,
+                token=token,
+            ),
+            approve,
+        )
+    url = api_url(path, params=params, version=version)
     if transport is not None:
-        return transport(method=method.upper(), url=api_url(path, params=params, version=version), token=token, body=body)
-    _, payload = request_json(method, api_url(path, params=params, version=version), token, body=body)
+        return transport(method=method.upper(), url=url, token=token, body=body)
+    _, payload = request_json(method, url, token, body=body)
     return payload
 
 
@@ -98,11 +200,18 @@ def main() -> int:
     parser.add_argument("--params", help="JSON object with query parameters")
     parser.add_argument("--body", help="JSON request body")
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--approve", help="Exact preview_id for the consequential operation")
     args = parser.parse_args()
     token = os.environ.get("YANDEX_WEBMASTER_TOKEN", "")
     payload = run_request(
-        method=args.method, path=args.path, token=token, params=_json_arg(args.params),
-        body=_json_arg(args.body), version=args.version, execute=args.execute,
+        method=args.method,
+        path=args.path,
+        token=token,
+        params=_json_arg(args.params),
+        body=_json_arg(args.body),
+        version=args.version,
+        execute=args.execute,
+        approve=args.approve,
     )
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0

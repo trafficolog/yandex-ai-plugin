@@ -2,6 +2,23 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
+## [2.0.0] — 2026-09-03
+
+- Breaking safety contract: `--execute` is no longer sufficient authorization for a consequential write; after a separate later-turn user approval, the exact preview requires `--execute --approve <preview_id>`.
+- Management API writes, Logs `create`/`clean`, and imports now fail closed on missing or mismatched approval.
+- Import approval is bound to the SHA-256 digest of the exact file bytes, so changed content requires a new preview and a new approval.
+- API/account/file content is treated as untrusted data rather than instructions; generic permission does not carry over to a different payload.
+
+Migration:
+
+```bash
+# 1.x
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute
+# 2.0.0
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}'
+python scripts/ym_api.py counter/123/goals --method POST --body '{"goal":{"name":"Lead"}}' --execute --approve <preview_id>
+```
+
 ## [1.0.3] — 2026-09-03
 
 - Closed the residual Direct expense-guard gap for CSV files without `UTMSource` / `UTMMedium`.

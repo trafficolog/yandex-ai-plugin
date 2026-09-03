@@ -21,7 +21,7 @@ class ReviewFollowupTraceabilityTests(unittest.TestCase):
         matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))
         ids = {contract["id"] for contract in matrix["contracts"]}
         required = {
-            "direct.preview-before-write",
+            "direct.preview-bound-write",
             "metrika.direct-expense-duplication-guard",
             "webmaster.feed-batch-safety",
             "webmaster.indexing-archive-lifecycle",
