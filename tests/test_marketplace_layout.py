@@ -88,7 +88,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_wordstat_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.1.0 |", content)
+        self.assertIn("| Yandex Wordstat | 1 | **available** | 1.1.1 |", content)
 
     def test_roadmap_marks_phase4_implemented_and_phase5_search_next(self):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
@@ -125,8 +125,8 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_seo_available(self):
         content=(ROOT/'docs/SERVICE_MATRIX.md').read_text(encoding='utf-8')
-        self.assertIn('| Yandex SEO | X | **available** | 1.1.0 |',content)
-        self.assertIn('`yandex-seo`: **available 1.1.0**',content)
+        self.assertIn('| Yandex SEO | X | **available** | 1.1.1 |',content)
+        self.assertIn('`yandex-seo`: **available 1.1.1**',content)
 
     def test_roadmap_marks_phase6a_and_phase6b(self):
         content=(ROOT/'docs/ROADMAP.md').read_text(encoding='utf-8')
@@ -180,6 +180,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
         self.assertTrue((ROOT/'docs/REVIEW_FIRST_RELEASE.md').is_file())
         changelog=(ROOT/'CHANGELOG.md').read_text(encoding='utf-8')
         review=(ROOT/'docs/REVIEW_FIRST_RELEASE.md').read_text(encoding='utf-8')
+        self.assertIn('## [PHASE 7 1.0.1] — 2026-09-03', changelog)
         self.assertIn('## [PHASE 7 1.0.0] — 2026-09-02', changelog)
         self.assertIn('## [OPUS 1.1.1] — 2026-09-02', changelog)
         self.assertIn('## [OPUS 1.1.0] — 2026-09-02', changelog)
