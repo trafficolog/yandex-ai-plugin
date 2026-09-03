@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from copy import deepcopy
 from typing import Any
 
@@ -141,8 +142,8 @@ def audit_link_inventory(
         raise ValueError("existing_links must be a list")
 
     findings: list[dict[str, Any]] = []
-    valid_links: set[tuple[str, str]] = set()
-    connected_pages: set[str] = set()
+    valid_link_counts: Counter[tuple[str, str]] = Counter()
+    inbound_counts: Counter[str] = Counter()
 
     for index, raw in enumerate(existing_links):
         source = raw.get("from_page_id")
@@ -157,8 +158,21 @@ def audit_link_inventory(
                 }
             )
             continue
-        valid_links.add((source, target))
-        connected_pages.update((source, target))
+        pair = (source, target)
+        valid_link_counts[pair] += 1
+        inbound_counts[target] += 1
+
+    valid_links = set(valid_link_counts)
+    for (source, target), count in sorted(valid_link_counts.items()):
+        if count > 1:
+            findings.append(
+                {
+                    "type": "DUPLICATE_LINK",
+                    "from_page_id": source,
+                    "to_page_id": target,
+                    "count": count,
+                }
+            )
 
     structural_links = {
         (node["canonical_parent_id"], node["page_id"])
@@ -185,10 +199,12 @@ def audit_link_inventory(
 
     for node in nodes:
         page_id = node["page_id"]
-        if page_id not in connected_pages and node.get("canonical_parent_id") is not None:
+        parent = node.get("canonical_parent_id")
+        page_role = node.get("page_role")
+        root_exempt = page_role == "ROOT" or (parent is None and page_role != "BRIDGE")
+        if not root_exempt and inbound_counts[page_id] == 0:
             findings.append({"type": "ORPHAN_PAGE", "page_id": page_id})
 
-        parent = node.get("canonical_parent_id")
         if parent is not None and (parent, page_id) not in valid_links:
             findings.append(
                 {
@@ -202,20 +218,28 @@ def audit_link_inventory(
         source = edge.get("from_page_id")
         target = edge.get("to_page_id")
         if source in page_ids and target in page_ids and (source, target) not in valid_links:
-            findings.append(
-                {
-                    "type": "MISSING_JUSTIFIED_LINK",
-                    "from_page_id": source,
-                    "to_page_id": target,
-                    "relation": edge.get("relation"),
-                    "claim_class": edge.get("claim_class"),
-                    "confidence": edge.get("confidence"),
-                }
-            )
+            finding = {
+                "type": "MISSING_JUSTIFIED_LINK",
+                "from_page_id": source,
+                "to_page_id": target,
+                "relation": edge.get("relation"),
+                "claim_class": edge.get("claim_class"),
+                "confidence": edge.get("confidence"),
+            }
+            findings.append(finding)
+            if edge.get("relation") == "BRIDGE":
+                findings.append(
+                    {
+                        "type": "BROKEN_SEMANTIC_BRIDGE",
+                        "from_page_id": source,
+                        "to_page_id": target,
+                    }
+                )
 
     return {
         "schema": "seo-internal-link-audit/v1",
         "known_pages": sorted(page_ids),
-        "observed_link_count": len(valid_links),
+        "observed_link_count": sum(valid_link_counts.values()),
+        "unique_link_count": len(valid_links),
         "findings": findings,
     }
