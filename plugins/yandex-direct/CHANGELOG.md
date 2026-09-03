@@ -2,7 +2,22 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
-> Repository release `DOCS 1.0.0` добавил RU/EN documentation mirror; SemVer плагина не изменён.
+## [2.0.0] — 2026-09-03
+
+- Breaking safety contract: consequential Direct writes теперь требуют exact `preview_id`; одного `--execute` недостаточно.
+- Новый flow: preview → approval exact preview в следующем пользовательском turn → `--execute --approve <preview_id>`.
+- Approval связывает service, method, `Client-Login`, environment и body; изменение payload инвалидирует permission.
+- API/account/file content трактуется как данные, а не инструкции; adjacent service work маршрутизируется в owning plugin.
+
+Migration:
+
+```bash
+# 1.x
+python scripts/yd_api.py campaigns update --params-file update.json --execute
+# 2.0.0
+python scripts/yd_api.py campaigns update --params-file update.json
+python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
+```
 
 ## [1.0.1] — 2026-09-02
 
