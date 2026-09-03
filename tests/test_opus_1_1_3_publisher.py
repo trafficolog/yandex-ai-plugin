@@ -59,6 +59,26 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(stale_guard, target_selection)
         self.assertIn('Stale main CI run: current main is $current_main_sha, target is $TARGET_SHA.', text)
 
+    def test_initial_publication_requires_repository_release_immutability_before_target_selection(self):
+        text = self._text()
+        self.assertIn("IMMUTABILITY_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}", text)
+        no_tags = text.index('if [[ "$tag_count" -eq 0 ]]')
+        enable_attempt = text.index(
+            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases"',
+            no_tags,
+        )
+        verify_setting = text.index(
+            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \' .enabled\'',
+            enable_attempt,
+        )
+        immutable_guard = text.index('if [[ "$immutable_enabled" != "true" ]]', verify_setting)
+        target_selection = text.index('release_target_sha=$TARGET_SHA', immutable_guard)
+        self.assertLess(no_tags, enable_attempt)
+        self.assertLess(enable_attempt, verify_setting)
+        self.assertLess(verify_setting, immutable_guard)
+        self.assertLess(immutable_guard, target_selection)
+        self.assertIn('Repository immutable releases must be enabled before OPUS 1.1.3 publication.', text)
+
     def test_publisher_supports_noop_partial_recovery_and_rejects_multi_sha_state(self):
         text = self._text()
         for token in (
@@ -82,12 +102,24 @@ class Opus113PublisherTests(unittest.TestCase):
     def test_draft_release_is_rejected_as_mutable_not_published_state(self):
         text = self._text()
         for token in (
-            '--json isDraft --jq \'.isDraft\'',
             'if [[ "$release_is_draft" == "true" ]]',
             'Draft release $tag is mutable and cannot count as published.',
         ):
             self.assertIn(token, text)
-        self.assertGreaterEqual(text.count('--json isDraft --jq \'.isDraft\''), 2)
+
+    def test_published_release_requires_github_immutability_and_new_release_is_rechecked(self):
+        text = self._text()
+        for token in (
+            '--json isDraft,isImmutable',
+            'release_is_immutable',
+            'if [[ "$release_is_immutable" != "true" ]]',
+            'Published release $tag is not immutable.',
+            'created_is_immutable="$(gh release view "$tag"',
+            'if [[ "$created_is_immutable" != "true" ]]',
+            'New release $tag was published without GitHub immutability.',
+        ):
+            self.assertIn(token, text)
+        self.assertGreaterEqual(text.count('--json isDraft,isImmutable'), 2)
 
     def test_tag_only_state_contributes_to_immutable_recovery_target(self):
         text = self._text()
@@ -135,7 +167,6 @@ class Opus113PublisherTests(unittest.TestCase):
     def test_existing_tags_and_releases_are_verified_against_immutable_target(self):
         text = self._text()
         for token in (
-            'release_is_draft="$(gh release view "$tag"',
             'existing_sha="$(git rev-list -n 1 "$tag")"',
             'if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]',
             '--verify-tag',
