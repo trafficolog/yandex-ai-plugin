@@ -224,6 +224,10 @@ jobs:
             cleanup_published_release() {
               local cleanup_status=0
               local cleanup_release_immutable=""
+              local release_probe_status=0
+              local release_probe_output=""
+              local release_http_status=""
+              local tag_probe_status=0
               trap - ERR
 
               if [[ "$rollback_armed" != "true" ]]; then
@@ -242,12 +246,31 @@ jobs:
               if [[ "$cleanup_delete_status" -ne 0 ]]; then
                 echo "Rollback delete command for $tag returned status $cleanup_delete_status; verifying residue explicitly." >&2
               fi
-              if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+
+              release_probe_status=0
+              release_probe_output="$(gh api --include "repos/$GITHUB_REPOSITORY/releases/tags/$tag" 2>&1)" || release_probe_status=$?
+              if [[ "$release_probe_status" -eq 0 ]]; then
                 echo "Rollback failed: release $tag still exists." >&2
                 cleanup_status=1
+              else
+                release_http_status="$(sed -nE 's/^HTTP\/[^ ]+ ([0-9]{3}).*/\1/p; s/^gh: .* \(HTTP ([0-9]{3})\)$/\1/p' <<< "$release_probe_output" | tail -n 1)"
+                if [[ "$release_http_status" == "404" ]]; then
+                  :
+                else
+                  echo "Rollback verification failed: unable to verify release $tag absence." >&2
+                  cleanup_status=1
+                fi
               fi
-              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+
+              tag_probe_status=0
+              git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1 || tag_probe_status=$?
+              if [[ "$tag_probe_status" -eq 0 ]]; then
                 echo "Rollback failed: tag $tag still exists." >&2
+                cleanup_status=1
+              elif [[ "$tag_probe_status" -eq 2 ]]; then
+                :
+              else
+                echo "Rollback verification failed: unable to verify tag $tag absence." >&2
                 cleanup_status=1
               fi
               return "$cleanup_status"
