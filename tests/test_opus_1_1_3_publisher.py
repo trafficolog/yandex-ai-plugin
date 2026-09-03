@@ -80,24 +80,29 @@ class Opus113PublisherTests(unittest.TestCase):
         self.assertLess(late_guard, first_publish)
         self.assertNotIn('publish_release "', text[late_gate:late_guard])
 
-    def test_initial_publication_requires_repository_release_immutability_before_target_selection(self):
+    def test_publication_checks_immutability_before_optional_admin_put(self):
         text = self._text()
         self.assertIn("IMMUTABILITY_TOKEN: ${{ secrets.RELEASE_ADMIN_TOKEN || github.token }}", text)
-        no_tags = text.index('if [[ "$tag_count" -eq 0 ]]')
+        first_publish = text.index('publish_release "opus-1.1.3"')
+        publish_step = text.rfind('- name: Publish repository and plugin releases', 0, first_publish)
+        get_setting = text.index(
+            'immutable_enabled="$(GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\' 2>/dev/null || true)"',
+            publish_step,
+        )
+        needs_enable = text.index('if [[ "$immutable_enabled" != "true" ]]', get_setting)
         enable_attempt = text.index(
             'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api --method PUT "repos/$GITHUB_REPOSITORY/immutable-releases"',
-            no_tags,
+            needs_enable,
         )
         verify_setting = text.index(
             'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\'',
             enable_attempt,
         )
-        immutable_guard = text.index('if [[ "$immutable_enabled" != "true" ]]', verify_setting)
-        target_selection = text.index('release_target_sha=$TARGET_SHA', immutable_guard)
-        self.assertLess(no_tags, enable_attempt)
+        self.assertLess(publish_step, get_setting)
+        self.assertLess(get_setting, needs_enable)
+        self.assertLess(needs_enable, enable_attempt)
         self.assertLess(enable_attempt, verify_setting)
-        self.assertLess(verify_setting, immutable_guard)
-        self.assertLess(immutable_guard, target_selection)
+        self.assertLess(verify_setting, first_publish)
         self.assertIn('Repository immutable releases must be enabled before OPUS 1.1.3 publication.', text)
 
     def test_publisher_supports_noop_partial_recovery_and_rejects_multi_sha_state(self):
@@ -187,15 +192,31 @@ class Opus113PublisherTests(unittest.TestCase):
             self.assertIn(token, text)
         self.assertIn('trap \'git worktree remove --force "$RELEASE_WORKTREE" >/dev/null 2>&1 || true\' EXIT', text)
 
-    def test_existing_tags_and_releases_are_verified_against_immutable_target(self):
+    def test_publish_release_atomically_creates_and_verifies_target_tag(self):
         text = self._text()
+        function_start = text.index('publish_release() {')
+        first_call = text.index('publish_release "opus-1.1.3"')
+        function = text[function_start:first_call]
         for token in (
+            'gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"',
+            '-f ref="refs/tags/$tag"',
+            '-f sha="$RELEASE_TARGET_SHA"',
+            'git fetch origin "refs/tags/$tag:refs/tags/$tag" --force',
             'existing_sha="$(git rev-list -n 1 "$tag")"',
             'if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]',
             '--verify-tag',
-            '--target "$RELEASE_TARGET_SHA"',
         ):
-            self.assertIn(token, text)
+            self.assertIn(token, function)
+        self.assertNotIn('--target "$RELEASE_TARGET_SHA"', function)
+        atomic_create = function.index('gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"')
+        fetch_tag = function.index('git fetch origin "refs/tags/$tag:refs/tags/$tag" --force', atomic_create)
+        verify_sha = function.index('if [[ "$existing_sha" != "$RELEASE_TARGET_SHA" ]]', fetch_tag)
+        create_release = function.index('gh release create "$tag"', verify_sha)
+        verify_tag = function.index('--verify-tag', create_release)
+        self.assertLess(atomic_create, fetch_tag)
+        self.assertLess(fetch_tag, verify_sha)
+        self.assertLess(verify_sha, create_release)
+        self.assertLess(create_release, verify_tag)
 
 
 if __name__ == "__main__":
