@@ -8,14 +8,14 @@
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** Phase 1–7 реализованы. Patch release `PHASE 7 1.0.1` усиливает опубликованный semantic-cocoon baseline: Wordstat `1.1.1` запрещает duplicate seed IDs и candidate self-relations; SEO `1.1.1` изолирует structural-node contract от execution state и типизирует link evidence. Search остаётся `1.0.2` и сохраняет ownership SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, Marketing `1.1.0` не меняются.
+> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.2` закрывает остаточный Opus 5 audit tail. Metrika `1.0.3` fail-closed обрабатывает Direct expense CSV без UTM через `TrafficSource` / `TrafficSourceDetail` provenance; shared runtime code не переносится в root `packages/` без безопасного installability/distribution contract. Wordstat `1.1.1`, SEO `1.1.1`, Search `1.0.2`, Direct `1.0.1`, Webmaster `1.0.3`, Marketing `1.1.0` не меняются.
 
 ## Быстрый обзор
 
 | Plugin | Version | Type | Основная зона ответственности | Live writes? |
 |---|---:|---|---|---|
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.3 | service | аналитика, цели, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | индексация, запросы, recrawl, sitemap, feeds, exports | guarded writes |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.1 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
@@ -150,7 +150,7 @@ python scripts/check_reference_freshness.py
 
 ```text
 yandex-direct        1.0.1
-yandex-metrika       1.0.2
+yandex-metrika       1.0.3
 yandex-webmaster     1.0.3
 yandex-wordstat      1.1.1
 yandex-search        1.0.2
@@ -158,7 +158,7 @@ yandex-seo           1.1.1
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов.
 
 ## Документация
 

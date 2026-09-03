@@ -8,14 +8,14 @@
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** Phases 1–7 are implemented. Patch release `PHASE 7 1.0.1` hardens the published semantic-cocoon baseline: Wordstat `1.1.1` rejects duplicate seed identifiers and candidate self-relations; SEO `1.1.1` isolates structural-node contracts from execution state and enforces list-typed link evidence. Search remains `1.0.2` and retains ownership of SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
+> **Status:** Phases 1–7 are implemented. The functional baseline remains `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.2` closes the residual Opus 5 audit tail. Metrika `1.0.3` fails closed for Direct expense CSVs without UTM by using `TrafficSource` / `TrafficSourceDetail` provenance; shared runtime code is not moved into root `packages/` without a safe installability/distribution contract. Wordstat `1.1.1`, SEO `1.1.1`, Search `1.0.2`, Direct `1.0.1`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
 
 ## Quick overview
 
 | Plugin | Version | Type | Primary scope | Live writes? |
 |---|---:|---|---|---|
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | campaigns, reports, audit, keywords, budgets | preview + explicit approval |
-| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | analytics, goals, attribution, Logs, imports | guarded writes |
+| [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.3 | service | analytics, goals, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.1 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
@@ -141,7 +141,7 @@ python scripts/check_reference_freshness.py
 
 ```text
 yandex-direct        1.0.1
-yandex-metrika       1.0.2
+yandex-metrika       1.0.3
 yandex-webmaster     1.0.3
 yandex-wordstat      1.1.1
 yandex-search        1.0.2
@@ -149,7 +149,7 @@ yandex-seo           1.1.1
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`) do not imply synchronized plugin bumps.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`) do not imply synchronized plugin bumps.
 
 ## Documentation
 

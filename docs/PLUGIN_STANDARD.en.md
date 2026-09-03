@@ -87,7 +87,11 @@ Validation checks matrix structure, unique IDs, supported statuses, referenced p
 
 ## 11. Shared code rule
 
-Do not promote code into `packages/` merely because it looks similar. Shared packages require repeated responsibility and a stable interface.
+Do not promote code into `packages/` merely because it looks similar. Repeated responsibility in at least two plugins and a stable interface are **necessary but not sufficient** conditions for promotion.
+
+A shared runtime package is allowed only when an installability/distribution contract also exists: every independently installed plugin must reliably receive that dependency in every supported runtime, either through a versioned dependency mechanism or through a reproducible build/vendor step with no hidden dependency on the monorepo root.
+
+Without such a mechanism, a small service-local adapter may remain duplicated. Independent installability takes precedence over formal DRY. In particular, the current `_http.py` helpers remain local until shared runtime code can be distributed safely with each independently installed plugin.
 
 ## 12. CI contract
 

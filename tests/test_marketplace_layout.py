@@ -68,7 +68,7 @@ class MarketplaceLayoutTests(unittest.TestCase):
 
     def test_service_matrix_marks_metrika_available(self):
         content = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("| Yandex Metrika | 1 | **available** | 1.0.2 |", content)
+        self.assertIn("| Yandex Metrika | 1 | **available** | 1.0.3 |", content)
 
     def test_ci_has_webmaster_plugin_job(self):
         content = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")

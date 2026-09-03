@@ -4,6 +4,22 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [OPUS 1.1.2] — 2026-09-03
+
+Residual hardening по оставшимся замечаниям финального Opus 5 audit.
+
+### Исправлено
+
+- Yandex Metrika `1.0.3` закрывает Direct expense provenance gap для CSV без `UTMSource` / `UTMMedium`: официальный `TrafficSourceDetail=yandex_direct_star` блокируется как `DIRECT_DUPLICATION_RISK`.
+- Недостаточная expense provenance теперь fail-closed как `DIRECT_SOURCE_UNVERIFIED`; generic `TrafficSource=ad` без source detail требует explicit review/`--allow-direct-risk` вместо silent pass.
+- Explicit non-Direct source detail остаётся разрешённым; arbitrary provider label вроде `MyDirect` не объявляется Direct только по substring.
+- Shared-code rule усилен installability/distribution gate: duplication + stable interface недостаточны для root runtime package, пока независимо устанавливаемый plugin не может гарантированно получить shared dependency.
+- N3/N5/N6/N8 повторно сверены с текущим contract/docs состоянием и не переоткрываются: traceability ≠ semantic proof, cross-service `ON_USE` соответствует marketplace schema, Webmaster `state`/`download_url` подтверждены, Marketing spec уже normatively reconciled.
+
+### Published plugin matrix
+
+Direct `1.0.1`, Metrika `1.0.3`, Webmaster `1.0.3`, Wordstat `1.1.1`, Search `1.0.2`, SEO `1.1.1`, Marketing `1.1.0`.
+
 ## [1.0.2] — 2026-09-03
 
 Maintenance release уровня репозитория для hardening release-инфраструктуры после Phase 7.

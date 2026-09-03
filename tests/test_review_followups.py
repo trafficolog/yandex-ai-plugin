@@ -80,6 +80,30 @@ class ReviewFollowupTraceabilityTests(unittest.TestCase):
         for tag in ("opus-1.1.1", "yandex-metrika-v1.0.2", "yandex-webmaster-v1.0.3"):
             self.assertIn(tag, workflow)
 
+    def test_metrika_expense_reference_covers_non_utm_direct_provenance(self):
+        text = (ROOT / "plugins/yandex-metrika/references/imports.md").read_text(encoding="utf-8")
+        for token in (
+            "TrafficSourceDetail=yandex_direct_star",
+            "DIRECT_DUPLICATION_RISK",
+            "DIRECT_SOURCE_UNVERIFIED",
+            "google_adwords",
+        ):
+            self.assertIn(token, text)
+
+    def test_shared_runtime_promotion_requires_installability_contract(self):
+        standard_ru = (ROOT / "docs/PLUGIN_STANDARD.md").read_text(encoding="utf-8")
+        standard_en = (ROOT / "docs/PLUGIN_STANDARD.en.md").read_text(encoding="utf-8")
+        package_doc = (ROOT / "packages/README.md").read_text(encoding="utf-8")
+        amendment = (
+            ROOT / "docs/superpowers/specs/2026-09-03-opus-1.1.2-residual-audit-hardening-amendment.md"
+        ).read_text(encoding="utf-8")
+        for text in (standard_ru, standard_en, package_doc, amendment):
+            self.assertIn("installability", text.lower())
+            self.assertIn("distribution", text.lower())
+            self.assertIn("_http.py", text)
+        self.assertIn("no hidden dependency on the monorepo root", standard_en.lower())
+        self.assertIn("Independent installability", standard_en)
+
 
 if __name__ == "__main__":
     unittest.main()

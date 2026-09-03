@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.0.2`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
+Version `1.0.3`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
 
 ## Capability matrix
 
@@ -20,7 +20,9 @@ Version `1.0.2`. Service plugin for Yandex Metrika reporting, conversions, ecomm
 - sampling, sample share, data lag and quality fields are part of the result contract;
 - Logs lifecycle is explicit: evaluate → create → status → download → clean;
 - imports guard against duplicate native Yandex Direct expenses;
-- the 1.0.2 expense guard rejects exact aliases and tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`) and independently inspects CSV `UTMSource`/`UTMMedium` content;
+- the `1.0.3` expense guard classifies CSV provenance as `DIRECT`, `NON_DIRECT`, or `UNVERIFIED` from UTM and `TrafficSource` / `TrafficSourceDetail` evidence;
+- official `TrafficSourceDetail=yandex_direct_star` is blocked as `DIRECT_DUPLICATION_RISK` even when `UTMSource` / `UTMMedium` are absent;
+- generic advertising provenance without enough source detail is blocked as `DIRECT_SOURCE_UNVERIFIED` until explicit review/override;
 - an arbitrary substring such as `MyDirect` is not treated as proven Direct provenance by label alone;
 - goal mutations are preview-first;
 - cross-service consumers preserve quality limitations.

@@ -5,7 +5,7 @@
   },
   "plugins": [
     {"name":"yandex-direct-suite","version":"1.0.1","source":{"source":"local","path":"./plugins/yandex-direct"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Marketing"},
-    {"name":"yandex-metrika","version":"1.0.2","source":{"source":"local","path":"./plugins/yandex-metrika"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Analytics"},
+    {"name":"yandex-metrika","version":"1.0.3","source":{"source":"local","path":"./plugins/yandex-metrika"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Analytics"},
     {"name":"yandex-webmaster","version":"1.0.3","source":{"source":"local","path":"./plugins/yandex-webmaster"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"SEO"},
     {"name":"yandex-wordstat","version":"1.1.1","source":{"source":"local","path":"./plugins/yandex-wordstat"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"SEO"},
     {"name":"yandex-search","version":"1.0.2","source":{"source":"local","path":"./plugins/yandex-search"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"SEO"},

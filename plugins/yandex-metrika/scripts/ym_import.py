@@ -33,6 +33,7 @@ DIRECT_SOURCE_ALIASES = {
 DIRECT_SOURCE_TOKENS = {"direct", "директ"}
 DIRECT_UTM_SOURCES = {"yandex", "яндекс", "yandexdirect", "яндексдирект", "ya"}
 DIRECT_UTM_MEDIA = {"cpc", "ppc", "paidsearch", "context", "контекст"}
+DIRECT_TRAFFIC_SOURCE_DETAILS = {"yandexdirectstar"}
 
 
 def inspect_csv(path: Path) -> dict[str, Any]:
@@ -78,27 +79,74 @@ def guard_expense_source(source: str | None) -> None:
         )
 
 
-def detect_direct_expense_risk(path: Path) -> bool:
-    """Detect Direct-like UTM rows as a risk signal, not a provenance guarantee."""
+def classify_expense_source(path: Path) -> str:
+    """Classify expense provenance as DIRECT, NON_DIRECT, or UNVERIFIED.
+
+    The CSV may identify acquisition either with UTM fields or Metrika's
+    TrafficSource/TrafficSourceDetail fields. A row that only says generic
+    advertising traffic is not enough evidence to exclude Yandex Direct.
+    """
     path = Path(path)
     try:
         with path.open("r", encoding="utf-8", newline="") as fh:
             reader = csv.DictReader(fh)
             if not reader.fieldnames:
-                return False
+                return "UNVERIFIED"
+
             normalized_names = {_compact_label(name): name for name in reader.fieldnames if name}
-            source_key = normalized_names.get("utmsource")
-            medium_key = normalized_names.get("utmmedium")
-            if not source_key or not medium_key:
-                return False
+            utm_source_key = normalized_names.get("utmsource")
+            utm_medium_key = normalized_names.get("utmmedium")
+            traffic_source_key = normalized_names.get("trafficsource")
+            traffic_detail_key = normalized_names.get("trafficsourcedetail")
+
+            saw_row = False
+            saw_unverified = False
             for row in reader:
-                source = _compact_label(str(row.get(source_key) or ""))
-                medium = _compact_label(str(row.get(medium_key) or ""))
-                if source in DIRECT_UTM_SOURCES and medium in DIRECT_UTM_MEDIA:
-                    return True
+                saw_row = True
+                utm_source = _compact_label(str(row.get(utm_source_key) or "")) if utm_source_key else ""
+                utm_medium = _compact_label(str(row.get(utm_medium_key) or "")) if utm_medium_key else ""
+                traffic_source = (
+                    _compact_label(str(row.get(traffic_source_key) or "")) if traffic_source_key else ""
+                )
+                traffic_detail = (
+                    _compact_label(str(row.get(traffic_detail_key) or "")) if traffic_detail_key else ""
+                )
+
+                if traffic_detail in DIRECT_TRAFFIC_SOURCE_DETAILS:
+                    return "DIRECT"
+                if utm_source in {"yandexdirect", "яндексдирект"}:
+                    return "DIRECT"
+                if utm_source in DIRECT_UTM_SOURCES and utm_medium in DIRECT_UTM_MEDIA:
+                    return "DIRECT"
+
+                # A non-Direct TrafficSourceDetail is explicit source evidence.
+                if traffic_detail:
+                    continue
+
+                if utm_source:
+                    # Generic Yandex UTM source without a medium remains ambiguous.
+                    if utm_source in DIRECT_UTM_SOURCES and not utm_medium:
+                        saw_unverified = True
+                    continue
+
+                if traffic_source:
+                    # `ad` is a channel class, not provider identity.
+                    if traffic_source == "ad":
+                        saw_unverified = True
+                    continue
+
+                saw_unverified = True
+
+            if not saw_row or saw_unverified:
+                return "UNVERIFIED"
+            return "NON_DIRECT"
     except UnicodeDecodeError as exc:
         raise ValueError("CSV must be UTF-8 encoded") from exc
-    return False
+
+
+def detect_direct_expense_risk(path: Path) -> bool:
+    """Detect proven Direct expense rows without claiming every ad row is Direct."""
+    return classify_expense_source(path) == "DIRECT"
 
 
 def import_url(kind: str, counter_id: int, query: dict[str, Any] | None = None) -> str:
@@ -146,15 +194,30 @@ def prepare_import(
     warnings: list[str] = []
     if kind == "expenses":
         guard_expense_source(source)
-        if detect_direct_expense_risk(file_path):
+        provenance = classify_expense_source(file_path)
+        warning: str | None = None
+        if provenance == "DIRECT":
             warning = "DIRECT_DUPLICATION_RISK"
+            message = (
+                f"{warning}: CSV contains Yandex Direct expense provenance. "
+                "Metrika receives Yandex Direct costs automatically; inspect the file and "
+                "use --allow-direct-risk only after confirming these rows are intentionally uploaded."
+            )
+        elif provenance == "UNVERIFIED":
+            warning = "DIRECT_SOURCE_UNVERIFIED"
+            message = (
+                f"{warning}: CSV does not contain enough source evidence to rule out Yandex Direct expenses. "
+                "Add UTMSource/UTMMedium or TrafficSourceDetail, or use --allow-direct-risk only after "
+                "confirming the expense provenance."
+            )
+        else:
+            message = ""
+
+        if warning:
             if not allow_direct_risk:
-                raise ValueError(
-                    f"{warning}: CSV contains Direct-like UTM source/medium values. "
-                    "Metrika receives Yandex Direct costs automatically; inspect the file and "
-                    "use --allow-direct-risk only after confirming these rows are intentionally uploaded."
-                )
+                raise ValueError(message)
             warnings.append(warning)
+
         if source is not None and "provider" not in query:
             query["provider"] = source
     file_info = inspect_csv(file_path)
@@ -215,7 +278,7 @@ def main() -> int:
     parser.add_argument(
         "--allow-direct-risk",
         action="store_true",
-        help="Allow an expense CSV with Direct-like UTM values after explicitly reviewing duplication risk.",
+        help="Allow an expense CSV with Direct or unverified source provenance after explicitly reviewing duplication risk.",
     )
     parser.add_argument("--new-goal-name", help="Calls import new_goal_name")
     parser.add_argument("--type", dest="offline_type", choices=["BASIC", "CALLS", "CHATS"])

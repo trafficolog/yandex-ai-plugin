@@ -7,7 +7,7 @@ Status reflects what this repository actually ships, not upstream product availa
 | Service plugin | Tier | Status | Version | Primary scope | Execution sources to evaluate |
 |---|---:|---|---|---|---|
 | Yandex Direct | 1 | **available** | 1.0.1 | campaigns, audit, reports, optimization, keywords, budget | bundled API helper; future MCP/app adapter |
-| Yandex Metrika | 1 | **available** | 1.0.2 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; two-layer Direct expense duplication guard | bundled API helpers; optional MCP/app backend |
+| Yandex Metrika | 1 | **available** | 1.0.3 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; provenance-aware Direct expense duplication guard | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 1.0.3 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports; verified indexing archive `state` contract and hardened PRO export contract | bundled API helpers; optional MCP/app backend |
 | Yandex Wordstat | 1 | **available** | 1.1.1 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
 | Yandex Search | 1 | **available** | 1.0.2 | web SERP, batch, rankings, competitors, URL-overlap clustering; 250-result depth | bundled Search API v2 helpers; optional MCP/app backend |
@@ -56,5 +56,7 @@ Both `GREENFIELD` and `EXISTING_SITE` modes are supported. When Search evidence 
 ## Repository controls
 
 High-risk contracts map to concrete skills/helpers/tests in [`CONTRACT_MATRIX.json`](CONTRACT_MATRIX.json). The matrix is a traceability index, not semantic proof. On PR/push, the 90-day age gate blocks only a changed freshness-controlled reference; the weekly scheduled strict check evaluates the complete controlled set and synchronizes a freshness issue.
+
+Shared runtime promotion requires not only repetition and a stable interface but also a safe installability/distribution contract for independently installed plugins; hidden repo-root dependencies are forbidden.
 
 See [`ROADMAP.en.md`](ROADMAP.en.md) · [Русский](ROADMAP.md).

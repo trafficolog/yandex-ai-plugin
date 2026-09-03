@@ -2,6 +2,14 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
+## [1.0.3] — 2026-09-03
+
+- Closed the residual Direct expense-guard gap for CSV files without `UTMSource` / `UTMMedium`.
+- Added `DIRECT` / `NON_DIRECT` / `UNVERIFIED` provenance classification from UTM and `TrafficSource` / `TrafficSourceDetail` evidence.
+- Official `TrafficSourceDetail=yandex_direct_star` is now detected as `DIRECT_DUPLICATION_RISK` independently of UTM fields.
+- Insufficient source provenance, such as generic `TrafficSource=ad` without source detail, fails closed as `DIRECT_SOURCE_UNVERIFIED` and requires explicit `--allow-direct-risk` after review.
+- Explicit non-Direct details such as `google_adwords` remain allowed; an arbitrary provider label like `MyDirect` is not declared Direct from substring matching alone.
+
 ## [1.0.2] — 2026-09-02
 
 - Hardened the Direct expense duplication guard: explicit tokenized labels (`Yandex Direct RU`, `direct_ads`, `Яндекс Директ агентство`) are rejected in addition to exact aliases.
