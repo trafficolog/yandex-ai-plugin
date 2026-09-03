@@ -2,9 +2,9 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.1.0`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
+Version `1.1.1`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
 
-> Phase 7 `1.1.0` adds Topical Architecture and Internal Linking while keeping Search the owner of SERP-overlap clustering and SEO transport-free.
+> Phase 7 `1.1.0` added Topical Architecture and Internal Linking; patch `1.1.1` hardens transport-free artifact integrity with a structural-node field whitelist and list-typed candidate-link `evidence`. Search remains the owner of SERP-overlap clustering.
 
 Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that SEO owns a credential surface.
 
@@ -31,7 +31,7 @@ Service plugins own transport and API volatility. The SEO layer consumes structu
 
 The artifact separates two layers:
 
-- `structural_tree` — canonical navigation hierarchy with at most one `canonical_parent_id` per page;
+- `structural_tree` — canonical navigation hierarchy with at most one `canonical_parent_id` per page; structural nodes use an explicit field whitelist and do not carry caller `decision/status/write/execution_id` state;
 - `semantic_graph` — independent semantic relations such as `SUPPORT`, `COMPARISON`, `EVIDENCE`, `USE_CASE`, and `BRIDGE`.
 
 Page decisions: `PRESERVE`, `CREATE`, `EXPAND`, `MERGE`, `SPLIT`, `REDIRECT`, `SECTION_ONLY`, `BRIDGE`, `NO_PAGE`, `MANUAL_REVIEW`.
@@ -40,7 +40,7 @@ Evidence classes stay distinct: `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOG
 
 ## Internal Linking
 
-`yandex-seo-internal-linking` creates a **preview-only** link plan or audits an existing link inventory. Every recommendation records source/target, relation, user need, reason codes, evidence, confidence, and claim class.
+`yandex-seo-internal-linking` creates a **preview-only** link plan or audits an existing link inventory. Every recommendation records source/target, relation, user need, reason codes, evidence, confidence, and claim class. Candidate-link `evidence`, when supplied, must be a list; scalar/object payloads are rejected before serialization.
 
 Audit findings include `ORPHAN_PAGE`, `STRUCTURAL_PARENT_LINK_MISSING`, `MISSING_JUSTIFIED_LINK`, and `UNKNOWN_LINK_ENDPOINT`. Semantic cycles are not errors by themselves.
 

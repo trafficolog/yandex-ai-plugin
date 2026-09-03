@@ -2,9 +2,9 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.1.0`. Workflow-first demand-research service plugin over Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, plus evidence-first candidate topic maps.
+Version `1.1.1`. Workflow-first demand-research service plugin over Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, plus evidence-first candidate topic maps.
 
-> Phase 7 `1.1.0` adds `yandex-wordstat-topic-map` and `wordstat-topic-map/v1` without changing ownership of final SERP clustering or page architecture.
+> Phase 7 `1.1.0` added `yandex-wordstat-topic-map` and `wordstat-topic-map/v1`; patch `1.1.1` hardens provenance by rejecting duplicate seed identifiers and candidate self-relations without changing ownership of final SERP clustering or page architecture.
 
 ## Capability matrix
 
@@ -41,7 +41,8 @@ Core contract: **Wordstat does not prove final page boundaries**. Associations/c
 
 - `results` (nested/popular) and `associations` (similar relation) remain distinct;
 - phrase/association counts overlap and are **never summed** into total market demand;
-- seed/operator provenance stays attached to numbers;
+- seed/operator provenance stays attached to numbers; `seeds[].seed` is unique within one topic-map bundle and duplicate identifiers are rejected;
+- candidate relations must connect distinct topic IDs; self-relations are invalid;
 - GetTop associations are capped at `20`; exactly 20 means `associations_truncated=true` and downstream `WORDSTAT_ASSOCIATIONS_CAPPED`;
 - weekly/monthly operator rejection is repository compatibility policy, not a claimed official Yandex prohibition;
 - `PERIOD_DAILY` remains the supported non-`+` operator path;

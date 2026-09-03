@@ -115,9 +115,9 @@ class BilingualDocumentationTests(unittest.TestCase):
             "yandex-direct": "1.0.1",
             "yandex-metrika": "1.0.2",
             "yandex-webmaster": "1.0.3",
-            "yandex-wordstat": "1.1.0",
+            "yandex-wordstat": "1.1.1",
             "yandex-search": "1.0.2",
-            "yandex-seo": "1.1.0",
+            "yandex-seo": "1.1.1",
             "yandex-marketing": "1.1.0",
         }
         import json

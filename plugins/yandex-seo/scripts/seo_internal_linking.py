@@ -79,6 +79,9 @@ def _normalize_candidate_link(
         raise ValueError("methodology/hypothesis-only link reasons cannot use an empirical claim_class")
     if raw.get("exact_match_required") is True:
         raise ValueError("forced exact-match anchor requirements are not supported")
+    evidence = raw.get("evidence", [])
+    if not isinstance(evidence, list):
+        raise ValueError("candidate link evidence must be a list")
 
     item = {
         "from_page_id": source,
@@ -86,7 +89,7 @@ def _normalize_candidate_link(
         "relation": relation,
         "user_need": user_need.strip(),
         "reason_codes": normalized_reason_codes,
-        "evidence": deepcopy(raw.get("evidence", [])),
+        "evidence": deepcopy(evidence),
         "confidence": confidence,
         "claim_class": claim_class,
         "status": "PREVIEW",

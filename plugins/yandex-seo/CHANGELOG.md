@@ -2,6 +2,12 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [1.1.1] — 2026-09-03
+
+- `structural_tree.nodes` теперь нормализуются через explicit field whitelist; caller `decision/status/write/execution_id` не попадают в transport-free structural artifact.
+- Candidate-link `evidence` в `yandex-seo-internal-linking` теперь обязан быть list; scalar/object payload отклоняется до preview serialization.
+- Topical Architecture ownership, Search-owned SERP clustering и preview-only/no-CMS-write boundary не меняются.
+
 ## [1.1.0] — 2026-09-02
 
 - Добавлен `yandex-seo-topical-architecture` и schema `seo-topical-architecture/v1` для `GREENFIELD` / `EXISTING_SITE` architecture workflows.

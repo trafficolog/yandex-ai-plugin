@@ -57,6 +57,8 @@ def build_topic_map(
         seed_name = seed_record.get("seed")
         if not isinstance(seed_name, str) or not seed_name:
             raise ValueError("every seed requires a non-empty seed name")
+        if seed_name in declared_seeds:
+            raise ValueError(f"duplicate seed identifier: {seed_name}")
         declared_seeds.add(seed_name)
 
     normalized_queries: dict[str, dict[str, Any]] = {}
@@ -149,6 +151,8 @@ def build_topic_map(
         relation_type = relation.get("relation")
         if source not in topic_ids or target not in topic_ids:
             raise ValueError("candidate relation references unknown topic")
+        if source == target:
+            raise ValueError("candidate relation source and target must differ")
         if relation_type not in TOPIC_RELATIONS:
             raise ValueError(f"candidate relation must be one of {sorted(TOPIC_RELATIONS)}")
         normalized_relations.append(

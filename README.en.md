@@ -2,13 +2,13 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-PHASE%207%201.0.0-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-PHASE%207%201.0.1-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** Phases 1–7 are implemented. Release `PHASE 7 1.0.0` adds candidate Topic Map capability to Wordstat `1.1.0` and Topical Architecture + Internal Linking to SEO `1.1.0`; Search remains `1.0.2` and retains ownership of SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
+> **Status:** Phases 1–7 are implemented. Patch release `PHASE 7 1.0.1` hardens the published semantic-cocoon baseline: Wordstat `1.1.1` rejects duplicate seed identifiers and candidate self-relations; SEO `1.1.1` isolates structural-node contracts from execution state and enforces list-typed link evidence. Search remains `1.0.2` and retains ownership of SERP-overlap clustering. Direct `1.0.1`, Metrika `1.0.2`, Webmaster `1.0.3`, and Marketing `1.1.0` are unchanged.
 
 ## Quick overview
 
@@ -17,9 +17,9 @@ A marketplace monorepo of independent AI plugins for working with Yandex service
 | [`yandex-direct`](plugins/yandex-direct/) | 1.0.1 | service | campaigns, reports, audit, keywords, budgets | preview + explicit approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 1.0.2 | service | analytics, goals, attribution, Logs, imports | guarded writes |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 1.0.3 | service | indexing, queries, recrawl, sitemaps, feeds, exports | guarded writes |
-| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.0 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
+| [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.1 | service | demand, semantics, topic-map candidates, dynamics, regions | no consequential writes |
 | [`yandex-search`](plugins/yandex-search/) | 1.0.2 | service | SERP, rankings, competitors, clustering | no |
-| [`yandex-seo`](plugins/yandex-seo/) | 1.1.0 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
+| [`yandex-seo`](plugins/yandex-seo/) | 1.1.1 | cross-service | organic evidence, Topical Architecture, Internal Linking, orchestration | delegated preview only |
 | [`yandex-marketing`](plugins/yandex-marketing/) | 1.1.0 | cross-service | paid acquisition and reconciliation | delegated preview only |
 
 Details: [`docs/SERVICE_MATRIX.en.md`](docs/SERVICE_MATRIX.en.md) · [Русский](docs/SERVICE_MATRIX.md).
@@ -91,6 +91,7 @@ flowchart LR
 - `yandex-seo-internal-linking` → preview-only link plan/audit with no CMS writes.
 - Claim classes `OBSERVED`, `DERIVED`, `HYPOTHESIS`, `METHODOLOGY` stay distinct; semantic-cocoon/TGA/QBST methodology is not represented as a verified ranking mechanism.
 - Without Search evidence, `SERP_VALIDATION_MISSING` is mandatory and page boundaries remain hypotheses.
+- Patch `1.0.1` does not change this architecture; it closes four post-release integrity findings in the Wordstat/SEO data contracts only.
 
 ## Marketing orchestration
 
@@ -142,13 +143,13 @@ python scripts/check_reference_freshness.py
 yandex-direct        1.0.1
 yandex-metrika       1.0.2
 yandex-webmaster     1.0.3
-yandex-wordstat      1.1.0
+yandex-wordstat      1.1.1
 yandex-search        1.0.2
-yandex-seo           1.1.0
+yandex-seo           1.1.1
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`) do not imply synchronized plugin bumps.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`) do not imply synchronized plugin bumps.
 
 ## Documentation
 

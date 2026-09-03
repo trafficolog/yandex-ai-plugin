@@ -2,9 +2,9 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `1.1.0`. Workflow-first service plugin для demand research через Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, а также evidence-first candidate topic maps.
+Версия `1.1.1`. Workflow-first service plugin для demand research через Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, а также evidence-first candidate topic maps.
 
-> Phase 7 `1.1.0` добавляет `yandex-wordstat-topic-map` и `wordstat-topic-map/v1`, не меняя ownership финального SERP clustering и page architecture.
+> Phase 7 `1.1.0` добавил `yandex-wordstat-topic-map` и `wordstat-topic-map/v1`; patch `1.1.1` усиливает provenance: duplicate seed identifiers и candidate self-relations отклоняются, ownership финального SERP clustering и page architecture не меняется.
 
 ## Capability matrix
 
@@ -41,7 +41,8 @@ SEO: yandex-seo-internal-linking
 
 - `results` (nested/popular) и `associations` (similar relation) не смешиваются;
 - phrase/association counts перекрываются и **не суммируются** в total market demand;
-- seed/operator provenance сохраняется рядом с числами;
+- seed/operator provenance сохраняется рядом с числами; `seeds[].seed` уникален внутри одного topic-map bundle, duplicate identifiers отклоняются;
+- candidate relations должны связывать разные topic IDs; self-relations недопустимы;
 - GetTop associations имеют cap `20`; ровно 20 → `associations_truncated=true` и limitation `WORDSTAT_ASSOCIATIONS_CAPPED` downstream;
 - weekly/monthly operator restriction — repository compatibility policy, не заявленный официальный запрет Яндекса;
 - `PERIOD_DAILY` остаётся supported path для non-`+` operators;

@@ -2,6 +2,12 @@
 
 [**Русский**](CHANGELOG.md) · [English](CHANGELOG.en.md)
 
+## [1.1.1] — 2026-09-03
+
+- Усилен provenance contract `wordstat-topic-map/v1`: duplicate `seeds[].seed` identifiers отклоняются до нормализации phrase records.
+- Candidate topic relations теперь требуют разные `from_topic_id` и `to_topic_id`; self-relations недопустимы.
+- Candidate-only ownership не меняется: Wordstat по-прежнему не утверждает финальные page boundaries или internal links.
+
 ## [1.1.0] — 2026-09-02
 
 - Добавлен `yandex-wordstat-topic-map` и deterministic helper `wordstat-topic-map/v1` для candidate demand/topic mapping.

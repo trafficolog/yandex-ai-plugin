@@ -2,6 +2,12 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
+## [1.1.1] — 2026-09-03
+
+- Hardened `wordstat-topic-map/v1` provenance: duplicate `seeds[].seed` identifiers are rejected before phrase normalization.
+- Candidate topic relations now require distinct `from_topic_id` and `to_topic_id`; self-relations are invalid.
+- Candidate-only ownership is unchanged: Wordstat still does not claim final page boundaries or internal links.
+
 ## [1.1.0] — 2026-09-02
 
 - Added `yandex-wordstat-topic-map` and the deterministic `wordstat-topic-map/v1` helper for candidate demand/topic mapping.
