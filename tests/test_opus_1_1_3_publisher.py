@@ -68,7 +68,7 @@ class Opus113PublisherTests(unittest.TestCase):
             no_tags,
         )
         verify_setting = text.index(
-            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \' .enabled\'',
+            'GH_TOKEN="$IMMUTABILITY_TOKEN" gh api "repos/$GITHUB_REPOSITORY/immutable-releases" --jq \'.enabled\'',
             enable_attempt,
         )
         immutable_guard = text.index('if [[ "$immutable_enabled" != "true" ]]', verify_setting)
