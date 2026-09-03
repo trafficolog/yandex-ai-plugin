@@ -6,7 +6,7 @@
 
 - Breaking safety contract: consequential Direct writes now require the exact `preview_id`; `--execute` alone is not sufficient.
 - New flow: preview → approval of the exact preview in a later user turn → `--execute --approve <preview_id>`.
-- Approval binds service, method, `Client-Login`, environment and body; changing the payload invalidates permission.
+- Approval binds service, method, `Client-Login`, environment, body, and a pseudonymous HMAC-SHA256 auth-principal binding; changing the OAuth token or payload invalidates permission without exposing the token.
 - API/account/file content is treated as data, not instructions; adjacent-service work routes to the owning plugin.
 
 Migration:
