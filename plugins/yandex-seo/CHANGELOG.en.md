@@ -8,7 +8,7 @@
 - `coverage.search=PARTIAL` now adds explicit `SERP_VALIDATION_PARTIAL`; Search cluster ingress is validated and bridge/source limitations propagate downstream automatically.
 - `METHODOLOGY` is now a first-class qualitative kind in the SEO Evidence Bundle, but it cannot masquerade as quantitative metric evidence.
 - Topical Architecture distinguishes not-evaluated `link_plan`/`audits` (`null`) from evaluated empty results through explicit attachment helpers.
-- Internal-link audit now defines orphaning by missing inbound links, preserves and flags duplicate links, and marks a rootless `BRIDGE` without inbound links as orphan/broken bridge; `ROOT` remains exempt.
+- Internal-link audit defines orphaning by missing inbound links, preserves and flags duplicate links, and marks a rootless `BRIDGE` without inbound links as orphan/broken bridge. Explicit `ROOT` and a legacy parentless node without `page_role` remain exempt; explicit non-root roles are still audited for orphaning. Self-links are reported as `SELF_LINK` and excluded from valid/inbound reachability counts.
 - Transport-free, preview-only, and Search-owned clustering boundaries remain unchanged.
 
 ## [1.1.1] — 2026-09-03
