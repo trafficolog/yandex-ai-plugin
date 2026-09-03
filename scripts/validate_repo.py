@@ -37,6 +37,9 @@ SECRET_PATTERNS = (
     re.compile(r"Authorization\s*:\s*(?:Bearer|OAuth)\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
     re.compile(r"Api-Key\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
     re.compile(r"\bAQVN[A-Za-z0-9_-]{8,}\b"),
+    re.compile(r"(?<![A-Za-z0-9_-])y0_[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
+    re.compile(r"(?<![A-Za-z0-9_-])AQAA[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
+    re.compile(r"(?<![A-Za-z0-9_-])t1\.[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
 )
 FORBIDDEN_TRANSPORT_MODULES = {"requests", "httpx", "aiohttp"}
 YANDEX_API_ENDPOINT_PATTERN = re.compile(
