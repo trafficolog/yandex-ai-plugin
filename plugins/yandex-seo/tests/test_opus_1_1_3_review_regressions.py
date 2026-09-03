@@ -106,6 +106,35 @@ class Opus113ReviewRegressionTests(unittest.TestCase):
                 }
                 self.assertIn("node", orphan_pages)
 
+    def test_existing_self_link_does_not_make_page_reachable(self):
+        architecture = {
+            "schema": "seo-topical-architecture/v1",
+            "structural_tree": {
+                "nodes": [
+                    {"page_id": "root", "canonical_parent_id": None, "page_role": "ROOT"},
+                    {"page_id": "child", "canonical_parent_id": "root", "page_role": "HUB"},
+                ],
+                "edges": [{"parent_page_id": "root", "child_page_id": "child"}],
+            },
+            "semantic_graph": {"nodes": [{"page_id": "root"}, {"page_id": "child"}], "edges": []},
+        }
+        audit = seo_internal_linking.audit_link_inventory(
+            architecture=architecture,
+            existing_links=[{"from_page_id": "child", "to_page_id": "child"}],
+        )
+        orphan_pages = {
+            finding["page_id"]
+            for finding in audit["findings"]
+            if finding["type"] == "ORPHAN_PAGE"
+        }
+        self.assertIn("child", orphan_pages)
+        self.assertEqual(audit["observed_link_count"], 0)
+        self.assertEqual(audit["unique_link_count"], 0)
+        self.assertIn(
+            {"type": "SELF_LINK", "link_index": 0, "page_id": "child"},
+            audit["findings"],
+        )
+
     def test_every_empirical_boundary_decision_requires_search_owned_provenance(self):
         boundary_decisions = (
             "CREATE",
