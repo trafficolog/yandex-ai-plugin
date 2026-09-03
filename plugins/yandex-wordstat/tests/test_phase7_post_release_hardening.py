@@ -41,6 +41,17 @@ class TestPhase7PostReleaseHardening(unittest.TestCase):
         self.assertEqual(result["candidate_relations"][0]["from_topic_id"], "t1")
         self.assertEqual(result["candidate_relations"][0]["to_topic_id"], "t2")
 
+    def test_duplicate_seed_identifiers_are_rejected(self):
+        with self.assertRaises(ValueError):
+            ywstat_topic_map.build_topic_map(
+                seeds=[
+                    {"seed": "seo", "operators": ["exact"]},
+                    {"seed": "seo", "operators": ["broad"]},
+                ],
+                phrase_records=[],
+                candidate_topics=[],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
