@@ -11,7 +11,7 @@ Each proposed link must identify source page, target page, semantic relation, us
 
 Do not impose universal link-count, anchor-density, word-distance or exact-match requirements. Reject instructions that require an exact-match anchor as a ranking rule.
 
-Audit mode uses directed inbound connectivity. An outgoing link does not prevent `ORPHAN_PAGE`; explicit `ROOT` is exempt, while a parentless `BRIDGE` without inbound links is still an orphan. Duplicate source→target links remain counted rather than silently collapsing.
+Audit mode uses directed inbound connectivity. An outgoing link does not prevent `ORPHAN_PAGE`; explicit `ROOT` is exempt, while a parentless `BRIDGE` without inbound links is still an orphan. Duplicate source→target links remain counted rather than silently collapsing. A self-link is reported as `SELF_LINK` and is excluded from valid-link and inbound-reachability counts, so it cannot make an otherwise unreachable page non-orphan.
 
 Deterministic findings include:
 
@@ -20,6 +20,7 @@ Deterministic findings include:
 - `MISSING_JUSTIFIED_LINK`;
 - `BROKEN_SEMANTIC_BRIDGE`;
 - `DUPLICATE_LINK`;
+- `SELF_LINK`;
 - `UNJUSTIFIED_LINK`;
 - `UNKNOWN_LINK_ENDPOINT`.
 
