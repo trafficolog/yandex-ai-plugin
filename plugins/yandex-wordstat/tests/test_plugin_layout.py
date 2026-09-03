@@ -21,7 +21,7 @@ class TestPluginLayout(unittest.TestCase):
     def test_codex_manifest_contract(self):
         data = json.loads((ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(data["name"], "yandex-wordstat")
-        self.assertEqual(data["version"], "1.1.1")
+        self.assertEqual(data["version"], "1.1.2")
         self.assertEqual(data["skills"], "./skills/")
 
     def test_exact_skill_set_exists(self):
@@ -64,6 +64,7 @@ class TestPluginLayout(unittest.TestCase):
         self.assertIn("WORDSTAT_ASSOCIATIONS_CAPPED", semantics)
         self.assertIn("wordstat-topic-map/v1", topic_map)
         self.assertIn("candidate", topic_map.lower())
+        self.assertIn("NFKC", topic_map)
         self.assertIn("yandex-search-clustering", topic_map)
         self.assertIn("yandex-seo-topical-architecture", topic_map)
         self.assertIn("PERIOD_MONTHLY", dynamics)
