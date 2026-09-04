@@ -12,14 +12,14 @@ import hmac
 import json
 import os
 import sys
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 try:
+    from . import _http
     from ._approval import preview_id, require_approval
 except ImportError:  # CLI execution from scripts directory
+    import _http
     from _approval import preview_id, require_approval
 
 API_BASE = "https://api.direct.yandex.com/json/v501"
@@ -56,6 +56,7 @@ class YandexDirectClient:
     client_login: str | None = None
     language: str = "ru"
     timeout: int = 60
+    opener: Callable[..., Any] = _http.urlopen
 
     def endpoint(self, service: str) -> str:
         service = service.strip().lower()
@@ -125,26 +126,23 @@ class YandexDirectClient:
         if not is_read_method(method):
             require_approval(envelope, approve)
 
-        payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            self.endpoint(service), data=payload, headers=self.headers(), method="POST"
-        )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                raw = response.read().decode("utf-8")
-                data = json.loads(raw) if raw else {}
-        except urllib.error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", errors="replace")
-            raise YandexDirectError(f"HTTP {exc.code}: {raw}") from exc
-        except urllib.error.URLError as exc:
-            raise YandexDirectError(f"Network error: {exc.reason}") from exc
+            data, transport = _http.request_json(
+                self.endpoint(service),
+                self.headers(),
+                body,
+                timeout=self.timeout,
+                opener=self.opener,
+            )
+        except _http.DirectHTTPError as exc:
+            raise YandexDirectError(str(exc)) from exc
 
-        if isinstance(data, dict) and data.get("error"):
+        if data.get("error"):
             err = data["error"]
-            request_id = data.get("request_id") or data.get("RequestId")
+            request_id = transport.get("request_id") or data.get("request_id") or data.get("RequestId")
             suffix = f" request_id={request_id}" if request_id else ""
             raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}")
-        return data
+        return {"result": data, "transport": transport}
 
 
 def _load_params(args: argparse.Namespace) -> dict[str, Any]:
