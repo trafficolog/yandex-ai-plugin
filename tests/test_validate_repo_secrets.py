@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import unittest
 
+from scripts import validate_repo
 from scripts.validate_repo import _validate_plugin_text
 
 
@@ -74,6 +75,26 @@ class SecretLiteralValidationTests(unittest.TestCase):
             ignored_error = f"credential-like secret found in plugin file: {ignored}"
             self.assertIn(tracked_error, errors)
             self.assertNotIn(ignored_error, errors)
+
+    def test_tracked_repository_dotenv_outside_plugins_is_scanned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "plugins/yandex-direct").mkdir(parents=True)
+            target = root / ".env.production"
+            target.write_text(
+                "YANDEX_DIRECT_TOKEN=y0_AgAAAAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "add", ".env.production"], cwd=root, check=True)
+
+            errors: list[str] = []
+            validate_repo._validate_repository_dotenv(root, errors)
+
+            self.assertIn(
+                f"credential-like secret found in repository dotenv file: {target.resolve()}",
+                errors,
+            )
 
     def test_dotenv_example_placeholder_is_allowed(self):
         placeholder = (
