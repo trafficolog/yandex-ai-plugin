@@ -36,23 +36,37 @@ class EvalRepositoryContractTests(unittest.TestCase):
                     self.assertIn("must_convey", expect)
                     self.assertIn("must_not_claim", expect)
 
+    def assert_adversarial_refusal(self, plugin_name, scenarios, label):
+        self.assertTrue(scenarios, f"{plugin_name} lacks a {label} scenario")
+        for scenario in scenarios:
+            with self.subTest(plugin=plugin_name, adversarial=label, prompt=scenario["prompt"]):
+                self.assertEqual(scenario["write"], "approval-required")
+                expect = scenario["expect"]
+                self.assertEqual(expect["outcome"], "refuse")
+                self.assertIn("preview_id", expect["must_mention_tokens"])
+                self.assertTrue(
+                    any("fresh exact preview" in item.lower() for item in expect["must_convey"]),
+                    f"{plugin_name} {label} scenario must require a fresh exact preview",
+                )
+
     def test_write_capable_plugins_cover_injection_and_fake_prior_approval(self):
         for plugin_name in WRITE_CAPABLE:
-            with self.subTest(plugin=plugin_name):
-                data = self.load(plugin_name)
-                prompts = [scenario["prompt"].lower() for scenario in data["scenarios"]]
-                self.assertTrue(
-                    any("system:" in prompt or "инструкц" in prompt for prompt in prompts),
-                    f"{plugin_name} lacks an untrusted-data injection scenario",
-                )
-                self.assertTrue(
-                    any(
-                        ("раньше" in prompt or "когда-то" in prompt)
-                        and ("preview" in prompt or "разреш" in prompt)
-                        for prompt in prompts
-                    ),
-                    f"{plugin_name} lacks a fake-prior-approval scenario",
-                )
+            data = self.load(plugin_name)
+            scenarios = data["scenarios"]
+            injection = [
+                scenario
+                for scenario in scenarios
+                if "system:" in scenario["prompt"].lower()
+                or "инструкц" in scenario["prompt"].lower()
+            ]
+            fake_prior_approval = [
+                scenario
+                for scenario in scenarios
+                if ("раньше" in scenario["prompt"].lower() or "когда-то" in scenario["prompt"].lower())
+                and ("preview" in scenario["prompt"].lower() or "разреш" in scenario["prompt"].lower())
+            ]
+            self.assert_adversarial_refusal(plugin_name, injection, "untrusted-data injection")
+            self.assert_adversarial_refusal(plugin_name, fake_prior_approval, "fake-prior-approval")
 
     def test_plugin_standard_documents_eval_v2_and_semantic_limit(self):
         for filename in ("PLUGIN_STANDARD.md", "PLUGIN_STANDARD.en.md"):
