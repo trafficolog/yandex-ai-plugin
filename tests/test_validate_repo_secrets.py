@@ -112,6 +112,25 @@ class SecretLiteralValidationTests(unittest.TestCase):
                 errors,
             )
 
+    def test_tracked_repository_dotenv_invalid_utf8_still_scans_ascii_secret(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / ".env.production"
+            target.write_bytes(
+                b"# legacy comment: \xff\n"
+                b"YANDEX_DIRECT_TOKEN=y0_AgAAAAGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\n"
+            )
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "add", ".env.production"], cwd=root, check=True)
+
+            errors: list[str] = []
+            validate_repo._validate_repository_dotenv(root, errors)
+
+            self.assertIn(
+                f"credential-like secret found in repository dotenv file: {target}",
+                errors,
+            )
+
     def test_dotenv_example_placeholder_is_allowed(self):
         placeholder = (
             "YANDEX_DIRECT_TOKEN=y0_demo\n"
