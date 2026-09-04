@@ -61,7 +61,13 @@ def request_json(
             transport = _transport_metadata(getattr(response, "headers", {}))
     except HTTPError as exc:
         try:
-            raw = exc.read(ERROR_BODY_LIMIT)
+            try:
+                raw = exc.read(ERROR_BODY_LIMIT)
+            except OSError as read_exc:
+                raise DirectHTTPError(
+                    f"Network error while reading HTTP {exc.code} error response: {read_exc}",
+                    error_type="network",
+                ) from read_exc
             text = raw.decode("utf-8", errors="replace")
         finally:
             exc.close()
