@@ -320,10 +320,10 @@ def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
 
 
 def _read_secret_scan_text(path: Path) -> str:
-    """Read a tracked text entry without following symlinks."""
+    """Read a tracked text entry without following symlinks or skipping undecodable bytes."""
     if path.is_symlink():
         return str(path.readlink())
-    return path.read_text(encoding="utf-8")
+    return path.read_bytes().decode("utf-8", errors="replace")
 
 
 def _iter_repository_dotenv_files(root: Path):
