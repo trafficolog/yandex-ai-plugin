@@ -60,8 +60,11 @@ def request_json(
                 ) from exc
             transport = _transport_metadata(getattr(response, "headers", {}))
     except HTTPError as exc:
-        raw = exc.read(ERROR_BODY_LIMIT)
-        text = raw.decode("utf-8", errors="replace")
+        try:
+            raw = exc.read(ERROR_BODY_LIMIT)
+            text = raw.decode("utf-8", errors="replace")
+        finally:
+            exc.close()
         raise DirectHTTPError(f"HTTP {exc.code}: {text}", error_type="http") from exc
     except URLError as exc:
         raise DirectHTTPError(f"Network error: {exc.reason}", error_type="network") from exc
