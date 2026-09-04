@@ -340,6 +340,8 @@ def _iter_repository_dotenv_files(root: Path):
 
 def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
     for path in _iter_repository_dotenv_files(root):
+        if path.is_symlink():
+            errors.append(f"repository dotenv symlink is not allowed: {path}")
         try:
             text = _read_secret_scan_text(path)
         except (OSError, UnicodeDecodeError):
