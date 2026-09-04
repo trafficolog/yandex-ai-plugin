@@ -94,6 +94,14 @@ class EvalContractV2Tests(unittest.TestCase):
                 errors = self.validate(data)
                 self.assertTrue(any("outcome" in error for error in errors), errors)
 
+    def test_write_non_scalar_values_are_reported_not_raised(self):
+        for value in ([], {}, 123, True, "unknown"):
+            with self.subTest(value=value):
+                data = self.base_data()
+                data["scenarios"][0]["write"] = value
+                errors = self.validate(data)
+                self.assertTrue(any("write mode" in error for error in errors), errors)
+
     def test_v2_string_lists_require_nonempty_strings(self):
         for field in ("must_mention_tokens", "must_convey", "must_not_claim"):
             for value in ("not-a-list", [""], [123]):
