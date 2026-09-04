@@ -14,7 +14,8 @@ class EvalContractV2Tests(unittest.TestCase):
         (plugin / "skills/router").mkdir(parents=True)
         (plugin / "skills/router/SKILL.md").write_text(
             "---\nname: router\ndescription: Use when routing.\n---\n\n"
-            "Exact contract tokens: SAFE_TOKEN, wordstat_count\n",
+            "Show a preview before writing.\n"
+            "Exact contract tokens: SAFE_TOKEN, wordstat_count, RequestId\n",
             encoding="utf-8",
         )
         if data is None:
@@ -146,6 +147,22 @@ class EvalContractV2Tests(unittest.TestCase):
         ]
         errors = self.validate(data)
         self.assertTrue(any("must_mention_tokens" in error and "token" in error.lower() for error in errors), errors)
+
+    def test_must_mention_tokens_reject_ordinary_prose_words_even_if_documented(self):
+        data = self.base_data()
+        data["scenarios"][0]["expect"]["must_mention_tokens"] = ["preview"]
+        errors = self.validate(data)
+        self.assertTrue(
+            any("preview" in error and ("identifier" in error.lower() or "must_convey" in error) for error in errors),
+            errors,
+        )
+
+    def test_must_mention_tokens_allow_identifier_like_contract_symbols(self):
+        for token in ("SAFE_TOKEN", "wordstat_count", "RequestId"):
+            with self.subTest(token=token):
+                data = self.base_data()
+                data["scenarios"][0]["expect"]["must_mention_tokens"] = [token]
+                self.assertEqual(self.validate(data), [])
 
     def test_must_mention_tokens_must_exist_in_plugin_vocabulary(self):
         data = self.base_data()
