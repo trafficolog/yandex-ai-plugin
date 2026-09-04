@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Small dependency-free Yandex Direct API v501 client.
-
-Only explicitly known read operations execute without --execute. Every other
-method is treated as consequential by default and is previewed first.
-"""
+"""Small dependency-free Yandex Direct API client."""
 from __future__ import annotations
 
 import argparse
@@ -22,7 +18,35 @@ except ImportError:  # CLI execution from scripts directory
     import _http
     from _approval import preview_id, require_approval
 
-API_BASE = "https://api.direct.yandex.com/json/v501"
+PRODUCTION_API_BASE = "https://api.direct.yandex.com/json/v501"
+API_BASE = PRODUCTION_API_BASE
+SUPPORTED_SERVICES = {
+    "adextensions",
+    "adgroups",
+    "adimages",
+    "ads",
+    "advideos",
+    "agencyclients",
+    "audiencetargets",
+    "bids",
+    "businesses",
+    "bidmodifiers",
+    "campaigns",
+    "changes",
+    "clients",
+    "creatives",
+    "dictionaries",
+    "feeds",
+    "keywordbids",
+    "keywords",
+    "keywordsresearch",
+    "leads",
+    "negativekeywordsharedsets",
+    "retargetinglists",
+    "sitelinks",
+    "strategies",
+    "turbopages",
+}
 READ_METHODS = {
     "check",
     "checkcampaigns",
@@ -44,7 +68,6 @@ def is_read_method(method: str) -> bool:
 
 
 def auth_principal_binding(token: str) -> str:
-    """Return a stable token-sensitive pseudonymous principal binding."""
     return hmac.new(
         token.encode("utf-8"),
         AUTH_PRINCIPAL_DOMAIN,
@@ -58,6 +81,14 @@ def emit_cli_error(error_type: str, message: str) -> int:
     return 2
 
 
+def validate_service(service: str) -> str:
+    if service != service.strip() or service != service.lower():
+        raise ValueError("service must be an exact lowercase Yandex Direct service name")
+    if service not in SUPPORTED_SERVICES:
+        raise ValueError(f"unsupported Yandex Direct service: {service!r}")
+    return service
+
+
 @dataclass
 class YandexDirectClient:
     token: str
@@ -67,10 +98,7 @@ class YandexDirectClient:
     opener: Callable[..., Any] = _http.urlopen
 
     def endpoint(self, service: str) -> str:
-        service = service.strip().lower()
-        if not service or "/" in service:
-            raise ValueError("service must be a single Yandex Direct service name")
-        return f"{API_BASE}/{service}"
+        return f"{PRODUCTION_API_BASE}/{validate_service(service)}"
 
     def headers(self) -> dict[str, str]:
         headers = {
@@ -92,7 +120,7 @@ class YandexDirectClient:
         method: str,
         params: Mapping[str, Any] | None,
     ) -> dict[str, Any]:
-        normalized_service = service.strip().lower()
+        normalized_service = validate_service(service)
         normalized_method = method.strip().lower()
         return {
             "schema": "yandex-ai-approval/v1",
@@ -165,8 +193,8 @@ def _load_params(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Yandex Direct API v501 helper")
-    parser.add_argument("service", help="campaigns, adgroups, keywords, ads, ...")
+    parser = argparse.ArgumentParser(description="Yandex Direct API helper")
+    parser.add_argument("service", help="Exact supported service name, e.g. campaigns")
     parser.add_argument("method", help="get, add, update, set, ...")
     parser.add_argument("--params", help="JSON object with method params")
     parser.add_argument("--params-file", help="Path to JSON params file")
@@ -183,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.params and args.params_file:
             raise ValueError("Use only one of --params or --params-file")
-
+        validate_service(args.service)
         params = _load_params(args)
         is_write = not is_read_method(args.method)
         dry_run = args.dry_run or (is_write and not args.execute)
