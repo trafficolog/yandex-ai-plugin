@@ -9,14 +9,23 @@ from scripts import yd_api
 
 
 class DirectCLICredentialTests(unittest.TestCase):
-    def test_token_argument_is_rejected(self):
-        stderr = io.StringIO()
-        with patch.dict(os.environ, {"YANDEX_DIRECT_TOKEN": "env-token"}, clear=False):
-            with redirect_stderr(stderr):
-                with self.assertRaises(SystemExit) as caught:
-                    yd_api.main(["campaigns", "get", "--params", "{}", "--token", "argv-token"])
-        self.assertEqual(caught.exception.code, 2)
-        self.assertIn("unrecognized arguments: --token", stderr.getvalue())
+    def test_token_argument_is_rejected_without_echoing_secret(self):
+        secret = "argv-token-secret"
+        for argv in [
+            ["campaigns", "get", "--params", "{}", "--token", secret],
+            ["campaigns", "get", "--params", "{}", f"--token={secret}"],
+        ]:
+            with self.subTest(argv=argv):
+                stderr = io.StringIO()
+                with patch.dict(os.environ, {"YANDEX_DIRECT_TOKEN": "env-token"}, clear=False):
+                    with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+                        rc = yd_api.main(argv)
+                self.assertEqual(rc, 2)
+                self.assertNotIn(secret, stderr.getvalue())
+                payload = json.loads(stderr.getvalue())
+                self.assertEqual(payload["error"]["type"], "validation")
+                self.assertIn("--token", payload["error"]["message"])
+                self.assertIn("YANDEX_DIRECT_TOKEN", payload["error"]["message"])
 
     def test_missing_env_token_returns_structured_error_without_transport(self):
         stderr = io.StringIO()
