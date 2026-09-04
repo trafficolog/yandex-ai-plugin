@@ -74,6 +74,20 @@ class DirectHTTPTests(unittest.TestCase):
         self.assertEqual(body.read_sizes, [4096])
         self.assertNotIn("TAIL-SENTINEL", str(caught.exception))
 
+    def test_http_error_response_is_closed_after_bounded_read(self):
+        body = RecordingBody(b"A" * 4096 + b"TAIL-SENTINEL")
+        exc = HTTPError("https://example.invalid", 500, "boom", {}, body)
+
+        with self.assertRaises(DirectHTTPError):
+            request_json(
+                "https://example.invalid",
+                {"Authorization": "Bearer secret"},
+                {"method": "get", "params": {}},
+                opener=RaisingOpener(exc),
+            )
+
+        self.assertTrue(body.closed)
+
     def test_http_error_invalid_utf8_uses_replacement_decoding(self):
         body = RecordingBody(b"prefix-\xff-suffix")
         exc = HTTPError("https://example.invalid", 400, "bad", {}, body)
