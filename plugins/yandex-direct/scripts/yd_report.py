@@ -16,6 +16,7 @@ from typing import Any, Mapping, Sequence
 REPORTS_URL = "https://api.direct.yandex.com/json/v501/reports"
 ERROR_BODY_LIMIT = 4096
 ATTRIBUTION_MODELS = {"FCCD", "LC", "LSCCD", "AUTO"}
+LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
 
 PRESETS: dict[str, tuple[str, list[str]]] = {
     "campaign": (
@@ -193,7 +194,24 @@ def _parse_csv_values(raw: str | None) -> list[str] | None:
     return values or None
 
 
+def contains_legacy_token_option(argv: list[str]) -> bool:
+    return any(arg.partition("=")[0] in LEGACY_TOKEN_OPTIONS for arg in argv)
+
+
+def emit_cli_error(error_type: str, message: str) -> int:
+    json.dump({"error": {"type": error_type, "message": message}}, sys.stderr, ensure_ascii=False)
+    sys.stderr.write("\n")
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    if contains_legacy_token_option(raw_argv):
+        return emit_cli_error(
+            "validation",
+            "--token is no longer supported; set YANDEX_DIRECT_TOKEN in the environment",
+        )
+
     parser = argparse.ArgumentParser(description="Yandex Direct Reports v501 helper")
     parser.add_argument("preset", choices=sorted(PRESETS))
     parser.add_argument("date_from")
@@ -208,7 +226,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated attribution models: FCCD, LC, LSCCD, AUTO",
     )
     parser.add_argument("--output", help="Write TSV to file instead of stdout")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_argv)
     token = os.getenv("YANDEX_DIRECT_TOKEN")
     if not token:
         parser.error("Set YANDEX_DIRECT_TOKEN")
