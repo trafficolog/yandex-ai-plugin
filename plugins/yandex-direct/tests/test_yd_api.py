@@ -1,4 +1,5 @@
 import io
+import os
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
@@ -125,9 +126,10 @@ class TestYandexDirectClient(unittest.TestCase):
             captured["approve"] = approve
             return {"dry_run": dry_run}
 
-        with patch.object(yd_api.YandexDirectClient, "request", new=fake_request):
-            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                rc = yd_api.main(["bids", method, "--params", "{}", "--token", "token"])
+        with patch.dict(os.environ, {"YANDEX_DIRECT_TOKEN": "token"}, clear=False):
+            with patch.object(yd_api.YandexDirectClient, "request", new=fake_request):
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    rc = yd_api.main(["bids", method, "--params", "{}"])
         self.assertEqual(rc, 0)
         return captured["dry_run"]
 
@@ -149,19 +151,18 @@ class TestYandexDirectClient(unittest.TestCase):
             captured["approve"] = approve
             return {"ok": True}
 
-        with patch.object(yd_api.YandexDirectClient, "request", new=fake_request):
-            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                rc = yd_api.main([
-                    "campaigns",
-                    "update",
-                    "--params",
-                    "{}",
-                    "--token",
-                    "token",
-                    "--execute",
-                    "--approve",
-                    "a" * 64,
-                ])
+        with patch.dict(os.environ, {"YANDEX_DIRECT_TOKEN": "token"}, clear=False):
+            with patch.object(yd_api.YandexDirectClient, "request", new=fake_request):
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    rc = yd_api.main([
+                        "campaigns",
+                        "update",
+                        "--params",
+                        "{}",
+                        "--execute",
+                        "--approve",
+                        "a" * 64,
+                    ])
         self.assertEqual(rc, 0)
         self.assertFalse(captured["dry_run"])
         self.assertEqual(captured["approve"], "a" * 64)
