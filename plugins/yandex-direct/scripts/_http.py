@@ -16,6 +16,10 @@ SAFE_RESPONSE_HEADERS = {
 class DirectHTTPError(RuntimeError):
     """Operational failure raised by the Direct-local HTTP adapter."""
 
+    def __init__(self, message: str, *, error_type: str):
+        super().__init__(message)
+        self.error_type = error_type
+
 
 def redact_headers(headers: Mapping[str, str]) -> dict[str, str]:
     redacted = dict(headers)
@@ -52,9 +56,9 @@ def request_json(
     except HTTPError as exc:
         raw = exc.read(ERROR_BODY_LIMIT)
         text = raw.decode("utf-8", errors="replace")
-        raise DirectHTTPError(f"HTTP {exc.code}: {text}") from exc
+        raise DirectHTTPError(f"HTTP {exc.code}: {text}", error_type="http") from exc
     except URLError as exc:
-        raise DirectHTTPError(f"Network error: {exc.reason}") from exc
+        raise DirectHTTPError(f"Network error: {exc.reason}", error_type="network") from exc
 
     if not raw:
         return {}, transport
@@ -62,7 +66,7 @@ def request_json(
     try:
         decoded = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise DirectHTTPError("Yandex Direct API returned invalid JSON") from exc
+        raise DirectHTTPError("Yandex Direct API returned invalid JSON", error_type="http") from exc
     if not isinstance(decoded, dict):
-        raise DirectHTTPError("Yandex Direct API returned a non-object JSON payload")
+        raise DirectHTTPError("Yandex Direct API returned a non-object JSON payload", error_type="http")
     return decoded, transport
