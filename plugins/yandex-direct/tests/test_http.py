@@ -103,6 +103,28 @@ class DirectHTTPTests(unittest.TestCase):
 
         self.assertTrue(body.closed)
 
+    def test_http_error_short_declared_body_is_network_failure(self):
+        body = RecordingBody(b"short")
+        exc = HTTPError(
+            "https://example.invalid",
+            500,
+            "boom",
+            {"Content-Length": "100"},
+            body,
+        )
+
+        with self.assertRaises(DirectHTTPError) as caught:
+            request_json(
+                "https://example.invalid",
+                {"Authorization": "Bearer secret"},
+                {"method": "get", "params": {}},
+                opener=RaisingOpener(exc),
+            )
+
+        self.assertEqual(body.read_sizes, [4096])
+        self.assertTrue(body.closed)
+        self.assertEqual(caught.exception.error_type, "network")
+
     def test_http_error_body_read_transport_failures_are_network_errors_and_close_response(self):
         for read_exc in [
             TimeoutError("error body timed out"),
