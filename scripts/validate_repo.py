@@ -287,7 +287,7 @@ def _iter_plugin_text_files(plugin_path: Path):
     for path in plugin_path.rglob("*"):
         if not path.is_file():
             continue
-        if path.name == ".env.example" or path.suffix.lower() in TEXT_SUFFIXES:
+        if path.name == ".env" or path.name.startswith(".env.") or path.suffix.lower() in TEXT_SUFFIXES:
             yield path
 
 
