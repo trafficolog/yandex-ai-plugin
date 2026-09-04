@@ -89,9 +89,9 @@ Official Yandex documentation — canonical source. Platform facts в freshness-
 
 ## 8. Versioning
 
-Plugins version independently with SemVer. Structural/documentation repository changes не обязаны менять plugin version.
+Plugins version independently with SemVer. Structural/documentation repository changes не обязаны менять plugin version. Service tags используют форму `yandex-<service>-vX.Y.Z`.
 
-Recommended service tags: `yandex-direct-v1.1.0`, `yandex-metrika-v1.0.0`. Repository milestones могут иметь собственные tags (`opus-*`, `docs-*`).
+Будущие repository releases используют одну repository SemVer line по [`RELEASE_POLICY.md`](RELEASE_POLICY.md). Исторические `OPUS` / `PHASE` / `DOCS` / `FABLE` labels сохраняются как immutable history/codenames и не являются рекомендацией создавать конкурирующие version schemes.
 
 ## 9. Tests and evals
 
