@@ -9,13 +9,26 @@ from scripts.validate_repo import _validate_evals
 class EvalContractV2Tests(unittest.TestCase):
     def make_plugin(self, *, data=None):
         tmp = tempfile.TemporaryDirectory()
-        plugin = Path(tmp.name) / "plugins/yandex-direct"
+        root = Path(tmp.name)
+        plugin = root / "plugins/yandex-direct"
         (plugin / "evals").mkdir(parents=True)
         (plugin / "skills/router").mkdir(parents=True)
+        (root / "docs").mkdir(parents=True)
         (plugin / "skills/router/SKILL.md").write_text(
             "---\nname: router\ndescription: Use when routing.\n---\n\n"
-            "Show a preview before writing.\n"
+            "Show a preview before writing. YES means the example condition is satisfied.\n"
             "Exact contract tokens: SAFE_TOKEN, wordstat_count, RequestId\n",
+            encoding="utf-8",
+        )
+        (root / "docs/EVAL_TOKEN_REGISTRY.json").write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "plugins": {
+                        "yandex-direct": ["SAFE_TOKEN", "wordstat_count", "RequestId"]
+                    },
+                }
+            ),
             encoding="utf-8",
         )
         if data is None:
@@ -152,29 +165,40 @@ class EvalContractV2Tests(unittest.TestCase):
         data = self.base_data()
         data["scenarios"][0]["expect"]["must_mention_tokens"] = ["preview"]
         errors = self.validate(data)
-        self.assertTrue(
-            any("preview" in error and ("identifier" in error.lower() or "must_convey" in error) for error in errors),
-            errors,
-        )
+        self.assertTrue(any("preview" in error and "registry" in error.lower() for error in errors), errors)
 
-    def test_must_mention_tokens_allow_identifier_like_contract_symbols(self):
+    def test_uppercase_prose_is_not_a_contract_token_without_registry_declaration(self):
+        data = self.base_data()
+        data["scenarios"][0]["expect"]["must_mention_tokens"] = ["YES"]
+        errors = self.validate(data)
+        self.assertTrue(any("YES" in error and "registry" in error.lower() for error in errors), errors)
+
+    def test_registered_contract_symbols_are_allowed(self):
         for token in ("SAFE_TOKEN", "wordstat_count", "RequestId"):
             with self.subTest(token=token):
                 data = self.base_data()
                 data["scenarios"][0]["expect"]["must_mention_tokens"] = [token]
                 self.assertEqual(self.validate(data), [])
 
-    def test_must_mention_tokens_must_exist_in_plugin_vocabulary(self):
+    def test_registered_token_must_still_exist_in_plugin_vocabulary(self):
+        tmp, plugin = self.make_plugin()
+        self.addCleanup(tmp.cleanup)
+        registry_path = Path(tmp.name) / "docs/EVAL_TOKEN_REGISTRY.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        registry["plugins"]["yandex-direct"].append("MISSPELLED_TOKEN")
+        registry_path.write_text(json.dumps(registry), encoding="utf-8")
         data = self.base_data()
         data["scenarios"][0]["expect"]["must_mention_tokens"] = ["MISSPELLED_TOKEN"]
-        errors = self.validate(data)
+        (plugin / "evals/scenarios.json").write_text(json.dumps(data), encoding="utf-8")
+        errors = []
+        _validate_evals(plugin, errors)
         self.assertTrue(any("MISSPELLED_TOKEN" in error and "vocabulary" in error.lower() for error in errors), errors)
 
-    def test_must_mention_tokens_require_exact_vocabulary_identifier_match(self):
+    def test_must_mention_tokens_require_exact_registry_match(self):
         data = self.base_data()
         data["scenarios"][0]["expect"]["must_mention_tokens"] = ["SAFE"]
         errors = self.validate(data)
-        self.assertTrue(any("SAFE" in error and "vocabulary" in error.lower() for error in errors), errors)
+        self.assertTrue(any("SAFE" in error and "registry" in error.lower() for error in errors), errors)
 
 
 if __name__ == "__main__":
