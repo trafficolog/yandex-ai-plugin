@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 REPORTS_URL = "https://api.direct.yandex.com/json/v501/reports"
+ERROR_BODY_LIMIT = 4096
 ATTRIBUTION_MODELS = {"FCCD", "LC", "LSCCD", "AUTO"}
 
 PRESETS: dict[str, tuple[str, list[str]]] = {
@@ -131,7 +132,11 @@ def fetch_report(
     client_login: str | None = None,
     max_attempts: int = 20,
     timeout: int = 120,
+    opener=None,
+    sleep=None,
 ) -> str:
+    opener = opener or urllib.request.urlopen
+    sleep = sleep or time.sleep
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json; charset=utf-8",
@@ -150,27 +155,29 @@ def fetch_report(
     for attempt in range(1, max_attempts + 1):
         req = urllib.request.Request(REPORTS_URL, data=payload, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            with opener(req, timeout=timeout) as response:
                 status = response.status
                 response_headers = dict(response.headers.items())
                 text = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             status = exc.code
             response_headers = dict(exc.headers.items()) if exc.headers else {}
-            text = exc.read().decode("utf-8", errors="replace")
+            text = exc.read(ERROR_BODY_LIMIT).decode("utf-8", errors="replace")
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"Direct Reports network error: {exc.reason}") from exc
 
         if status == 200:
             return text
         if status in {201, 202}:
             if attempt == max_attempts:
                 raise RuntimeError(f"Report still not ready after {max_attempts} attempts")
-            time.sleep(parse_retry_in(response_headers))
+            sleep(parse_retry_in(response_headers))
             continue
         if status == 400:
             raise RuntimeError(f"Bad report request: {text}")
         if status == 500 and not retried_server_error and attempt < max_attempts:
             retried_server_error = True
-            time.sleep(parse_retry_in(response_headers))
+            sleep(parse_retry_in(response_headers))
             continue
         if status == 500:
             raise RuntimeError(f"Yandex report server error: {text}")
