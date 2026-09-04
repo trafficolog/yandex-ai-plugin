@@ -12,11 +12,9 @@ concurrency:
   group: fable-review5-maintenance-release-publisher
   cancel-in-progress: false
 
-env:
-  TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
-
 jobs:
   publish:
+    name: Publish verified FABLE review-5 maintenance releases
     if: >-
       github.repository == 'trafficolog/yandex-ai-plugins-skills' &&
       github.event.workflow_run.conclusion == 'success' &&
@@ -24,116 +22,77 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout exact successful CI commit
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 0
 
-      - name: Resolve existing maintenance release state
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Detect immutable release state
         id: state
-        env:
-          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main --tags --force
-
+          git fetch --tags --force
+          tags=(yandex-direct-v2.0.1 "1.0.3")
           candidates=()
           published=0
           drafts=0
 
-          resolve_target() {
-            local raw="$1"
-            if [[ "$raw" =~ ^[0-9a-fA-F]{40}$ ]]; then
-              printf '%s\n' "${raw,,}"
-              return 0
-            fi
-            git rev-parse "${raw}^{commit}" 2>/dev/null || return 1
-          }
-
-          remote_tag_exists() {
-            local tag="$1" rc
-            set +e
-            git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1
-            rc=$?
-            set -e
-            case "$rc" in
-              0) return 0 ;;
-              2) return 1 ;;
-              *)
-                echo "Unable to determine remote tag state for $tag (git ls-remote rc=$rc)." >&2
-                exit "$rc"
-                ;;
-            esac
-          }
-
-          inspect_release() {
-            local tag="$1"
-            local json=""
-            local is_draft="false"
-            local is_immutable="false"
-            local target=""
-            local tag_sha=""
-
-            if json="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish 2>/dev/null)"; then
-              is_draft="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isDraft"]).lower())' <<<"$json")"
-              is_immutable="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())' <<<"$json")"
-              target="$(python -c 'import json,sys; print(json.load(sys.stdin)["targetCommitish"])' <<<"$json")"
-
+          for tag in "${tags[@]}"; do
+            if state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv' 2>/dev/null)"; then
+              IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
               if [[ "$is_draft" == "true" ]]; then
+                if git show-ref --verify --quiet "refs/tags/$tag"; then
+                  echo "Draft release $tag unexpectedly has a Git tag." >&2
+                  exit 1
+                fi
+                candidates+=("$target")
                 drafts=$((drafts + 1))
-                local resolved=""
-                if ! resolved="$(resolve_target "$target")"; then
-                  echo "Draft $tag target cannot be resolved: $target" >&2
-                  exit 1
-                fi
-                candidates+=("$resolved")
-                if remote_tag_exists "$tag"; then
-                  echo "Draft $tag unexpectedly has a materialized tag." >&2
-                  exit 1
-                fi
               else
-                published=$((published + 1))
                 if [[ "$is_immutable" != "true" ]]; then
                   echo "Published release $tag is not immutable." >&2
                   exit 1
                 fi
-                if remote_tag_exists "$tag"; then
-                  :
-                else
-                  echo "Published release $tag is missing its tag." >&2
-                  exit 1
-                fi
                 git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
-                tag_sha="$(git rev-parse "${tag}^{commit}")"
-                candidates+=("$tag_sha")
+                candidates+=("$(git rev-list -n 1 "$tag")")
+                published=$((published + 1))
               fi
-            else
-              if remote_tag_exists "$tag"; then
-                echo "Tag-only release state is not allowed for $tag." >&2
-                exit 1
-              fi
+            elif git show-ref --verify --quiet "refs/tags/$tag"; then
+              echo "Standalone tag $tag exists without a GitHub Release." >&2
+              exit 1
             fi
-          }
+          done
 
-          inspect_release yandex-direct-v2.0.1
-          inspect_release "1.0.3"
-
+          git fetch origin main --prune
+          live_main="$(git rev-parse origin/main)"
           if [[ "${#candidates[@]}" -eq 0 ]]; then
+            if [[ "$live_main" != "$TARGET_SHA" ]]; then
+              echo "Stale main CI run: live=$live_main target=$TARGET_SHA" >&2
+              exit 1
+            fi
             release_target="$TARGET_SHA"
             initial=true
           else
             release_target="${candidates[0]}"
-            initial=false
-            for candidate in "${candidates[@]}"; do
-              if [[ "$candidate" != "$release_target" ]]; then
-                echo "Existing FABLE review-5 release state spans multiple commits" >&2
-                printf 'candidate=%s\n' "${candidates[@]}" >&2
+            for sha in "${candidates[@]}"; do
+              if [[ "$sha" != "$release_target" ]]; then
+                echo "Existing FABLE review-5 release state spans multiple commits: ${candidates[*]}" >&2
                 exit 1
               fi
             done
+            if ! git merge-base --is-ancestor "$release_target" "$live_main"; then
+              echo "Existing release target $release_target is not an ancestor of live main $live_main." >&2
+              exit 1
+            fi
+            initial=false
           fi
 
           if [[ "$published" -eq 2 && "$drafts" -eq 0 ]]; then
@@ -141,55 +100,23 @@ jobs:
           else
             complete=false
           fi
-
-          live_main="$(git rev-parse origin/main^{commit})"
-          if [[ "$initial" == "true" ]]; then
-            if [[ "$live_main" != "$TARGET_SHA" ]]; then
-              echo "Stale main CI event: live main $live_main != event target $TARGET_SHA" >&2
-              exit 1
-            fi
-          else
-            if ! git merge-base --is-ancestor "$release_target" "$live_main"; then
-              echo "Existing release target $release_target is not an ancestor of live main $live_main" >&2
-              exit 1
-            fi
-          fi
-
           echo "release_target=$release_target" >> "$GITHUB_OUTPUT"
           echo "initial=$initial" >> "$GITHUB_OUTPUT"
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout release target
-        if: steps.state.outputs.complete != 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.state.outputs.release_target }}
-          fetch-depth: 0
-
-      - name: Verify exact target contract
+      - name: Verify exact release target
         if: steps.state.outputs.complete != 'true'
         env:
           RELEASE_TARGET: ${{ steps.state.outputs.release_target }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$(git rev-parse HEAD)" == "$RELEASE_TARGET" ]]
+          git cat-file -e "$RELEASE_TARGET^{commit}"
 
           verify_manifest_version() {
-            local path="$1"
+            local manifest_path="$1"
             local expected="$2"
-            python - "$path" "$expected" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          expected = sys.argv[2]
-          data = json.loads(path.read_text(encoding="utf-8"))
-          actual = data.get("version")
-          if actual != expected:
-              raise SystemExit(f"{path}: expected version {expected}, got {actual}")
-          PY
+            git show "$RELEASE_TARGET:$manifest_path" | python -c 'import json, sys; path=sys.argv[1]; expected=sys.argv[2]; actual=json.load(sys.stdin).get("version"); sys.exit(0 if actual == expected else f"{path} version {actual!r}, expected {expected!r}")' "$manifest_path" "$expected"
           }
 
           verify_manifest_version "plugins/yandex-direct/.codex-plugin/plugin.json" "2.0.1"
@@ -203,48 +130,56 @@ jobs:
           verify_manifest_version "plugins/yandex-seo/.codex-plugin/plugin.json" "1.1.2"
           verify_manifest_version "plugins/yandex-marketing/.codex-plugin/plugin.json" "1.1.0"
 
-          grep -Fq "## [2.0.1] — 2026-09-04" plugins/yandex-direct/CHANGELOG.md
-          grep -Fq "## [2.0.1] — 2026-09-04" plugins/yandex-direct/CHANGELOG.en.md
-          grep -Fq "## [1.0.3] — 2026-09-04" CHANGELOG.md
-          grep -Fq "## [1.0.3] — 2026-09-04" CHANGELOG.en.md
-          grep -Fq "yandex-direct        2.0.1" README.md
-          grep -Fq "yandex-direct        2.0.1" README.en.md
+          git show "$RELEASE_TARGET:plugins/yandex-direct/CHANGELOG.md" | grep -F "## [2.0.1] — 2026-09-04"
+          git show "$RELEASE_TARGET:plugins/yandex-direct/CHANGELOG.en.md" | grep -F "## [2.0.1] — 2026-09-04"
+          git show "$RELEASE_TARGET:CHANGELOG.md" | grep -F "## [1.0.3] — 2026-09-04"
+          git show "$RELEASE_TARGET:CHANGELOG.en.md" | grep -F "## [1.0.3] — 2026-09-04"
+          git show "$RELEASE_TARGET:README.md" | grep -F "yandex-direct        2.0.1"
+          git show "$RELEASE_TARGET:README.en.md" | grep -F "yandex-direct        2.0.1"
 
-          python scripts/validate_repo.py
-          python -m unittest discover -s tests -v
-          (cd "plugins/yandex-direct" && python -m unittest discover -s tests -v && python -m compileall -q scripts)
+          WT="$(mktemp -d)"
+          trap 'git worktree remove --force "$WT" >/dev/null 2>&1 || true' EXIT
+          git worktree add --detach "$WT" "$RELEASE_TARGET"
+          (cd "$WT" && python scripts/validate_repo.py && python -m unittest discover -s tests -v)
+          (cd "$WT/plugins/yandex-direct" && python -m unittest discover -s tests -v && python -m compileall -q scripts)
 
-      - name: Recheck live main before initial publication
-        if: steps.state.outputs.complete != 'true' && steps.state.outputs.initial == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main --force
-          live_main="$(git rev-parse origin/main^{commit})"
-          if [[ "$live_main" != "$TARGET_SHA" ]]; then
-            echo "Main advanced after CI; refusing initial publication: $live_main != $TARGET_SHA" >&2
+          git fetch origin main --prune
+          live_main="$(git rev-parse origin/main)"
+          if [[ "${{ steps.state.outputs.initial }}" == "true" ]]; then
+            if [[ "$live_main" != "$TARGET_SHA" || "$RELEASE_TARGET" != "$TARGET_SHA" ]]; then
+              echo "Late stale-main guard failed." >&2
+              exit 1
+            fi
+          elif ! git merge-base --is-ancestor "$RELEASE_TARGET" "$live_main"; then
+            echo "Recovery target is no longer an ancestor of live main." >&2
             exit 1
           fi
 
       - name: Publish immutable maintenance releases
         if: steps.state.outputs.complete != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           RELEASE_TARGET: ${{ steps.state.outputs.release_target }}
         shell: bash
         run: |
-          set -euo pipefail
-          git fetch origin --tags --force
+          set -Eeuo pipefail
 
-          release_probe() {
-            local tag="$1"
-            local output=""
-            if output="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish 2>/dev/null)"; then
-              printf 'present\t%s\n' "$output"
-              return 0
-            fi
-            printf 'absent\t\n'
-          }
+          cat > /tmp/direct.md <<'EOF'
+          Yandex Direct 2.0.1 — FABLE review-5 maintenance patch.
+
+          - Reports OAuth is environment-only through YANDEX_DIRECT_TOKEN; argv --token is removed.
+          - Reports HTTP error bodies are bounded to 4096 bytes with UTF-8 replacement decoding.
+          - Network failures are controlled, secret-free operational errors.
+          - Transport opener/sleep are injectable while 201/202 retryIn polling and one HTTP 500 retry are preserved.
+          - Direct Reports/provenance/creation-not-activation contracts and freshness traceability are explicit.
+          EOF
+          cat > /tmp/repository.md <<'EOF'
+          Repository 1.0.3 — FABLE review-5 maintenance release.
+
+          - Yandex Direct advances to 2.0.1; Metrika/Webmaster remain 2.0.0; SEO remains 1.1.2.
+          - SEO internal-linking guards are tested semantically without a production behavior change.
+          - Committed dotenv-style credential literals are scanned.
+          - RU/EN documentation reflects the published immutable FABLE generation and the executable-vs-policy safety boundary.
+          EOF
 
           remote_tag_exists() {
             local tag="$1" rc
@@ -263,151 +198,100 @@ jobs:
           }
 
           rollback_published_release() {
-            local tag="$1" probe_rc
+            local tag="$1" original_rc="$2" probe_rc
+            trap - ERR
             set +e
+            echo "Publication verification failed for $tag; attempting fail-closed cleanup." >&2
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1
-            git fetch origin --prune --tags --force >/dev/null 2>&1
-            local residue=0
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Rollback residue: release $tag remains." >&2
-              residue=1
             fi
             git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1
             probe_rc=$?
-            case "$probe_rc" in
-              0)
-                echo "Rollback residue: tag $tag remains." >&2
-                residue=1
-                ;;
-              2) ;;
-              *)
-                echo "Rollback verification could not determine tag state for $tag (rc=$probe_rc)." >&2
-                residue=1
-                ;;
-            esac
-            set -e
-            return "$residue"
-          }
-
-          verify_published_release() {
-            local tag="$1"
-            local json=""
-            json="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish)"
-            local is_draft="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isDraft"]).lower())' <<<"$json")"
-            local is_immutable="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())' <<<"$json")"
-            if [[ "$is_draft" == "true" ]]; then
-              echo "Release $tag is still draft after publication." >&2
-              return 1
+            if [[ "$probe_rc" -eq 0 ]]; then
+              echo "Rollback residue: tag $tag remains." >&2
+            elif [[ "$probe_rc" -ne 2 ]]; then
+              echo "Rollback verification could not determine tag state for $tag (rc=$probe_rc)." >&2
             fi
-            if [[ "$is_immutable" != "true" ]]; then
-              echo "Release $tag did not become immutable." >&2
-              return 1
-            fi
-            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
-            local tag_sha="$(git rev-parse "${tag}^{commit}")"
-            [[ "$tag_sha" == "$RELEASE_TARGET" ]]
+            exit "$original_rc"
           }
 
           publish_one() {
-            local tag="$1"
-            local title="$2"
-            local notes="$3"
-            local probe=""
-            local state=""
-            local json=""
-            local draft="false"
-            local immutable="false"
-            local target=""
-            local rollback_armed=false
+            local tag="$1" title="$2" notes="$3"
+            local state="" is_draft="" is_immutable="" target="" tag_sha=""
 
-            cleanup_publish_failure() {
-              local rc=$?
-              trap - ERR
-              if [[ "$rollback_armed" == "true" ]]; then
-                echo "Publication failed for $tag; attempting fail-closed cleanup." >&2
-                rollback_published_release "$tag" || true
+            if state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv' 2>/dev/null)"; then
+              IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
+              if [[ "$target" != "$RELEASE_TARGET" ]]; then
+                echo "$tag targets $target, expected $RELEASE_TARGET." >&2
+                exit 1
               fi
-              exit "$rc"
-            }
-
-            probe="$(release_probe "$tag")"
-            state="${probe%%$'\t'*}"
-            json="${probe#*$'\t'}"
-
-            if [[ "$state" == "present" ]]; then
-              draft="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isDraft"]).lower())' <<<"$json")"
-              immutable="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())' <<<"$json")"
-              target="$(python -c 'import json,sys; print(json.load(sys.stdin)["targetCommitish"])' <<<"$json")"
-              if [[ "$draft" == "false" ]]; then
-                if [[ "$immutable" != "true" ]]; then
-                  echo "Existing published release $tag is not immutable." >&2
+              if [[ "$is_draft" != "true" ]]; then
+                if [[ "$is_immutable" != "true" ]]; then
+                  echo "$tag is published but mutable." >&2
                   exit 1
                 fi
                 git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
-                [[ "$(git rev-parse "${tag}^{commit}")" == "$RELEASE_TARGET" ]]
+                tag_sha="$(git rev-list -n 1 "$tag")"
+                [[ "$tag_sha" == "$RELEASE_TARGET" ]] || { echo "$tag points to $tag_sha." >&2; exit 1; }
+                echo "$tag already published at exact target."
                 return 0
               fi
-              local resolved_target=""
-              if [[ "$target" =~ ^[0-9a-fA-F]{40}$ ]]; then
-                resolved_target="${target,,}"
-              else
-                resolved_target="$(git rev-parse "${target}^{commit}" 2>/dev/null || true)"
-              fi
-              if [[ "$resolved_target" != "$RELEASE_TARGET" ]]; then
-                echo "Draft $tag targets $target ($resolved_target), expected $RELEASE_TARGET" >&2
-                exit 1
-              fi
               if remote_tag_exists "$tag"; then
-                echo "Draft $tag unexpectedly materialized a tag." >&2
+                echo "Draft $tag unexpectedly has a remote tag." >&2
                 exit 1
               fi
             else
               if remote_tag_exists "$tag"; then
-                echo "Cannot reserve $tag: tag exists without a release." >&2
+                echo "Standalone remote tag $tag exists." >&2
                 exit 1
               fi
-              gh release create "$tag" \
-                --repo "$GITHUB_REPOSITORY" \
-                --draft --target "$RELEASE_TARGET" \
-                --title "$title" --notes "$notes"
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --draft --target "$RELEASE_TARGET" --title "$title" --notes-file "$notes"
+              state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish --jq '[.isDraft,.targetCommitish] | @tsv')"
+              IFS=$'\t' read -r is_draft target <<< "$state"
+              [[ "$is_draft" == "true" && "$target" == "$RELEASE_TARGET" ]] || { echo "Invalid draft reservation for $tag." >&2; exit 1; }
               if remote_tag_exists "$tag"; then
                 echo "Draft reservation $tag unexpectedly materialized a tag." >&2
                 exit 1
               fi
             fi
 
-            rollback_armed=true
-            trap cleanup_publish_failure ERR
-            gh release edit "$tag" \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "$title" --notes "$notes" \
-              --draft=false --target "$RELEASE_TARGET"
-            verify_published_release "$tag"
-            rollback_armed=false
+            trap 'rc=$?; rollback_published_release "$tag" "$rc"' ERR
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --target "$RELEASE_TARGET" --title "$title" --notes-file "$notes"
+            state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
+            IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
+            [[ "$is_draft" != "true" && "$target" == "$RELEASE_TARGET" ]] || { echo "Invalid published state for $tag." >&2; false; }
+            if [[ "$is_immutable" != "true" ]]; then
+              echo "$tag did not become immutable." >&2
+              false
+            fi
+            git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
+            tag_sha="$(git rev-list -n 1 "$tag")"
+            [[ "$tag_sha" == "$RELEASE_TARGET" ]] || { echo "$tag points to $tag_sha, expected $RELEASE_TARGET." >&2; false; }
             trap - ERR
           }
 
-          direct_notes=$'FABLE review-5 maintenance patch for Yandex Direct.\n\n- Reports OAuth is environment-only through YANDEX_DIRECT_TOKEN; argv --token is removed.\n- Reports HTTP error bodies are bounded to 4096 bytes with replacement decoding and secret-free URLError handling.\n- Transport opener/sleep are injectable while 201/202 retryIn polling and one HTTP 500 retry are preserved.\n- Direct Reports/provenance/creation-not-activation contracts and freshness traceability are explicit.'
-          repo_notes=$'Repository maintenance release for FABLE 5.1 review 5.\n\n- Direct advances to 2.0.1; Metrika/Webmaster remain 2.0.0; SEO remains 1.1.2.\n- SEO internal-linking guards are tested semantically without a production behavior change.\n- Committed dotenv-style credential literals are scanned.\n- RU/EN release documentation reflects the published immutable FABLE generation and the executable-vs-policy safety boundary.'
+          git fetch origin main --prune
+          live_main="$(git rev-parse origin/main)"
+          if [[ "${{ steps.state.outputs.initial }}" == "true" ]]; then
+            [[ "$live_main" == "$TARGET_SHA" && "$RELEASE_TARGET" == "$TARGET_SHA" ]] || { echo "Late publication stale-main guard failed." >&2; exit 1; }
+          else
+            git merge-base --is-ancestor "$RELEASE_TARGET" "$live_main" || { echo "Late recovery ancestry guard failed." >&2; exit 1; }
+          fi
 
-          publish_one yandex-direct-v2.0.1 "Yandex Direct 2.0.1" "$direct_notes"
-          publish_one "1.0.3" "Repository 1.0.3" "$repo_notes"
+          publish_one yandex-direct-v2.0.1 "Yandex Direct 2.0.1" /tmp/direct.md
+          publish_one "1.0.3" "Repository 1.0.3" /tmp/repository.md
 
       - name: Verify complete immutable release set
         env:
-          GH_TOKEN: ${{ github.token }}
           RELEASE_TARGET: ${{ steps.state.outputs.release_target }}
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin --tags --force
           for tag in yandex-direct-v2.0.1 "1.0.3"; do
-            json="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable)"
-            is_draft="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isDraft"]).lower())' <<<"$json")"
-            is_immutable="$(python -c 'import json,sys; print(str(json.load(sys.stdin)["isImmutable"]).lower())' <<<"$json")"
-            [[ "$is_draft" == "false" ]]
-            [[ "$is_immutable" == "true" ]]
+            state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
+            IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
+            [[ "$is_draft" != "true" && "$is_immutable" == "true" && "$target" == "$RELEASE_TARGET" ]]
             git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
-            tag_sha="$(git rev-parse "${tag}^{commit}")"
-            [[ "$tag_sha" == "$RELEASE_TARGET" ]]
+            [[ "$(git rev-list -n 1 "$tag")" == "$RELEASE_TARGET" ]]
           done
