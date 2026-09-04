@@ -28,7 +28,14 @@ except ImportError:
         validate_reference_freshness,
     )
 
-FORBIDDEN_RUNTIME_PATHS = ("~/.openclaw/", "~/.claude/", "~/.codex/")
+FORBIDDEN_RUNTIME_PATHS = (
+    "~/.openclaw/",
+    "~/.claude/",
+    "~/.codex/",
+    "~/.agents/",
+    "$HOME/",
+    "${HOME}/",
+)
 ALLOWED_EVAL_WRITE = {"preview-first", "approval-required"}
 ALLOWED_EVAL_OUTCOMES = {"comply", "comply_with_limitations", "refuse"}
 EVAL_TOKEN_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]*$")
@@ -83,12 +90,14 @@ def _load_json(path: Path, errors: list[str]) -> Any | None:
 
 
 def _frontmatter(text: str) -> dict[str, str] | None:
-    if not text.startswith("---\n"):
+    normalized = text.removeprefix("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    if not normalized.startswith("---\n"):
         return None
-    end = text.find("\n---\n", 4)
-    if end == -1:
+    body = normalized[4:]
+    delimiter = re.search(r"\n---(?:\n|$)", body)
+    if delimiter is None:
         return None
-    lines = text[4:end].splitlines()
+    lines = body[:delimiter.start()].splitlines()
     result: dict[str, str] = {}
     index = 0
     while index < len(lines):
@@ -515,7 +524,11 @@ def _validate_cross_service_transport(plugin_path: Path, errors: list[str]) -> N
     if plugin_path.name not in CROSS_SERVICE_PLUGINS:
         return
     for path in plugin_path.rglob("*.py"):
-        text = path.read_text(encoding="utf-8")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"unable to scan cross-service Python file: {path}: {exc}")
+            continue
         if python_transport_findings(path, text) or YANDEX_API_ENDPOINT_PATTERN.search(text):
             errors.append(f"cross-service transport/API client found in {path}")
 
@@ -678,7 +691,6 @@ def validate_repository(
             errors.append(f"marketplace plugin source path missing: {item.get('name')}")
             continue
         plugin_path = (root / raw_path).resolve()
-        known_plugin_dirs.add(plugin_path.name)
         try:
             plugin_path.relative_to(root)
         except ValueError:
@@ -687,8 +699,17 @@ def validate_repository(
         if not plugin_path.is_dir():
             errors.append(f"marketplace source path does not exist: {raw_path}")
             continue
+        known_plugin_dirs.add(plugin_path.name)
         marketplace_skill_files.extend(sorted((plugin_path / "skills").glob("*/SKILL.md")))
         _validate_plugin(root, plugin_path, item, claude_by_name.get(item.get("name")), errors)
+
+    plugins_root = root / "plugins"
+    if plugins_root.is_dir():
+        repository_plugin_dirs = {
+            path.name for path in plugins_root.iterdir() if path.is_dir()
+        }
+        for plugin_dir in sorted(repository_plugin_dirs - known_plugin_dirs):
+            errors.append(f"plugin directory absent from marketplace: {plugins_root / plugin_dir}")
 
     _validate_marketplace_skill_names(marketplace_skill_files, errors)
 
