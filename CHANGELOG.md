@@ -4,6 +4,25 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.3] — 2026-09-04
+
+FABLE 5.1 review-5 maintenance release после опубликованной immutable `2.0.0` safety generation.
+
+### Исправлено
+
+- Yandex Direct `2.0.1`: Reports CLI больше не принимает OAuth через argv; token читается только из `YANDEX_DIRECT_TOKEN`.
+- Direct Reports HTTP errors ограничены 4096 bytes, invalid UTF-8 декодируется с replacement semantics, `URLError` становится secret-free operational failure; opener/sleep injectable для deterministic tests.
+- Reports `201/202 + retryIn` polling и один retry первого HTTP `500` сохранены как отдельный read-only async contract.
+- `CONTRACT_MATRIX.json` получил explicit Direct contracts для Reports async transport, KPI provenance и creation≠activation; `references/sources.md` включён в freshness control с canonical `Verified:` marker.
+- Исправлены false-positive SEO internal-linking tests: unknown endpoint и forced exact-match теперь проверяются с otherwise-valid candidate metadata и точными failure messages. Production SEO code не менялся; SEO остаётся `1.1.2`.
+- Repository secret scanner теперь проверяет committed `.env` / `.env.*` files и сохраняет безопасные placeholder semantics `.env.example`.
+- RU/EN root docs синхронизированы с уже опубликованной immutable FABLE `2.0.0` generation и Direct `2.0.1`; verification examples используют `python -m compileall -q scripts`.
+- Safety docs разделяют executable helper guarantees и agent/operator policy: generic rollback snapshots и bulk `>20` enforcement отложены до отдельного safety design.
+
+### Release matrix
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [OPUS 1.1.3] — 2026-09-03
 
 Hardening Phase 7 contracts по новому Opus 5 audit.
