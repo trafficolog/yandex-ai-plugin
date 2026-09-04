@@ -38,6 +38,7 @@ SUPPORTED_SERVICES = {
     "clients",
     "creatives",
     "dictionaries",
+    "dynamictextadtargets",
     "feeds",
     "keywordbids",
     "keywords",
@@ -46,8 +47,10 @@ SUPPORTED_SERVICES = {
     "negativekeywordsharedsets",
     "retargetinglists",
     "sitelinks",
+    "smartadtargets",
     "strategies",
     "turbopages",
+    "vcards",
 }
 READ_METHODS = {
     "check",
