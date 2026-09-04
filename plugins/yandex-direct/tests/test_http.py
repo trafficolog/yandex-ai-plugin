@@ -16,6 +16,20 @@ class RecordingBody(io.BytesIO):
         return super().read(size)
 
 
+class FailingErrorBody:
+    def __init__(self, exc: OSError):
+        self.exc = exc
+        self.read_sizes: list[int] = []
+        self.closed = False
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_sizes.append(size)
+        raise self.exc
+
+    def close(self) -> None:
+        self.closed = True
+
+
 class RaisingOpener:
     def __init__(self, exc: Exception):
         self.exc = exc
@@ -87,6 +101,25 @@ class DirectHTTPTests(unittest.TestCase):
             )
 
         self.assertTrue(body.closed)
+
+    def test_http_error_body_read_os_errors_are_network_failures_and_close_response(self):
+        for read_exc in [TimeoutError("error body timed out"), ConnectionResetError("error body reset")]:
+            with self.subTest(exc=type(read_exc).__name__):
+                body = FailingErrorBody(read_exc)
+                exc = HTTPError("https://example.invalid", 503, "unavailable", {}, body)
+
+                with self.assertRaises(DirectHTTPError) as caught:
+                    request_json(
+                        "https://example.invalid",
+                        {"Authorization": "Bearer secret"},
+                        {"method": "get", "params": {}},
+                        opener=RaisingOpener(exc),
+                    )
+
+                self.assertEqual(body.read_sizes, [4096])
+                self.assertTrue(body.closed)
+                self.assertEqual(caught.exception.error_type, "network")
+                self.assertIn(str(read_exc), str(caught.exception))
 
     def test_http_error_invalid_utf8_uses_replacement_decoding(self):
         body = RecordingBody(b"prefix-\xff-suffix")
