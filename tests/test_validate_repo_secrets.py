@@ -96,6 +96,22 @@ class SecretLiteralValidationTests(unittest.TestCase):
                 errors,
             )
 
+    def test_tracked_repository_dotenv_symlink_payload_is_scanned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            link = root / ".env.production"
+            link.symlink_to("y0_AgAAAAFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "add", ".env.production"], cwd=root, check=True)
+
+            errors: list[str] = []
+            validate_repo._validate_repository_dotenv(root, errors)
+
+            self.assertIn(
+                f"credential-like secret found in repository dotenv file: {link}",
+                errors,
+            )
+
     def test_dotenv_example_placeholder_is_allowed(self):
         placeholder = (
             "YANDEX_DIRECT_TOKEN=y0_demo\n"
