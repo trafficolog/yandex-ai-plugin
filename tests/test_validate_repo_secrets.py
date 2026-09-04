@@ -70,8 +70,10 @@ class SecretLiteralValidationTests(unittest.TestCase):
             errors: list[str] = []
             _validate_plugin_text(plugin, errors)
 
-            self.assertTrue(any(str(tracked) in error for error in errors), errors)
-            self.assertFalse(any(str(ignored) in error for error in errors), errors)
+            tracked_error = f"credential-like secret found in plugin file: {tracked}"
+            ignored_error = f"credential-like secret found in plugin file: {ignored}"
+            self.assertIn(tracked_error, errors)
+            self.assertNotIn(ignored_error, errors)
 
     def test_dotenv_example_placeholder_is_allowed(self):
         placeholder = (
