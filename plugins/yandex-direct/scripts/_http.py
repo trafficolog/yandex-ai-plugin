@@ -40,6 +40,19 @@ def _transport_metadata(headers: Mapping[str, str]) -> dict[str, str]:
     return metadata
 
 
+def _expected_bounded_error_bytes(headers: Mapping[str, str]) -> int | None:
+    value = headers.get("Content-Length")
+    if value is None:
+        return None
+    try:
+        declared = int(value)
+    except (TypeError, ValueError):
+        return None
+    if declared < 0:
+        return None
+    return min(declared, ERROR_BODY_LIMIT)
+
+
 def request_json(
     url: str,
     headers: Mapping[str, str],
@@ -69,6 +82,12 @@ def request_json(
                     f"Network error while reading HTTP {exc.code} error response: {read_exc}",
                     error_type="network",
                 ) from read_exc
+            expected = _expected_bounded_error_bytes(getattr(exc, "headers", {}))
+            if expected is not None and len(raw) < expected:
+                raise DirectHTTPError(
+                    f"Network error while reading HTTP {exc.code} error response: truncated body ({len(raw)}/{expected} bytes)",
+                    error_type="network",
+                )
             text = raw.decode("utf-8", errors="replace")
         finally:
             exc.close()
