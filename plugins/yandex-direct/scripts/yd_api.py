@@ -34,7 +34,9 @@ AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v1"
 
 
 class YandexDirectError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, error_type: str = "api"):
+        super().__init__(message)
+        self.error_type = error_type
 
 
 def is_read_method(method: str) -> bool:
@@ -141,13 +143,13 @@ class YandexDirectClient:
                 opener=self.opener,
             )
         except _http.DirectHTTPError as exc:
-            raise YandexDirectError(str(exc)) from exc
+            raise YandexDirectError(str(exc), error_type=exc.error_type) from exc
 
         if data.get("error"):
             err = data["error"]
             request_id = transport.get("request_id") or data.get("request_id") or data.get("RequestId")
             suffix = f" request_id={request_id}" if request_id else ""
-            raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}")
+            raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}", error_type="api")
         return {"result": data, "transport": transport}
 
 
@@ -177,21 +179,32 @@ def main(argv: list[str] | None = None) -> int:
     token = os.getenv("YANDEX_DIRECT_TOKEN")
     if not token:
         return emit_cli_error("validation", "YANDEX_DIRECT_TOKEN environment variable is required")
-    if args.params and args.params_file:
-        parser.error("Use only one of --params or --params-file")
 
-    params = _load_params(args)
-    is_write = not is_read_method(args.method)
-    dry_run = args.dry_run or (is_write and not args.execute)
+    try:
+        if args.params and args.params_file:
+            raise ValueError("Use only one of --params or --params-file")
 
-    client = YandexDirectClient(token, client_login=args.client_login)
-    result = client.request(
-        args.service,
-        args.method,
-        params,
-        dry_run=dry_run,
-        approve=args.approve,
-    )
+        params = _load_params(args)
+        is_write = not is_read_method(args.method)
+        dry_run = args.dry_run or (is_write and not args.execute)
+
+        client = YandexDirectClient(token, client_login=args.client_login)
+        result = client.request(
+            args.service,
+            args.method,
+            params,
+            dry_run=dry_run,
+            approve=args.approve,
+        )
+    except json.JSONDecodeError as exc:
+        return emit_cli_error("input", str(exc))
+    except OSError as exc:
+        return emit_cli_error("input", str(exc))
+    except YandexDirectError as exc:
+        return emit_cli_error(exc.error_type, str(exc))
+    except ValueError as exc:
+        return emit_cli_error("validation", str(exc))
+
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
     if is_write and dry_run:
