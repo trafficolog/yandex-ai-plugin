@@ -97,11 +97,13 @@ Executable helpers have unit tests. The active offline eval contract is `evals/s
 
 - `must_route_to` — exact skill name; it must equal `skill`, and `skills/<skill>/SKILL.md` must exist;
 - `outcome` — one of `comply`, `comply_with_limitations`, `refuse`;
-- `must_mention_tokens` — exact machine vocabulary only, not prose (reason codes, artifact names, contract identifiers); validation checks identifier shape and that the token appears in the owning plugin's documented/executable contract vocabulary;
+- `must_mention_tokens` — exact machine vocabulary only, not prose (reason codes, artifact names, contract identifiers). An exact token must be explicitly registered for the owning plugin in `docs/EVAL_TOKEN_REGISTRY.json` **and** actually occur in that plugin's documented/executable contract vocabulary; capitalization, punctuation, or an incidental documentation word alone is not sufficient;
 - `must_convey` — natural-language semantic requirements;
 - `must_not_claim` — forbidden semantic claims.
 
-Legacy `must_refuse` and `must_mention` fields are rejected in v2. Allowed `write` values are `false`, `preview-first`, and `approval-required`.
+`docs/EVAL_TOKEN_REGISTRY.json` is the repository-owned allowlist for exact assertions, not a source of truth by itself: registry membership cannot legitimize a typo or invented token that is absent from contract/source vocabulary. Ordinary words and semantic requirements belong in `must_convey`.
+
+Legacy `must_refuse` and `must_mention` fields are rejected in v2. Allowed `write` values are `false`, `preview-first`, and `approval-required`. For owning write-capable plugins (`yandex-direct`, `yandex-metrika`, `yandex-webmaster`), every scenario with `write != false` must include exact `preview_id` in `must_mention_tokens`, so a consequential write cannot be considered correctly specified without an exact-preview artifact.
 
 Example:
 
@@ -125,7 +127,7 @@ Example:
 }
 ```
 
-Important: the repository validator checks **structure, enum/vocabulary, real skill references, and fixture consistency**, but it **does not execute scenarios against a model or judge semantic satisfaction** of `must_convey`/`must_not_claim`. Green validator/CI means the eval contract is structurally ready for a future runner/judge; it is not proof that a model passed the semantic evals.
+Important: the repository validator checks **structure, enum/registry/vocabulary, real skill references, and fixture consistency**, but it **does not execute scenarios against a model or judge semantic satisfaction** of `must_convey`/`must_not_claim`. Green validator/CI means the eval contract is structurally ready for a future runner/judge; it is not proof that a model passed the semantic evals.
 
 ## 10. Contract matrix: traceability, not semantic proof
 
