@@ -112,9 +112,15 @@ jobs:
         run: |
           set -euo pipefail
           git cat-file -e "$RELEASE_TARGET^{commit}"
+
+          verify_manifest_version() {
+            local manifest_path="$1"
+            git show "$RELEASE_TARGET:$manifest_path" | python -c 'import json, sys; path=sys.argv[1]; actual=json.load(sys.stdin).get("version"); expected="2.0.0"; sys.exit(0 if actual == expected else f"{path} version {actual!r}, expected {expected!r}")' "$manifest_path"
+          }
+
           for plugin in yandex-direct yandex-metrika yandex-webmaster; do
-            git show "$RELEASE_TARGET:plugins/$plugin/.codex-plugin/plugin.json" | grep -F '"version": "2.0.0"'
-            git show "$RELEASE_TARGET:plugins/$plugin/.claude-plugin/plugin.json" | grep -F '"version": "2.0.0"'
+            verify_manifest_version "plugins/$plugin/.codex-plugin/plugin.json"
+            verify_manifest_version "plugins/$plugin/.claude-plugin/plugin.json"
             git show "$RELEASE_TARGET:plugins/$plugin/CHANGELOG.md" | grep -F '## [2.0.0]'
           done
 
