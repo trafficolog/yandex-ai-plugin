@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import re
+
+try:
+    from .version_contracts import validate_plugin_version_mentions
+except ImportError:
+    from version_contracts import validate_plugin_version_mentions
 
 KEY_DOC_NAMES = (
     "SERVICE_MATRIX",
@@ -88,5 +94,13 @@ def validate_bilingual_docs(root: Path, plugin_dirs: set[str]) -> list[str]:
             errors,
             compare_release_markers=True,
         )
+        manifest_path = plugin / ".codex-plugin" / "plugin.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        version = manifest.get("version") if isinstance(manifest, dict) else None
+        if isinstance(version, str):
+            validate_plugin_version_mentions(root, plugin, version, errors)
 
     return errors
