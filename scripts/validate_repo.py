@@ -60,7 +60,7 @@ FORBIDDEN_TRANSPORT_ROOTS = {
     "subprocess",
 }
 YANDEX_API_ENDPOINT_PATTERN = re.compile(
-    r"https://(?:[a-z0-9-]+\.)*yandex\.(?:com|net|ru)(?:[/:]|$)",
+    r"https://(?:[a-z0-9-]+\.)*yandex\.(?:com|net|ru)(?![a-z0-9.-])",
     re.IGNORECASE,
 )
 
