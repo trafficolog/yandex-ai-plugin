@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.1.1`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
+Version `1.1.2`. Read-only cross-service orchestration over structured Wordstat, Search, Webmaster and Metrika outputs. The plugin **contains no Yandex API client/credentials and performs no live writes**.
 
 > Phase 7 `1.1.0` added Topical Architecture and Internal Linking; patch `1.1.1` hardens transport-free artifact integrity with a structural-node field whitelist and list-typed candidate-link `evidence`. Search remains the owner of SERP-overlap clustering.
 

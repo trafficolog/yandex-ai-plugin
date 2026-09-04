@@ -28,7 +28,14 @@ except ImportError:
         validate_reference_freshness,
     )
 
-FORBIDDEN_RUNTIME_PATHS = ("~/.openclaw/", "~/.claude/", "~/.codex/")
+FORBIDDEN_RUNTIME_PATHS = (
+    "~/.openclaw/",
+    "~/.claude/",
+    "~/.codex/",
+    "~/.agents/",
+    "$HOME/",
+    "${HOME}/",
+)
 ALLOWED_EVAL_WRITE = {"preview-first", "approval-required"}
 ALLOWED_EVAL_OUTCOMES = {"comply", "comply_with_limitations", "refuse"}
 EVAL_TOKEN_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]*$")
@@ -39,6 +46,13 @@ TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml"}
 CAPABILITY_HEADER = "| Capability | Read | Write | MCP/App | Bundled API | File fallback |"
 CROSS_SERVICE_PLUGINS = {"yandex-seo", "yandex-marketing"}
 SUPPORTED_AUTHENTICATION_POLICIES = {"ON_INSTALL", "ON_USE"}
+MIN_SKILL_DESCRIPTION_CHARS = 32
+MAX_SKILL_DESCRIPTION_CHARS = 500
+MAX_SKILL_BYTES = 15 * 1024
+WRITE_SKILL_SAFETY_MARKERS = (
+    "approval-contract: exact-preview",
+    "untrusted-data-policy: data-not-instructions",
+)
 SECRET_PATTERNS = (
     re.compile(r"Authorization\s*:\s*(?:Bearer|OAuth)\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
     re.compile(r"Api-Key\s+[A-Za-z0-9._-]{16,}", re.IGNORECASE),
@@ -47,9 +61,21 @@ SECRET_PATTERNS = (
     re.compile(r"(?<![A-Za-z0-9_-])AQAA[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
     re.compile(r"(?<![A-Za-z0-9_-])t1\.[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
 )
-FORBIDDEN_TRANSPORT_MODULES = {"requests", "httpx", "aiohttp"}
+FORBIDDEN_TRANSPORT_ROOTS = {
+    "http",
+    "socket",
+    "ssl",
+    "requests",
+    "httpx",
+    "aiohttp",
+    "urllib3",
+    "pycurl",
+    "importlib",
+    "subprocess",
+}
 YANDEX_API_ENDPOINT_PATTERN = re.compile(
-    r"https://(?:api(?:-[a-z]+)?\.yandex\.(?:com|net)|searchapi\.api\.cloud\.yandex\.net)"
+    r"https://(?:[a-z0-9-]+\.)*yandex\.(?:com|net|ru)(?![a-z0-9.-])",
+    re.IGNORECASE,
 )
 
 
@@ -64,12 +90,14 @@ def _load_json(path: Path, errors: list[str]) -> Any | None:
 
 
 def _frontmatter(text: str) -> dict[str, str] | None:
-    if not text.startswith("---\n"):
+    normalized = text.removeprefix("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    if not normalized.startswith("---\n"):
         return None
-    end = text.find("\n---\n", 4)
-    if end == -1:
+    body = normalized[4:]
+    delimiter = re.search(r"\n---(?:\n|$)", body)
+    if delimiter is None:
         return None
-    lines = text[4:end].splitlines()
+    lines = body[:delimiter.start()].splitlines()
     result: dict[str, str] = {}
     index = 0
     while index < len(lines):
@@ -101,16 +129,51 @@ def _frontmatter(text: str) -> dict[str, str] | None:
 
 
 def _validate_skill(skill_path: Path, errors: list[str]) -> None:
-    text = skill_path.read_text(encoding="utf-8")
+    raw = skill_path.read_bytes()
+    if len(raw) > MAX_SKILL_BYTES:
+        errors.append(
+            f"skill file exceeds size limit {MAX_SKILL_BYTES} bytes: {skill_path}"
+        )
+    text = raw.decode("utf-8")
     fm = _frontmatter(text)
     if fm is None:
         errors.append(f"skill frontmatter missing or malformed: {skill_path}")
         return
-    if not fm.get("name"):
+    name = fm.get("name", "")
+    if not name:
         errors.append(f"skill frontmatter missing name: {skill_path}")
+    elif name != skill_path.parent.name:
+        errors.append(
+            f"skill frontmatter name '{name}' must match directory '{skill_path.parent.name}': {skill_path}"
+        )
     description = fm.get("description", "")
     if not description.startswith("Use when"):
         errors.append(f"skill description must start with 'Use when': {skill_path}")
+    if not MIN_SKILL_DESCRIPTION_CHARS <= len(description) <= MAX_SKILL_DESCRIPTION_CHARS:
+        errors.append(
+            f"skill description length must be {MIN_SKILL_DESCRIPTION_CHARS}-{MAX_SKILL_DESCRIPTION_CHARS} characters: {skill_path}"
+        )
+
+
+def _validate_marketplace_skill_names(skill_files: list[Path], errors: list[str]) -> None:
+    by_name: dict[str, list[Path]] = {}
+    for skill_path in skill_files:
+        try:
+            text = skill_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        fm = _frontmatter(text)
+        if fm is None:
+            continue
+        name = fm.get("name", "").strip()
+        if not name:
+            continue
+        by_name.setdefault(name.casefold(), []).append(skill_path)
+    for paths in by_name.values():
+        if len(paths) > 1:
+            errors.append(
+                "duplicate skill name across marketplace: " + ", ".join(str(path) for path in paths)
+            )
 
 
 def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
@@ -233,6 +296,17 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
         write_mode = scenario.get("write")
         if not _valid_eval_write(write_mode):
             errors.append(f"eval scenario #{index} has invalid write mode: {path}")
+        elif write_mode == "approval-required" and isinstance(skill, str) and skill in discoverable_skills:
+            skill_path = plugin_path / "skills" / skill / "SKILL.md"
+            try:
+                skill_text = skill_path.read_text(encoding="utf-8").casefold()
+            except (OSError, UnicodeDecodeError):
+                skill_text = ""
+            for marker in WRITE_SKILL_SAFETY_MARKERS:
+                if marker not in skill_text:
+                    errors.append(
+                        f"write-capable skill missing safety marker '{marker}': {skill_path}"
+                    )
 
         expect = scenario.get("expect")
         if not isinstance(expect, dict):
@@ -415,6 +489,13 @@ def _validate_plugin_text(plugin_path: Path, errors: list[str]) -> None:
                 break
 
 
+def _is_forbidden_transport_module(module: str) -> bool:
+    if module == "urllib.request" or module.startswith("urllib.request."):
+        return True
+    root = module.split(".", 1)[0]
+    return root in FORBIDDEN_TRANSPORT_ROOTS
+
+
 def python_transport_findings(path: Path, text: str) -> list[str]:
     """Return AST-backed transport-boundary findings for a Python source file."""
     try:
@@ -427,34 +508,38 @@ def python_transport_findings(path: Path, text: str) -> list[str]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 module = alias.name
-                if module == "urllib.request" or any(
-                    module == forbidden or module.startswith(f"{forbidden}.")
-                    for forbidden in FORBIDDEN_TRANSPORT_MODULES
-                ):
+                if _is_forbidden_transport_module(module):
                     findings.append(f"forbidden transport import {module}")
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
             imported_names = {alias.name for alias in node.names}
             if module == "urllib" and "request" in imported_names:
                 findings.append("forbidden transport import urllib.request")
-            elif module == "urllib.request":
-                findings.append("forbidden transport import urllib.request")
-            elif any(
-                module == forbidden or module.startswith(f"{forbidden}.")
-                for forbidden in FORBIDDEN_TRANSPORT_MODULES
-            ):
+            elif _is_forbidden_transport_module(module):
                 findings.append(f"forbidden transport import {module}")
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "__import__"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            module = node.args[0].value
+            if _is_forbidden_transport_module(module):
+                findings.append(f"forbidden dynamic transport import {module}")
     return findings
 
 
 def _validate_cross_service_transport(plugin_path: Path, errors: list[str]) -> None:
     if plugin_path.name not in CROSS_SERVICE_PLUGINS:
         return
-    scripts = plugin_path / "scripts"
-    if not scripts.is_dir():
-        return
-    for path in scripts.rglob("*.py"):
-        text = path.read_text(encoding="utf-8")
+    for path in plugin_path.rglob("*.py"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"unable to scan cross-service Python file: {path}: {exc}")
+            continue
         if python_transport_findings(path, text) or YANDEX_API_ENDPOINT_PATTERN.search(text):
             errors.append(f"cross-service transport/API client found in {path}")
 
@@ -603,6 +688,7 @@ def validate_repository(
     }
 
     known_plugin_dirs: set[str] = set()
+    marketplace_skill_files: list[Path] = []
     for item in plugins:
         if not isinstance(item, dict):
             errors.append(f"marketplace plugin entry is not an object: {agent_marketplace_path}")
@@ -616,7 +702,6 @@ def validate_repository(
             errors.append(f"marketplace plugin source path missing: {item.get('name')}")
             continue
         plugin_path = (root / raw_path).resolve()
-        known_plugin_dirs.add(plugin_path.name)
         try:
             plugin_path.relative_to(root)
         except ValueError:
@@ -625,7 +710,19 @@ def validate_repository(
         if not plugin_path.is_dir():
             errors.append(f"marketplace source path does not exist: {raw_path}")
             continue
+        known_plugin_dirs.add(plugin_path.name)
+        marketplace_skill_files.extend(sorted((plugin_path / "skills").glob("*/SKILL.md")))
         _validate_plugin(root, plugin_path, item, claude_by_name.get(item.get("name")), errors)
+
+    plugins_root = root / "plugins"
+    if plugins_root.is_dir():
+        repository_plugin_dirs = {
+            path.name for path in plugins_root.iterdir() if path.is_dir()
+        }
+        for plugin_dir in sorted(repository_plugin_dirs - known_plugin_dirs):
+            errors.append(f"plugin directory absent from marketplace: {plugins_root / plugin_dir}")
+
+    _validate_marketplace_skill_names(marketplace_skill_files, errors)
 
     agent_names = {item.get("name") for item in plugins if isinstance(item, dict)}
     extra_claude = set(claude_by_name) - agent_names

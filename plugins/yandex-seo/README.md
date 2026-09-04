@@ -2,7 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `1.1.1`. Read-only cross-service orchestration над structured outputs Wordstat, Search, Webmaster и Metrika. Плагин **не содержит Yandex API client/credentials и не выполняет live writes**.
+Версия `1.1.2`. Read-only cross-service orchestration над structured outputs Wordstat, Search, Webmaster и Metrika. Плагин **не содержит Yandex API client/credentials и не выполняет live writes**.
 
 > Phase 7 `1.1.0` добавил Topical Architecture и Internal Linking; patch `1.1.1` усиливает transport-free artifact integrity: structural nodes используют field whitelist, а candidate-link `evidence` обязан быть list. Search остаётся владельцем SERP-overlap clustering.
 
