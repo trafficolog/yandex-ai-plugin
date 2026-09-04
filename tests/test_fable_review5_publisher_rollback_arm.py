@@ -10,7 +10,7 @@ class FableReview5PublisherRollbackArmTests(unittest.TestCase):
     def test_rollback_is_armed_before_draft_publication(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         publish_start = text.index("publish_one() {")
-        publish_end = text.index("direct_notes=", publish_start)
+        publish_end = text.index("- name: Verify complete immutable release set", publish_start)
         function = text[publish_start:publish_end]
 
         trap = function.index("trap 'rc=$?; rollback_published_release \"$tag\" \"$rc\"' ERR")
