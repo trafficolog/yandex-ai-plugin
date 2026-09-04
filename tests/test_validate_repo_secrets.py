@@ -10,7 +10,9 @@ class SecretLiteralValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             plugin = Path(tmp) / "yandex-direct"
             plugin.mkdir(parents=True)
-            (plugin / filename).write_text(text, encoding="utf-8")
+            target = plugin / filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
             errors: list[str] = []
             _validate_plugin_text(plugin, errors)
             return errors
