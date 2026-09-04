@@ -4,11 +4,11 @@
 
 Статус отражает то, что реально поставляется этим репозиторием, а не всю доступность продуктов Яндекса. Production plugins используют independent SemVer.
 
-> **FABLE 2.0.0 staging:** Direct, Metrika и Webmaster переходят на breaking exact-preview approval contract. Это metadata/documentation staging в PR A; tags/releases создаются отдельно после merge и release gate.
+> **FABLE release state:** breaking exact-preview generation Direct/Metrika/Webmaster `2.0.0` уже опубликована immutable releases. Review-5 maintenance increment обновляет Direct до `2.0.1`; Metrika `2.0.0` и Webmaster `2.0.0` остаются без изменений.
 
 | Service plugin | Tier | Status | Version | Primary scope | Execution sources to evaluate |
 |---|---:|---|---|---|---|
-| Yandex Direct | 1 | **available** | 2.0.0 | campaigns, audit, reports, optimization, keywords, budget; exact-preview write approval | bundled API helper; future MCP/app adapter |
+| Yandex Direct | 1 | **available** | 2.0.1 | campaigns, audit, reports, optimization, keywords, budget; exact-preview write approval; hardened Reports transport | bundled API helper; future MCP/app adapter |
 | Yandex Metrika | 1 | **available** | 2.0.0 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; provenance-aware Direct expense duplication guard; exact-preview write approval | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 2.0.0 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports; verified indexing archive `state` contract; exact-preview write approval | bundled API helpers; optional MCP/app backend |
 | Yandex Wordstat | 1 | **available** | 1.1.2 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
