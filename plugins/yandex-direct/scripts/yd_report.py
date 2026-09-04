@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from http.client import IncompleteRead
 import json
 import os
 import sys
@@ -14,7 +15,18 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 REPORTS_URL = "https://api.direct.yandex.com/json/v501/reports"
+ERROR_BODY_LIMIT = 4096
 ATTRIBUTION_MODELS = {"FCCD", "LC", "LSCCD", "AUTO"}
+LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
+
+
+class ReportError(RuntimeError):
+    """Expected Direct Reports operational failure safe for the CLI boundary."""
+
+    def __init__(self, message: str, *, error_type: str) -> None:
+        super().__init__(message)
+        self.error_type = error_type
+
 
 PRESETS: dict[str, tuple[str, list[str]]] = {
     "campaign": (
@@ -124,6 +136,23 @@ def parse_retry_in(headers: Mapping[str, str], default: int = 5) -> int:
         return default
 
 
+def _read_response_text(
+    response,
+    *,
+    context: str,
+    limit: int | None = None,
+    decode_errors: str = "strict",
+) -> str:
+    try:
+        raw = response.read() if limit is None else response.read(limit)
+    except (TimeoutError, OSError, IncompleteRead) as exc:
+        raise ReportError(
+            f"Direct Reports network error while {context}",
+            error_type="network",
+        ) from exc
+    return raw.decode("utf-8", errors=decode_errors)
+
+
 def fetch_report(
     token: str,
     body: Mapping[str, Any],
@@ -131,7 +160,11 @@ def fetch_report(
     client_login: str | None = None,
     max_attempts: int = 20,
     timeout: int = 120,
+    opener=None,
+    sleep=None,
 ) -> str:
+    opener = opener or urllib.request.urlopen
+    sleep = sleep or time.sleep
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json; charset=utf-8",
@@ -150,33 +183,51 @@ def fetch_report(
     for attempt in range(1, max_attempts + 1):
         req = urllib.request.Request(REPORTS_URL, data=payload, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            with opener(req, timeout=timeout) as response:
                 status = response.status
                 response_headers = dict(response.headers.items())
-                text = response.read().decode("utf-8")
+                text = _read_response_text(response, context="reading response")
         except urllib.error.HTTPError as exc:
             status = exc.code
             response_headers = dict(exc.headers.items()) if exc.headers else {}
-            text = exc.read().decode("utf-8", errors="replace")
+            try:
+                text = _read_response_text(
+                    exc,
+                    context=f"reading HTTP {status} error response",
+                    limit=ERROR_BODY_LIMIT,
+                    decode_errors="replace",
+                )
+            finally:
+                close = getattr(getattr(exc, "fp", None), "close", None)
+                if callable(close):
+                    close()
+        except urllib.error.URLError as exc:
+            raise ReportError(
+                f"Direct Reports network error: {exc.reason}",
+                error_type="network",
+            ) from exc
 
         if status == 200:
             return text
         if status in {201, 202}:
             if attempt == max_attempts:
-                raise RuntimeError(f"Report still not ready after {max_attempts} attempts")
-            time.sleep(parse_retry_in(response_headers))
+                raise ReportError(
+                    f"Report still not ready after {max_attempts} attempts",
+                    error_type="api",
+                )
+            sleep(parse_retry_in(response_headers))
             continue
         if status == 400:
-            raise RuntimeError(f"Bad report request: {text}")
+            raise ReportError(f"Bad report request: {text}", error_type="api")
         if status == 500 and not retried_server_error and attempt < max_attempts:
             retried_server_error = True
-            time.sleep(parse_retry_in(response_headers))
+            sleep(parse_retry_in(response_headers))
             continue
         if status == 500:
-            raise RuntimeError(f"Yandex report server error: {text}")
-        raise RuntimeError(f"Unexpected HTTP {status}: {text}")
+            raise ReportError(f"Yandex report server error: {text}", error_type="http")
+        raise ReportError(f"Unexpected HTTP {status}: {text}", error_type="http")
 
-    raise RuntimeError("Unreachable")
+    raise ReportError("Unreachable", error_type="api")
 
 
 def _parse_csv_values(raw: str | None) -> list[str] | None:
@@ -186,13 +237,29 @@ def _parse_csv_values(raw: str | None) -> list[str] | None:
     return values or None
 
 
+def contains_legacy_token_option(argv: list[str]) -> bool:
+    return any(arg.partition("=")[0] in LEGACY_TOKEN_OPTIONS for arg in argv)
+
+
+def emit_cli_error(error_type: str, message: str) -> int:
+    json.dump({"error": {"type": error_type, "message": message}}, sys.stderr, ensure_ascii=False)
+    sys.stderr.write("\n")
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    if contains_legacy_token_option(raw_argv):
+        return emit_cli_error(
+            "validation",
+            "--token is no longer supported; set YANDEX_DIRECT_TOKEN in the environment",
+        )
+
     parser = argparse.ArgumentParser(description="Yandex Direct Reports v501 helper")
     parser.add_argument("preset", choices=sorted(PRESETS))
     parser.add_argument("date_from")
     parser.add_argument("date_to")
     parser.add_argument("--report-name")
-    parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
     parser.add_argument("--include-vat", choices=["YES", "NO"], default="YES")
     parser.add_argument("--goals", help="Comma-separated Metrika goal IDs (max 10)")
@@ -202,9 +269,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated attribution models: FCCD, LC, LSCCD, AUTO",
     )
     parser.add_argument("--output", help="Write TSV to file instead of stdout")
-    args = parser.parse_args(argv)
-    if not args.token:
-        parser.error("Provide --token or YANDEX_DIRECT_TOKEN")
+    args = parser.parse_args(raw_argv)
+    token = os.getenv("YANDEX_DIRECT_TOKEN")
+    if not token:
+        parser.error("Set YANDEX_DIRECT_TOKEN")
 
     goals = _parse_csv_values(args.goals)
     attribution_models = _parse_csv_values(args.attribution_models)
@@ -217,7 +285,11 @@ def main(argv: list[str] | None = None) -> int:
         goals=goals,
         attribution_models=attribution_models,
     )
-    text = fetch_report(args.token, body, client_login=args.client_login)
+    try:
+        text = fetch_report(token, body, client_login=args.client_login)
+    except ReportError as exc:
+        return emit_cli_error(exc.error_type, str(exc))
+
     if args.output:
         output_path = Path(args.output)
         output_path.write_text(text, encoding="utf-8", newline="")

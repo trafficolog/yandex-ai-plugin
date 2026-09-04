@@ -7,6 +7,7 @@ from datetime import date
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 from typing import Any
 
@@ -283,19 +284,127 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                     )
 
 
-def _iter_plugin_text_files(plugin_path: Path):
-    for path in plugin_path.rglob("*"):
-        if not path.is_file():
+def _tracked_repository_paths(path: Path) -> set[Path] | None:
+    """Return lexical Git-tracked paths under path, or None when Git metadata is unavailable."""
+    requested_root = path.resolve()
+    try:
+        root_result = subprocess.run(
+            ["git", "-C", str(requested_root), "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        git_root = Path(root_result.stdout.strip()).resolve()
+        tracked_result = subprocess.run(
+            ["git", "-C", str(git_root), "ls-files", "-z"],
+            check=True,
+            capture_output=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+    tracked_paths = {
+        git_root / relative_path.decode(sys.getfilesystemencoding(), errors="surrogateescape")
+        for relative_path in tracked_result.stdout.split(b"\0")
+        if relative_path
+    }
+    return {candidate for candidate in tracked_paths if candidate.is_relative_to(requested_root)}
+
+
+def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
+    """Return Git-tracked plugin paths, or None when Git metadata is unavailable."""
+    return _tracked_repository_paths(plugin_path)
+
+
+def _read_secret_scan_text(path: Path) -> str:
+    """Read a worktree text entry without following symlinks or skipping undecodable bytes."""
+    if path.is_symlink():
+        return str(path.readlink())
+    return path.read_bytes().decode("utf-8", errors="replace")
+
+
+def _read_index_secret_scan_entry(root: Path, path: Path) -> tuple[str, str]:
+    """Return the staged Git mode and text for a tracked repository entry."""
+    relative = path.absolute().relative_to(root.resolve()).as_posix()
+    stage_result = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--stage", "--", relative],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    first_line = stage_result.stdout.splitlines()[0]
+    mode = first_line.split(maxsplit=1)[0]
+    blob_result = subprocess.run(
+        ["git", "-C", str(root), "show", f":{relative}"],
+        check=True,
+        capture_output=True,
+        timeout=5,
+    )
+    return mode, blob_result.stdout.decode("utf-8", errors="replace")
+
+
+def _iter_repository_dotenv_files(root: Path):
+    tracked_paths = _tracked_repository_paths(root)
+    if tracked_paths is not None:
+        candidates = tracked_paths
+        require_worktree_entry = False
+    else:
+        candidates = {path for path in root.rglob("*") if path.is_file() or path.is_symlink()}
+        require_worktree_entry = True
+    for path in sorted(candidates):
+        if path.name != ".env" and not path.name.startswith(".env."):
             continue
-        if path.name == ".env.example" or path.suffix.lower() in TEXT_SUFFIXES:
+        if not require_worktree_entry or path.is_file() or path.is_symlink():
+            yield path
+
+
+def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
+    tracked_paths = _tracked_repository_paths(root)
+    for path in _iter_repository_dotenv_files(root):
+        symlink_error = f"repository dotenv symlink is not allowed: {path}"
+        texts: list[str] = []
+        if tracked_paths is not None:
+            try:
+                mode, staged_text = _read_index_secret_scan_entry(root, path)
+            except (OSError, subprocess.SubprocessError, IndexError, ValueError):
+                errors.append(f"unable to read tracked repository dotenv index: {path}")
+            else:
+                if mode == "120000" and symlink_error not in errors:
+                    errors.append(symlink_error)
+                texts.append(staged_text)
+        if path.is_symlink() and symlink_error not in errors:
+            errors.append(symlink_error)
+        if path.is_file() or path.is_symlink():
+            try:
+                texts.append(_read_secret_scan_text(path))
+            except (OSError, UnicodeDecodeError):
+                pass
+        if any(pattern.search(text) for text in texts for pattern in SECRET_PATTERNS):
+            errors.append(f"credential-like secret found in repository dotenv file: {path}")
+
+
+def _iter_plugin_text_files(plugin_path: Path):
+    tracked_paths = _tracked_plugin_paths(plugin_path)
+    for path in plugin_path.rglob("*"):
+        is_dotenv = path.name == ".env" or path.name.startswith(".env.")
+        if is_dotenv:
+            if not (path.is_file() or path.is_symlink()):
+                continue
+            if tracked_paths is not None and path.absolute() not in tracked_paths:
+                continue
+            yield path
+        elif path.is_file() and path.suffix.lower() in TEXT_SUFFIXES:
             yield path
 
 
 def _validate_plugin_text(plugin_path: Path, errors: list[str]) -> None:
     for path in _iter_plugin_text_files(plugin_path):
         try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+            text = _read_secret_scan_text(path) if path.name == ".env" or path.name.startswith(".env.") else path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
             continue
         for forbidden in FORBIDDEN_RUNTIME_PATHS:
             if forbidden in text:
@@ -471,6 +580,7 @@ def validate_repository(
 ) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
+    _validate_repository_dotenv(root, errors)
     agent_marketplace_path = root / ".agents/plugins/marketplace.json"
     claude_marketplace_path = root / ".claude-plugin/marketplace.json"
     agent_marketplace = _load_json(agent_marketplace_path, errors)

@@ -98,23 +98,24 @@ class TestSeoInternalLinking(unittest.TestCase):
                 }],
             )
 
-    def test_unknown_endpoint_and_forced_exact_match_are_rejected(self):
-        with self.assertRaises(ValueError):
+    def test_link_plan_rejects_unknown_endpoint_for_otherwise_valid_candidate(self):
+        with self.assertRaisesRegex(ValueError, "candidate link references unknown page"):
             seo_internal_linking.build_link_plan(
                 architecture=ARCHITECTURE,
                 candidate_links=[{
                     "from_page_id": "root", "to_page_id": "missing", "relation": "SUPPORT",
-                    "user_need": "detail", "reason_codes": [], "evidence": [],
+                    "user_need": "detail", "reason_codes": ["METHODOLOGY_HEURISTIC"], "evidence": [],
                     "confidence": "LOW", "claim_class": "HYPOTHESIS",
                 }],
             )
 
-        with self.assertRaises(ValueError):
+    def test_link_plan_rejects_forced_exact_match_for_otherwise_valid_candidate(self):
+        with self.assertRaisesRegex(ValueError, "forced exact-match anchor requirements are not supported"):
             seo_internal_linking.build_link_plan(
                 architecture=ARCHITECTURE,
                 candidate_links=[{
                     "from_page_id": "root", "to_page_id": "support", "relation": "SUPPORT",
-                    "user_need": "detail", "reason_codes": [], "evidence": [],
+                    "user_need": "detail", "reason_codes": ["METHODOLOGY_HEURISTIC"], "evidence": [],
                     "confidence": "LOW", "claim_class": "HYPOTHESIS",
                     "anchor_concept": "seo аудит", "exact_match_required": True,
                 }],
@@ -157,12 +158,12 @@ class TestSeoInternalLinking(unittest.TestCase):
         duplicates = [f for f in audit["findings"] if f["type"] == "DUPLICATE_LINK"]
         self.assertEqual(audit["observed_link_count"], 3)
         self.assertEqual(audit["unique_link_count"], 2)
-        self.assertEqual(duplicates, [{
-            "type": "DUPLICATE_LINK",
-            "from_page_id": "support",
-            "to_page_id": "compare",
-            "count": 2,
-        }])
+        self.assertEqual(len(duplicates), 1)
+        duplicate = duplicates[0]
+        self.assertEqual(duplicate["type"], "DUPLICATE_LINK")
+        self.assertEqual(duplicate["from_page_id"], "support")
+        self.assertEqual(duplicate["to_page_id"], "compare")
+        self.assertEqual(duplicate["count"], 2)
 
     def test_rootless_bridge_without_inbound_link_is_orphan_and_broken_bridge(self):
         architecture = {

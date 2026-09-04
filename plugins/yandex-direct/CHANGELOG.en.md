@@ -2,6 +2,15 @@
 
 [Русский](CHANGELOG.md) · [**English**](CHANGELOG.en.md)
 
+## [2.0.1] — 2026-09-04
+
+- Moved the Reports CLI to env-only OAuth: `yd_report.py` reads the token only from `YANDEX_DIRECT_TOKEN`; the argv `--token` option is removed.
+- Capped Direct Reports HTTP error bodies at 4096 bytes with replacement decoding; `URLError` becomes a secret-free operational failure.
+- Made transport opener and sleep injectable for deterministic tests while preserving Reports-specific `201/202 + retryIn` polling and at most one HTTP `500` retry.
+- Added explicit contracts for `direct.reports-async-transport`, `direct.reports-kpi-provenance`, and `direct.creation-not-activation`, plus freshness control for `references/sources.md`.
+- Repaired SEO internal-linking tests so they exercise the intended unknown-endpoint and forced exact-match guards; production SEO behavior is unchanged, so SEO remains `1.1.2`.
+- Documented the helper-level safety boundary accurately: rollback context and bulk `>20` handling remain agent/operator policy rather than generic executable guarantees.
+
 ## [2.0.0] — 2026-09-03
 
 - Breaking safety contract: consequential Direct writes now require the exact `preview_id`; `--execute` alone is not sufficient.
@@ -21,7 +30,7 @@ Migration:
 # 1.x
 python scripts/yd_api.py campaigns update --params-file update.json --execute
 
-# 2.0.0
+# 2.0.0+
 export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns update --params-file update.json
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>

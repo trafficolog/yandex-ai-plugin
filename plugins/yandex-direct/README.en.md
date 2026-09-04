@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `2.0.0`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API workflows.
+Version `2.0.1`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API workflows.
 
 ## Execution model
 
@@ -10,20 +10,24 @@ Preference: compatible connected MCP/app → bundled Python helper → export/fi
 
 ### Migration 1.x → 2.0.0
 
-`2.0.0` introduces a breaking write-safety contract. The old `--execute`-only invocation is no longer sufficient authorization:
+`2.0.0` introduced the breaking write-safety contract. The old `--execute`-only invocation is no longer sufficient authorization:
 
 ```bash
 # 1.x — old contract
 python scripts/yd_api.py campaigns update --params-file update.json --execute
 
-# 2.0.0 — preview first
+# 2.x — preview first
 export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns update --params-file update.json
 # then, only after the exact preview is approved in a later user turn
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
 ```
 
-The `preview_id` binds service, method, `Client-Login`, OAuth auth principal, environment, and body. Changing the token, payload, or environment requires a fresh preview/approval. OAuth is supplied only through `YANDEX_DIRECT_TOKEN`; the 2.0.0 CLI has no `--token` argument.
+The `preview_id` binds service, method, `Client-Login`, OAuth auth principal, environment, and body. Changing the token, payload, or environment requires a fresh preview/approval. OAuth is supplied only through `YANDEX_DIRECT_TOKEN`; there is no `--token` argv option.
+
+### Patch 2.0.1 — Reports hardening
+
+`yd_report.py` now uses the same credential boundary: OAuth only from `YANDEX_DIRECT_TOKEN`, with no `--token`. HTTP error bodies are capped at 4096 bytes and decoded with `errors="replace"`; `URLError` becomes a secret-free operational failure. The transport opener and sleep function are injectable for deterministic tests. Reports-specific semantics are preserved: `200` returns TSV, `201/202` continue polling according to `retryIn`, and HTTP `500` allows at most one automatic retry.
 
 ## Production and sandbox
 
@@ -37,9 +41,9 @@ Sandbox uses `https://api-sandbox.direct.yandex.com/json/v5/{service}`. Producti
 
 ## Transport metadata and errors
 
-A live call keeps the exact Yandex Direct JSON payload under `result` and exposes selected safe transport headers separately under `transport`: `RequestId` → `request_id`, `Units` → `units`, and `Units-Used-Login` → `units_used_login`. Other response headers are not copied by default.
+A live API-helper call keeps the exact Yandex Direct JSON payload under `result` and exposes selected safe transport headers separately under `transport`: `RequestId` → `request_id`, `Units` → `units`, and `Units-Used-Login` → `units_used_login`. Other response headers are not copied by default.
 
-Expected CLI failures (`validation`, `input`, `network`, `http`, `api`) are emitted as JSON to stderr with exit code `2`, without a normal traceback. HTTP error bodies are capped at 4096 bytes and decoded with replacement semantics.
+Expected `yd_api.py` CLI failures (`validation`, `input`, `network`, `http`, `api`) are emitted as JSON to stderr with exit code `2`, without a normal traceback. HTTP error bodies are capped at 4096 bytes and decoded with replacement semantics. The Reports helper also uses bounded error reads and secret-free network failures while retaining its read-only polling contract.
 
 ## Capability matrix
 
@@ -68,6 +72,10 @@ Expected CLI failures (`validation`, `input`, `network`, `http`, `api`) are emit
 - consequential writes require exact `preview_id` approval;
 - no universal CPA/CPC/CTR/ROAS kill rules;
 - campaign creation is distinct from activation.
+
+## Safety enforcement boundary
+
+Helper-level executable guarantees are exact-preview approval binding, environment/auth-principal binding, env-only OAuth, the service allowlist, and bounded transport errors. Rollback-context preservation and tighter handling for bulk edits above 20 entities remain agent/operator policy; generic helper-level enforcement is not claimed until a separate safety design defines those semantics.
 
 ## Helpers
 
