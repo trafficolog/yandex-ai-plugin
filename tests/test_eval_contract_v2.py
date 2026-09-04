@@ -86,6 +86,14 @@ class EvalContractV2Tests(unittest.TestCase):
                 errors = self.validate(data)
                 self.assertTrue(any("outcome" in error for error in errors), errors)
 
+    def test_outcome_non_string_values_are_reported_not_raised(self):
+        for value in ([], {}, 123, True):
+            with self.subTest(value=value):
+                data = self.base_data()
+                data["scenarios"][0]["expect"]["outcome"] = value
+                errors = self.validate(data)
+                self.assertTrue(any("outcome" in error for error in errors), errors)
+
     def test_v2_string_lists_require_nonempty_strings(self):
         for field in ("must_mention_tokens", "must_convey", "must_not_claim"):
             for value in ("not-a-list", [""], [123]):
@@ -116,6 +124,13 @@ class EvalContractV2Tests(unittest.TestCase):
         errors = self.validate(data)
         self.assertTrue(any("missing-skill" in error and "SKILL.md" in error for error in errors), errors)
 
+    def test_skill_must_be_a_discoverable_immediate_child_name(self):
+        data = self.base_data()
+        data["scenarios"][0]["skill"] = "../skills/router"
+        data["scenarios"][0]["expect"]["must_route_to"] = "../skills/router"
+        errors = self.validate(data)
+        self.assertTrue(any("discoverable" in error.lower() or "skill name" in error.lower() for error in errors), errors)
+
     def test_must_mention_tokens_rejects_prose(self):
         data = self.base_data()
         data["scenarios"][0]["expect"]["must_mention_tokens"] = [
@@ -129,6 +144,12 @@ class EvalContractV2Tests(unittest.TestCase):
         data["scenarios"][0]["expect"]["must_mention_tokens"] = ["MISSPELLED_TOKEN"]
         errors = self.validate(data)
         self.assertTrue(any("MISSPELLED_TOKEN" in error and "vocabulary" in error.lower() for error in errors), errors)
+
+    def test_must_mention_tokens_require_exact_vocabulary_identifier_match(self):
+        data = self.base_data()
+        data["scenarios"][0]["expect"]["must_mention_tokens"] = ["SAFE"]
+        errors = self.validate(data)
+        self.assertTrue(any("SAFE" in error and "vocabulary" in error.lower() for error in errors), errors)
 
 
 if __name__ == "__main__":
