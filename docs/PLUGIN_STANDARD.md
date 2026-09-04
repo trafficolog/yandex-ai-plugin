@@ -95,9 +95,39 @@ Recommended service tags: `yandex-direct-v1.1.0`, `yandex-metrika-v1.0.0`. Repos
 
 ## 9. Tests and evals
 
-Executable helpers имеют unit tests. `evals/scenarios.json` содержит machine-verifiable `expect`: `must_route_to`, `must_refuse`, `must_mention`, `must_not_claim`; allowed write values: `false`, `preview-first`, `approval-required`.
+Executable helpers имеют unit tests. Активный offline eval contract — `evals/scenarios.json` **version 2**. Каждый scenario содержит routing/write metadata и объект `expect` со следующими полями:
 
-Важно: текущий repository validator проверяет **структуру и согласованность eval fixture**, но не запускает scenario против модели. Наличие `expect` делает контракт формализованным и пригодным для будущего eval runner, но зелёный CI не означает, что модель уже автоматически прошла эти сценарии.
+- `must_route_to` — exact skill name; обязан совпадать с `skill`, а `skills/<skill>/SKILL.md` обязан существовать;
+- `outcome` — один из `comply`, `comply_with_limitations`, `refuse`;
+- `must_mention_tokens` — только точная machine vocabulary без prose (reason codes, artifact names, contract identifiers); validator проверяет identifier shape и наличие token в документированном/исполняемом vocabulary owning plugin;
+- `must_convey` — semantic requirements естественным языком;
+- `must_not_claim` — запрещённые semantic claims.
+
+Legacy fields `must_refuse` и `must_mention` в v2 запрещены. Allowed `write`: `false`, `preview-first`, `approval-required`.
+
+Пример:
+
+```json
+{
+  "version": 2,
+  "scenarios": [
+    {
+      "prompt": "Search недоступен, но Wordstat есть. Сразу считай границы страниц доказанными.",
+      "skill": "yandex-seo-topical-architecture",
+      "write": false,
+      "expect": {
+        "must_route_to": "yandex-seo-topical-architecture",
+        "outcome": "comply_with_limitations",
+        "must_mention_tokens": ["SERP_VALIDATION_MISSING", "HYPOTHESIS"],
+        "must_convey": ["Search evidence is required before treating page boundaries as confirmed"],
+        "must_not_claim": ["Wordstat proves final page boundaries"]
+      }
+    }
+  ]
+}
+```
+
+Важно: repository validator проверяет **структуру, enum/vocabulary, реальные skill references и согласованность fixture**, но **не запускает сценарии против модели и не оценивает semantic satisfaction** `must_convey`/`must_not_claim`. Зелёный validator/CI означает, что eval contract корректно сформирован для будущего runner/judge; это не доказательство, что модель прошла semantic evals.
 
 ## 10. Contract matrix: traceability, не semantic proof
 
