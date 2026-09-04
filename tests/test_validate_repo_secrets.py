@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -42,6 +43,35 @@ class SecretLiteralValidationTests(unittest.TestCase):
         ]:
             with self.subTest(filename=filename):
                 self.assert_secret_rejected(literal, filename=filename)
+
+    def test_ignored_local_dotenv_is_not_scanned_but_tracked_dotenv_is(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plugin = root / "plugins/yandex-direct"
+            plugin.mkdir(parents=True)
+            ignored = plugin / ".env"
+            tracked = plugin / ".env.production"
+            ignored.write_text(
+                "YANDEX_DIRECT_TOKEN=y0_AgAAAACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n",
+                encoding="utf-8",
+            )
+            tracked.write_text(
+                "YANDEX_DIRECT_TOKEN=y0_AgAAAADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n",
+                encoding="utf-8",
+            )
+            (root / ".gitignore").write_text("plugins/yandex-direct/.env\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(
+                ["git", "add", ".gitignore", "plugins/yandex-direct/.env.production"],
+                cwd=root,
+                check=True,
+            )
+
+            errors: list[str] = []
+            _validate_plugin_text(plugin, errors)
+
+            self.assertTrue(any(str(tracked) in error for error in errors), errors)
+            self.assertFalse(any(str(ignored) in error for error in errors), errors)
 
     def test_dotenv_example_placeholder_is_allowed(self):
         placeholder = (
