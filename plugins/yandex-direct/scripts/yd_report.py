@@ -197,7 +197,9 @@ def fetch_report(
                     decode_errors="replace",
                 )
             finally:
-                exc.close()
+                close = getattr(getattr(exc, "fp", None), "close", None)
+                if callable(close):
+                    close()
         except urllib.error.URLError as exc:
             raise ReportError(
                 f"Direct Reports network error: {exc.reason}",
