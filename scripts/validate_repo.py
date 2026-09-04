@@ -285,7 +285,7 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
 
 
 def _tracked_repository_paths(path: Path) -> set[Path] | None:
-    """Return Git-tracked paths under path, or None when Git metadata is unavailable."""
+    """Return lexical Git-tracked paths under path, or None when Git metadata is unavailable."""
     requested_root = path.resolve()
     try:
         root_result = subprocess.run(
@@ -307,7 +307,7 @@ def _tracked_repository_paths(path: Path) -> set[Path] | None:
         return None
 
     tracked_paths = {
-        (git_root / relative_path).resolve()
+        git_root / relative_path
         for relative_path in tracked_result.stdout.split("\0")
         if relative_path
     }
@@ -319,23 +319,30 @@ def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
     return _tracked_repository_paths(plugin_path)
 
 
+def _read_secret_scan_text(path: Path) -> str:
+    """Read a tracked text entry without following symlinks."""
+    if path.is_symlink():
+        return str(path.readlink())
+    return path.read_text(encoding="utf-8")
+
+
 def _iter_repository_dotenv_files(root: Path):
     tracked_paths = _tracked_repository_paths(root)
     candidates = tracked_paths if tracked_paths is not None else {
-        path.resolve() for path in root.rglob("*") if path.is_file()
+        path for path in root.rglob("*") if path.is_file() or path.is_symlink()
     }
     for path in sorted(candidates):
-        if not path.is_file():
+        if path.name != ".env" and not path.name.startswith(".env."):
             continue
-        if path.name == ".env" or path.name.startswith(".env."):
+        if path.is_file() or path.is_symlink():
             yield path
 
 
 def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
     for path in _iter_repository_dotenv_files(root):
         try:
-            text = path.read_text(encoding="utf-8")
-        except (FileNotFoundError, UnicodeDecodeError):
+            text = _read_secret_scan_text(path)
+        except (OSError, UnicodeDecodeError):
             continue
         for pattern in SECRET_PATTERNS:
             if pattern.search(text):
@@ -346,22 +353,22 @@ def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
 def _iter_plugin_text_files(plugin_path: Path):
     tracked_paths = _tracked_plugin_paths(plugin_path)
     for path in plugin_path.rglob("*"):
-        if not path.is_file():
-            continue
         is_dotenv = path.name == ".env" or path.name.startswith(".env.")
         if is_dotenv:
-            if tracked_paths is not None and path.resolve() not in tracked_paths:
+            if not (path.is_file() or path.is_symlink()):
+                continue
+            if tracked_paths is not None and path.absolute() not in tracked_paths:
                 continue
             yield path
-        elif path.suffix.lower() in TEXT_SUFFIXES:
+        elif path.is_file() and path.suffix.lower() in TEXT_SUFFIXES:
             yield path
 
 
 def _validate_plugin_text(plugin_path: Path, errors: list[str]) -> None:
     for path in _iter_plugin_text_files(plugin_path):
         try:
-            text = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+            text = _read_secret_scan_text(path) if path.name == ".env" or path.name.startswith(".env.") else path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
             continue
         for forbidden in FORBIDDEN_RUNTIME_PATHS:
             if forbidden in text:
