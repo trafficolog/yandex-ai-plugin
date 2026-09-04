@@ -62,6 +62,19 @@ class Repository105PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, text)
 
+    def test_rollback_is_disarmed_before_post_immutability_probes(self):
+        text = self._text()
+        self.assertIn('local rollback_armed=false', text)
+        self.assertIn('if [[ "$rollback_armed" != "true" ]]', text)
+        self.assertIn(
+            'cleanup_release_immutable="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isImmutable --jq \' .isImmutable\' 2>/dev/null || true)"'.replace("' .isImmutable'", "'.isImmutable'"),
+            text,
+        )
+        immutable_guard = text.index('if [[ "$published_is_immutable" != "true" ]]')
+        disarm = text.index('rollback_armed=false', immutable_guard)
+        tag_fetch = text.index('git fetch origin "refs/tags/$tag:refs/tags/$tag" --force', disarm)
+        self.assertLess(disarm, tag_fetch)
+
     def test_exact_target_contract_pins_plugin_matrix_and_human_docs(self):
         text = self._text()
         for plugin, version in PLUGIN_VERSIONS.items():
