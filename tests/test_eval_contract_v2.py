@@ -125,6 +125,14 @@ class EvalContractV2Tests(unittest.TestCase):
                     errors = self.validate(data)
                     self.assertTrue(any(field in error for error in errors), errors)
 
+    def test_must_mention_tokens_non_list_scalars_are_reported_not_raised(self):
+        for value in (None, 123, True):
+            with self.subTest(value=value):
+                data = self.base_data()
+                data["scenarios"][0]["expect"]["must_mention_tokens"] = value
+                errors = self.validate(data)
+                self.assertTrue(any("must_mention_tokens" in error for error in errors), errors)
+
     def test_legacy_expectation_keys_are_rejected(self):
         for field, value in (("must_refuse", False), ("must_mention", ["SAFE_TOKEN"])):
             with self.subTest(field=field):
