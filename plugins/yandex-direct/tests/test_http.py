@@ -41,6 +41,21 @@ class FakeResponse:
         return self._raw
 
 
+class FailingReadResponse:
+    def __init__(self, exc: OSError):
+        self.exc = exc
+        self.headers: dict[str, str] = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        raise self.exc
+
+
 class DirectHTTPTests(unittest.TestCase):
     def test_http_error_body_read_is_bounded_to_4096_bytes(self):
         body = RecordingBody(b"A" * 4096 + b"TAIL-SENTINEL")
@@ -72,6 +87,20 @@ class DirectHTTPTests(unittest.TestCase):
             )
 
         self.assertIn("prefix-�-suffix", str(caught.exception))
+
+    def test_response_read_os_errors_are_network_failures(self):
+        for exc in [TimeoutError("read timed out"), ConnectionResetError("connection reset")]:
+            with self.subTest(exc=type(exc).__name__):
+                response = FailingReadResponse(exc)
+                with self.assertRaises(DirectHTTPError) as caught:
+                    request_json(
+                        "https://example.invalid",
+                        {"Authorization": "Bearer secret"},
+                        {"method": "get", "params": {}},
+                        opener=lambda request, timeout, response=response: response,
+                    )
+                self.assertEqual(caught.exception.error_type, "network")
+                self.assertIn(str(exc), str(caught.exception))
 
     def test_redact_headers_preserves_authorization_scheme(self):
         redacted = redact_headers(
