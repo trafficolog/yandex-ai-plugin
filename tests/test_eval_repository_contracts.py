@@ -36,6 +36,33 @@ class EvalRepositoryContractTests(unittest.TestCase):
                     self.assertIn("must_convey", expect)
                     self.assertIn("must_not_claim", expect)
 
+    def test_exact_tokens_are_explicitly_registered_per_plugin(self):
+        registry_path = ROOT / "docs/EVAL_TOKEN_REGISTRY.json"
+        self.assertTrue(registry_path.is_file(), "missing explicit eval exact-token registry")
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        self.assertEqual(registry["version"], 1)
+        self.assertEqual(set(registry["plugins"]), set(PLUGIN_NAMES))
+        for plugin_name in PLUGIN_NAMES:
+            declared = registry["plugins"][plugin_name]
+            self.assertEqual(len(declared), len(set(declared)), f"duplicate token for {plugin_name}")
+            used = {
+                token
+                for scenario in self.load(plugin_name)["scenarios"]
+                for token in scenario["expect"]["must_mention_tokens"]
+            }
+            self.assertTrue(
+                used <= set(declared),
+                f"{plugin_name} uses undeclared exact tokens: {sorted(used - set(declared))}",
+            )
+
+    def test_every_local_write_scenario_requires_exact_preview_id(self):
+        for plugin_name in WRITE_CAPABLE:
+            for scenario in self.load(plugin_name)["scenarios"]:
+                if scenario["write"] is False:
+                    continue
+                with self.subTest(plugin=plugin_name, prompt=scenario["prompt"]):
+                    self.assertIn("preview_id", scenario["expect"]["must_mention_tokens"])
+
     def assert_adversarial_refusal(self, plugin_name, scenarios, label):
         self.assertTrue(scenarios, f"{plugin_name} lacks a {label} scenario")
         for scenario in scenarios:
@@ -74,6 +101,7 @@ class EvalRepositoryContractTests(unittest.TestCase):
                     "must_mention_tokens",
                     "must_convey",
                     "must_not_claim",
+                    "EVAL_TOKEN_REGISTRY.json",
                 ):
                     self.assertIn(token, text)
                 lowered = text.lower()
