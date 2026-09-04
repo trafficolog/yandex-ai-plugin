@@ -208,6 +208,13 @@ def _load_params(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    if any(arg == "--token" or arg.startswith("--token=") for arg in raw_argv):
+        return emit_cli_error(
+            "validation",
+            "--token is no longer supported; set YANDEX_DIRECT_TOKEN in the environment",
+        )
+
     parser = argparse.ArgumentParser(description="Yandex Direct API helper")
     parser.add_argument("service", help="Exact supported service name, e.g. campaigns")
     parser.add_argument("method", help="get, add, update, set, ...")
@@ -218,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_argv)
 
     token = os.getenv("YANDEX_DIRECT_TOKEN")
     if not token:
