@@ -31,12 +31,16 @@ class _TrackingBody:
     def __init__(self, body: bytes):
         self.body = body
         self.read_sizes = []
+        self.closed = False
 
     def read(self, size=-1):
         self.read_sizes.append(size)
         if size is None or size < 0:
             return self.body
         return self.body[:size]
+
+    def close(self):
+        self.closed = True
 
 
 class TestReportHelpers(unittest.TestCase):
@@ -155,6 +159,7 @@ class TestReportHelpers(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ctx:
             fetch_report("token", body, opener=opener)
         self.assertEqual(tracking.read_sizes, [4096])
+        self.assertTrue(tracking.closed)
         self.assertIn("bad:�", str(ctx.exception))
         self.assertNotIn("TAIL-SENTINEL", str(ctx.exception))
 
