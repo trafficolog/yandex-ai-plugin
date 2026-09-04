@@ -7,6 +7,7 @@ from datetime import date
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 from typing import Any
 
@@ -283,11 +284,46 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                     )
 
 
+def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
+    """Return Git-tracked plugin paths, or None when Git metadata is unavailable."""
+    try:
+        root_result = subprocess.run(
+            ["git", "-C", str(plugin_path), "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        root = Path(root_result.stdout.strip()).resolve()
+        relative_plugin = plugin_path.resolve().relative_to(root).as_posix()
+        tracked_result = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--", relative_plugin],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+    return {
+        (root / relative_path).resolve()
+        for relative_path in tracked_result.stdout.split("\0")
+        if relative_path
+    }
+
+
 def _iter_plugin_text_files(plugin_path: Path):
+    tracked_paths = _tracked_plugin_paths(plugin_path)
     for path in plugin_path.rglob("*"):
         if not path.is_file():
             continue
-        if path.name == ".env" or path.name.startswith(".env.") or path.suffix.lower() in TEXT_SUFFIXES:
+        is_dotenv = path.name == ".env" or path.name.startswith(".env.")
+        if is_dotenv:
+            if tracked_paths is not None and path.resolve() not in tracked_paths:
+                continue
+            yield path
+        elif path.suffix.lower() in TEXT_SUFFIXES:
             yield path
 
 
