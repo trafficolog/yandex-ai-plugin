@@ -135,6 +135,23 @@ def parse_retry_in(headers: Mapping[str, str], default: int = 5) -> int:
         return default
 
 
+def _read_response_text(
+    response,
+    *,
+    context: str,
+    limit: int | None = None,
+    decode_errors: str = "strict",
+) -> str:
+    try:
+        raw = response.read() if limit is None else response.read(limit)
+    except (TimeoutError, OSError) as exc:
+        raise ReportError(
+            f"Direct Reports network error while {context}",
+            error_type="network",
+        ) from exc
+    return raw.decode("utf-8", errors=decode_errors)
+
+
 def fetch_report(
     token: str,
     body: Mapping[str, Any],
@@ -168,11 +185,19 @@ def fetch_report(
             with opener(req, timeout=timeout) as response:
                 status = response.status
                 response_headers = dict(response.headers.items())
-                text = response.read().decode("utf-8")
+                text = _read_response_text(response, context="reading response")
         except urllib.error.HTTPError as exc:
             status = exc.code
             response_headers = dict(exc.headers.items()) if exc.headers else {}
-            text = exc.read(ERROR_BODY_LIMIT).decode("utf-8", errors="replace")
+            try:
+                text = _read_response_text(
+                    exc,
+                    context=f"reading HTTP {status} error response",
+                    limit=ERROR_BODY_LIMIT,
+                    decode_errors="replace",
+                )
+            finally:
+                exc.close()
         except urllib.error.URLError as exc:
             raise ReportError(
                 f"Direct Reports network error: {exc.reason}",
