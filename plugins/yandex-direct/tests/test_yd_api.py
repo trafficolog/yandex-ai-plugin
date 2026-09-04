@@ -8,17 +8,6 @@ from scripts._approval import preview_id
 from scripts.yd_api import YandexDirectClient
 
 
-class FakeResponse:
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        return False
-
-    def read(self):
-        return b'{"result":{"UpdateResults":[]}}'
-
-
 class TestYandexDirectClient(unittest.TestCase):
     def test_uses_v501_endpoint(self):
         client = YandexDirectClient("token")
@@ -44,14 +33,14 @@ class TestYandexDirectClient(unittest.TestCase):
 
     def test_write_execute_requires_approval_before_transport(self):
         client = YandexDirectClient("token", client_login="client")
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 client.request("campaigns", "update", {"Campaigns": [{"Id": 123}]})
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_wrong_approval_does_not_call_transport(self):
         client = YandexDirectClient("token", client_login="client")
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 client.request(
                     "campaigns",
@@ -59,36 +48,37 @@ class TestYandexDirectClient(unittest.TestCase):
                     {"Campaigns": [{"Id": 123}]},
                     approve="0" * 64,
                 )
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_exact_approval_calls_transport_once(self):
         client = YandexDirectClient("token", client_login="client")
         params = {"Campaigns": [{"Id": 123}]}
         approve = preview_id(client.approval_envelope("campaigns", "update", params))
-        with patch("scripts.yd_api.urllib.request.urlopen", return_value=FakeResponse()) as opener:
+        api_payload = {"result": {"UpdateResults": []}}
+        with patch("scripts.yd_api._http.request_json", return_value=(api_payload, {})) as request_json:
             result = client.request("campaigns", "update", params, approve=approve)
-        opener.assert_called_once()
-        self.assertIn("result", result)
+        request_json.assert_called_once()
+        self.assertEqual(result["result"], api_payload)
 
     def test_client_login_change_invalidates_approval(self):
         params = {"Campaigns": [{"Id": 123}]}
         source = YandexDirectClient("token", client_login="client-a")
         approve = preview_id(source.approval_envelope("campaigns", "update", params))
         target = YandexDirectClient("token", client_login="client-b")
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 target.request("campaigns", "update", params, approve=approve)
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_token_change_invalidates_approval_without_client_login(self):
         params = {"Campaigns": [{"Id": 123}]}
         source = YandexDirectClient("token-account-a")
         approve = preview_id(source.approval_envelope("campaigns", "update", params))
         target = YandexDirectClient("token-account-b")
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 target.request("campaigns", "update", params, approve=approve)
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_auth_principal_binding_is_stable_but_token_sensitive(self):
         params = {"Campaigns": [{"Id": 123}]}
@@ -104,26 +94,26 @@ class TestYandexDirectClient(unittest.TestCase):
         client = YandexDirectClient("token", client_login="client")
         params = {"Campaigns": [{"Id": 123}]}
         approve = preview_id(client.approval_envelope("campaigns", "update", params))
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 client.request("adgroups", "update", params, approve=approve)
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_body_change_invalidates_approval(self):
         client = YandexDirectClient("token", client_login="client")
         approved_params = {"Campaigns": [{"Id": 123}]}
         changed_params = {"Campaigns": [{"Id": 124}]}
         approve = preview_id(client.approval_envelope("campaigns", "update", approved_params))
-        with patch("scripts.yd_api.urllib.request.urlopen") as opener:
+        with patch("scripts.yd_api._http.request_json") as request_json:
             with self.assertRaises(ValueError):
                 client.request("campaigns", "update", changed_params, approve=approve)
-        opener.assert_not_called()
+        request_json.assert_not_called()
 
     def test_known_read_method_executes_without_approval(self):
         client = YandexDirectClient("token")
-        with patch("scripts.yd_api.urllib.request.urlopen", return_value=FakeResponse()) as opener:
+        with patch("scripts.yd_api._http.request_json", return_value=({"result": {}}, {})) as request_json:
             client.request("campaigns", "get", {})
-        opener.assert_called_once()
+        request_json.assert_called_once()
 
     def _run_cli_and_capture_dry_run(self, method: str) -> bool:
         captured = {}
