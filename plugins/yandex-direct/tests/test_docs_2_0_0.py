@@ -22,7 +22,7 @@ class Direct200DocumentationTests(unittest.TestCase):
         for name in ["CHANGELOG.md", "CHANGELOG.en.md"]:
             text = (PLUGIN / name).read_text(encoding="utf-8")
             with self.subTest(name=name):
-                self.assertIn("## 2.0.0", text)
+                self.assertIn("## [2.0.0]", text)
                 self.assertIn("YANDEX_DIRECT_TOKEN", text)
                 self.assertIn("sandbox", text.lower())
                 self.assertIn("RequestId", text)
