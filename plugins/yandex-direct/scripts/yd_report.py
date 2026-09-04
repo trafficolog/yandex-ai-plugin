@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from http.client import IncompleteRead
 import json
 import os
 import sys
@@ -144,7 +145,7 @@ def _read_response_text(
 ) -> str:
     try:
         raw = response.read() if limit is None else response.read(limit)
-    except (TimeoutError, OSError) as exc:
+    except (TimeoutError, OSError, IncompleteRead) as exc:
         raise ReportError(
             f"Direct Reports network error while {context}",
             error_type="network",
