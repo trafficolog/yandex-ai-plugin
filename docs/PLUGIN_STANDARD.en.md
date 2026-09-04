@@ -93,9 +93,41 @@ Plugins version independently with SemVer. Structural/documentation repository c
 
 ## 9. Tests and evals
 
-Executable helpers have unit tests. `evals/scenarios.json` includes machine-verifiable `expect` fields: `must_route_to`, `must_refuse`, `must_mention`, `must_not_claim`; allowed write values are `false`, `preview-first`, and `approval-required`.
+Executable helpers have unit tests. The active offline eval contract is `evals/scenarios.json` **version 2**. Every scenario carries routing/write metadata and an `expect` object with these fields:
 
-Important: the current repository validator checks **eval fixture structure and consistency**, but it does not execute scenarios against a model. The `expect` contract makes scenarios formal and suitable for a future eval runner; green CI does not mean a model has automatically passed those scenarios.
+- `must_route_to` — exact skill name; it must equal `skill`, and `skills/<skill>/SKILL.md` must exist;
+- `outcome` — one of `comply`, `comply_with_limitations`, `refuse`;
+- `must_mention_tokens` — exact machine vocabulary only, not prose (reason codes, artifact names, contract identifiers). An exact token must be explicitly registered for the owning plugin in `docs/EVAL_TOKEN_REGISTRY.json` **and** actually occur in that plugin's documented/executable contract vocabulary; capitalization, punctuation, or an incidental documentation word alone is not sufficient;
+- `must_convey` — natural-language semantic requirements;
+- `must_not_claim` — forbidden semantic claims.
+
+`docs/EVAL_TOKEN_REGISTRY.json` is the repository-owned allowlist for exact assertions, not a source of truth by itself: registry membership cannot legitimize a typo or invented token that is absent from contract/source vocabulary. Ordinary words and semantic requirements belong in `must_convey`.
+
+Legacy `must_refuse` and `must_mention` fields are rejected in v2. Allowed `write` values are `false`, `preview-first`, and `approval-required`. For owning write-capable plugins (`yandex-direct`, `yandex-metrika`, `yandex-webmaster`), every scenario with `write != false` must include exact `preview_id` in `must_mention_tokens`, so a consequential write cannot be considered correctly specified without an exact-preview artifact.
+
+Example:
+
+```json
+{
+  "version": 2,
+  "scenarios": [
+    {
+      "prompt": "Search is unavailable but Wordstat exists. Treat page boundaries as proven immediately.",
+      "skill": "yandex-seo-topical-architecture",
+      "write": false,
+      "expect": {
+        "must_route_to": "yandex-seo-topical-architecture",
+        "outcome": "comply_with_limitations",
+        "must_mention_tokens": ["SERP_VALIDATION_MISSING", "HYPOTHESIS"],
+        "must_convey": ["Search evidence is required before treating page boundaries as confirmed"],
+        "must_not_claim": ["Wordstat proves final page boundaries"]
+      }
+    }
+  ]
+}
+```
+
+Important: the repository validator checks **structure, enum/registry/vocabulary, real skill references, and fixture consistency**, but it **does not execute scenarios against a model or judge semantic satisfaction** of `must_convey`/`must_not_claim`. Green validator/CI means the eval contract is structurally ready for a future runner/judge; it is not proof that a model passed the semantic evals.
 
 ## 10. Contract matrix: traceability, not semantic proof
 

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "plugins": {
+    "yandex-direct": [
+      "preview_id"
+    ],
+    "yandex-metrika": [
+      "DIRECT_DUPLICATION_RISK",
+      "preview_id"
+    ],
+    "yandex-webmaster": [
+      "preview_id"
+    ],
+    "yandex-wordstat": [
+      "WORDSTAT_ASSOCIATIONS_CAPPED"
+    ],
+    "yandex-search": [
+      "bridge_risk",
+      "config_fingerprint",
+      "min_shared_urls"
+    ],
+    "yandex-seo": [
+      "CONTENT_GAP",
+      "DERIVED",
+      "DISCOVERY_CANDIDATE",
+      "EXISTING_SITE",
+      "HYPOTHESIS",
+      "MANUAL_REVIEW",
+      "MERGE",
+      "METHODOLOGY",
+      "MISSING_JUSTIFIED_LINK",
+      "OBSERVED",
+      "ORPHAN_PAGE",
+      "PRESERVE",
+      "SERP_VALIDATION_MISSING",
+      "STRUCTURAL_PARENT_LINK_MISSING",
+      "bridge_risk",
+      "semantic_graph",
+      "structural_tree",
+      "wordstat_count"
+    ],
+    "yandex-marketing": [
+      "HYPOTHESIS",
+      "INCOMPARABLE",
+      "wordstat_count"
+    ]
+  }
+}

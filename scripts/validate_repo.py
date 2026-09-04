@@ -28,7 +28,12 @@ except ImportError:
     )
 
 FORBIDDEN_RUNTIME_PATHS = ("~/.openclaw/", "~/.claude/", "~/.codex/")
-ALLOWED_EVAL_WRITE = {False, "preview-first", "approval-required"}
+ALLOWED_EVAL_WRITE = {"preview-first", "approval-required"}
+ALLOWED_EVAL_OUTCOMES = {"comply", "comply_with_limitations", "refuse"}
+EVAL_TOKEN_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]*$")
+EVAL_TOKEN_SCAN_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_.:-])([A-Za-z][A-Za-z0-9_.:-]*)(?![A-Za-z0-9_.:-])"
+)
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml"}
 CAPABILITY_HEADER = "| Capability | Read | Write | MCP/App | Bundled API | File fallback |"
 CROSS_SERVICE_PLUGINS = {"yandex-seo", "yandex-marketing"}
@@ -107,15 +112,108 @@ def _validate_skill(skill_path: Path, errors: list[str]) -> None:
         errors.append(f"skill description must start with 'Use when': {skill_path}")
 
 
+def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
+    """Collect plugin vocabulary without allowing evals/tests to self-validate exact tokens."""
+    tokens: set[str] = set()
+    eval_path = plugin_path / "evals/scenarios.json"
+    for candidate in plugin_path.rglob("*"):
+        if not candidate.is_file() or candidate == eval_path:
+            continue
+        relative = candidate.relative_to(plugin_path)
+        if relative.parts and relative.parts[0] in {"evals", "tests"}:
+            continue
+        if candidate.name != ".env.example" and candidate.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        try:
+            text = candidate.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        tokens.update(EVAL_TOKEN_SCAN_PATTERN.findall(text))
+    return tokens
+
+
+def _eval_token_registry(plugin_path: Path, errors: list[str]) -> set[str]:
+    """Load the explicit per-plugin allowlist for exact eval tokens."""
+    registry_path = plugin_path.parent.parent / "docs/EVAL_TOKEN_REGISTRY.json"
+    data = _load_json(registry_path, errors)
+    if not isinstance(data, dict):
+        return set()
+    if data.get("version") != 1:
+        errors.append(f"eval exact-token registry must use version 1: {registry_path}")
+    plugins = data.get("plugins")
+    if not isinstance(plugins, dict):
+        errors.append(f"eval exact-token registry missing plugins object: {registry_path}")
+        return set()
+    values = plugins.get(plugin_path.name)
+    if not isinstance(values, list):
+        errors.append(
+            f"eval exact-token registry missing list for plugin {plugin_path.name}: {registry_path}"
+        )
+        return set()
+
+    valid: list[str] = []
+    for token in values:
+        if not isinstance(token, str) or not token.strip() or EVAL_TOKEN_PATTERN.fullmatch(token) is None:
+            errors.append(
+                f"eval exact-token registry contains invalid token for {plugin_path.name}: {token!r}"
+            )
+            continue
+        valid.append(token)
+    if len(valid) != len(set(valid)):
+        errors.append(f"eval exact-token registry contains duplicate tokens for {plugin_path.name}")
+    return set(valid)
+
+
+def _valid_string_list(value: Any) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(item, str) and bool(item.strip()) for item in value
+    )
+
+
+def _valid_eval_write(value: Any) -> bool:
+    return value is False or (isinstance(value, str) and value in ALLOWED_EVAL_WRITE)
+
+
 def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
     path = plugin_path / "evals/scenarios.json"
     data = _load_json(path, errors)
     if not isinstance(data, dict):
         return
     scenarios = data.get("scenarios")
-    if data.get("version") != 1 or not isinstance(scenarios, list) or not scenarios:
+    if data.get("version") != 2:
+        errors.append(f"eval schema must use version 2: {path}")
+    if not isinstance(scenarios, list) or not scenarios:
         errors.append(f"invalid evals/scenarios.json structure: {path}")
         return
+
+    vocabulary = _eval_plugin_vocabulary(plugin_path)
+    all_mentioned_tokens: set[str] = set()
+    for scenario in scenarios:
+        if not isinstance(scenario, dict):
+            continue
+        expect = scenario.get("expect")
+        if not isinstance(expect, dict):
+            continue
+        mentioned_tokens = expect.get("must_mention_tokens")
+        if not isinstance(mentioned_tokens, list):
+            continue
+        all_mentioned_tokens.update(
+            token
+            for token in mentioned_tokens
+            if isinstance(token, str) and token.strip()
+        )
+    registered_tokens = _eval_token_registry(plugin_path, errors) if all_mentioned_tokens else set()
+    for token in sorted(registered_tokens):
+        if token not in vocabulary:
+            errors.append(
+                f"registered exact token '{token}' is absent from plugin contract vocabulary: {plugin_path}"
+            )
+
+    discoverable_skills = {
+        skill_file.parent.name
+        for skill_file in (plugin_path / "skills").glob("*/SKILL.md")
+        if skill_file.is_file()
+    }
     for index, scenario in enumerate(scenarios):
         if not isinstance(scenario, dict):
             errors.append(f"invalid eval scenario #{index}: {path}")
@@ -126,7 +224,13 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
             errors.append(f"eval scenario #{index} missing prompt: {path}")
         if not isinstance(skill, str) or not skill.strip():
             errors.append(f"eval scenario #{index} missing skill: {path}")
-        if scenario.get("write") not in ALLOWED_EVAL_WRITE:
+        elif skill not in discoverable_skills:
+            errors.append(
+                f"eval scenario #{index} skill '{skill}' is not a discoverable immediate-child skill name with SKILL.md: {path}"
+            )
+
+        write_mode = scenario.get("write")
+        if not _valid_eval_write(write_mode):
             errors.append(f"eval scenario #{index} has invalid write mode: {path}")
 
         expect = scenario.get("expect")
@@ -138,12 +242,45 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
             errors.append(f"eval scenario #{index} expect.must_route_to is required: {path}")
         elif isinstance(skill, str) and route != skill:
             errors.append(f"eval scenario #{index} expect.must_route_to must match skill: {path}")
-        if not isinstance(expect.get("must_refuse"), bool):
-            errors.append(f"eval scenario #{index} expect.must_refuse must be boolean: {path}")
-        for field in ("must_mention", "must_not_claim"):
+
+        outcome = expect.get("outcome")
+        if not isinstance(outcome, str) or outcome not in ALLOWED_EVAL_OUTCOMES:
+            errors.append(
+                f"eval scenario #{index} expect.outcome must be one of {sorted(ALLOWED_EVAL_OUTCOMES)}: {path}"
+            )
+
+        for legacy_field in ("must_refuse", "must_mention"):
+            if legacy_field in expect:
+                errors.append(
+                    f"eval scenario #{index} expect.{legacy_field} is a legacy v1 field; migrate to eval v2: {path}"
+                )
+
+        for field in ("must_mention_tokens", "must_convey", "must_not_claim"):
             values = expect.get(field)
-            if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
-                errors.append(f"eval scenario #{index} expect.{field} must be a string list: {path}")
+            if not _valid_string_list(values):
+                errors.append(
+                    f"eval scenario #{index} expect.{field} must be a list of nonempty strings: {path}"
+                )
+
+        mentioned_tokens = expect.get("must_mention_tokens")
+        if isinstance(mentioned_tokens, list):
+            for token in mentioned_tokens:
+                if not isinstance(token, str) or not token.strip():
+                    continue
+                if EVAL_TOKEN_PATTERN.fullmatch(token) is None:
+                    errors.append(
+                        f"eval scenario #{index} expect.must_mention_tokens contains non-token prose '{token}': {path}"
+                    )
+                    continue
+                if token not in registered_tokens:
+                    errors.append(
+                        f"eval scenario #{index} exact token '{token}' is absent from plugin exact-token registry: {path}"
+                    )
+                    continue
+                if token not in vocabulary:
+                    errors.append(
+                        f"eval scenario #{index} exact token '{token}' is absent from plugin contract vocabulary: {path}"
+                    )
 
 
 def _iter_plugin_text_files(plugin_path: Path):
