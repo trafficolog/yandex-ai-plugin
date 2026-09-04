@@ -18,6 +18,15 @@ ERROR_BODY_LIMIT = 4096
 ATTRIBUTION_MODELS = {"FCCD", "LC", "LSCCD", "AUTO"}
 LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
 
+
+class ReportError(RuntimeError):
+    """Expected Direct Reports operational failure safe for the CLI boundary."""
+
+    def __init__(self, message: str, *, error_type: str) -> None:
+        super().__init__(message)
+        self.error_type = error_type
+
+
 PRESETS: dict[str, tuple[str, list[str]]] = {
     "campaign": (
         "CAMPAIGN_PERFORMANCE_REPORT",
@@ -165,26 +174,32 @@ def fetch_report(
             response_headers = dict(exc.headers.items()) if exc.headers else {}
             text = exc.read(ERROR_BODY_LIMIT).decode("utf-8", errors="replace")
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"Direct Reports network error: {exc.reason}") from exc
+            raise ReportError(
+                f"Direct Reports network error: {exc.reason}",
+                error_type="network",
+            ) from exc
 
         if status == 200:
             return text
         if status in {201, 202}:
             if attempt == max_attempts:
-                raise RuntimeError(f"Report still not ready after {max_attempts} attempts")
+                raise ReportError(
+                    f"Report still not ready after {max_attempts} attempts",
+                    error_type="api",
+                )
             sleep(parse_retry_in(response_headers))
             continue
         if status == 400:
-            raise RuntimeError(f"Bad report request: {text}")
+            raise ReportError(f"Bad report request: {text}", error_type="api")
         if status == 500 and not retried_server_error and attempt < max_attempts:
             retried_server_error = True
             sleep(parse_retry_in(response_headers))
             continue
         if status == 500:
-            raise RuntimeError(f"Yandex report server error: {text}")
-        raise RuntimeError(f"Unexpected HTTP {status}: {text}")
+            raise ReportError(f"Yandex report server error: {text}", error_type="http")
+        raise ReportError(f"Unexpected HTTP {status}: {text}", error_type="http")
 
-    raise RuntimeError("Unreachable")
+    raise ReportError("Unreachable", error_type="api")
 
 
 def _parse_csv_values(raw: str | None) -> list[str] | None:
@@ -242,7 +257,11 @@ def main(argv: list[str] | None = None) -> int:
         goals=goals,
         attribution_models=attribution_models,
     )
-    text = fetch_report(token, body, client_login=args.client_login)
+    try:
+        text = fetch_report(token, body, client_login=args.client_login)
+    except ReportError as exc:
+        return emit_cli_error(exc.error_type, str(exc))
+
     if args.output:
         output_path = Path(args.output)
         output_path.write_text(text, encoding="utf-8", newline="")
