@@ -2,7 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `2.0.0`. Service plugin для Яндекс Директа: кампании, Reports API, аудит, ключевые слова/минус-фразы, бюджеты, оптимизация и low-level API v501 workflows.
+Версия `2.0.0`. Service plugin для Яндекс Директа: кампании, Reports API, аудит, ключевые слова/минус-фразы, бюджеты, оптимизация и low-level API workflows.
 
 ## Модель выполнения
 
@@ -17,12 +17,29 @@
 python scripts/yd_api.py campaigns update --params-file update.json --execute
 
 # 2.0.0 — сначала preview
+export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns update --params-file update.json
 # затем, только после approval exact preview в следующем пользовательском turn
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
 ```
 
-`preview_id` привязан к service, method, `Client-Login`, environment и body. Изменение payload требует нового preview/approval.
+`preview_id` привязан к service, method, `Client-Login`, OAuth auth principal, environment и body. Изменение token, payload или environment требует нового preview/approval. OAuth token передаётся только через `YANDEX_DIRECT_TOKEN`; argv-параметра `--token` в 2.0.0 нет.
+
+## Production и sandbox
+
+По умолчанию helper использует production endpoint `https://api.direct.yandex.com/json/v501/{service}`. Для официального sandbox используйте отдельный флаг:
+
+```bash
+python scripts/yd_api.py campaigns get --params '{}' --sandbox
+```
+
+Sandbox использует `https://api-sandbox.direct.yandex.com/json/v5/{service}`. Production и sandbox являются разными approval-bound environments: preview из production не авторизует sandbox write и наоборот.
+
+## Transport metadata и ошибки
+
+Live-вызов возвращает исходный JSON Yandex Direct под `result`, а безопасные transport headers — отдельно под `transport`. Поддерживаются `RequestId` → `request_id`, `Units` → `units`, `Units-Used-Login` → `units_used_login`; остальные headers по умолчанию не копируются.
+
+Ожидаемые CLI-ошибки (`validation`, `input`, `network`, `http`, `api`) выводятся как JSON в stderr с exit code `2`, без обычного traceback. HTTP error body ограничен 4096 bytes и декодируется с replacement semantics.
 
 ## Capability matrix
 
@@ -42,7 +59,8 @@ python scripts/yd_api.py campaigns update --params-file update.json --execute --
 
 ## Ключевые correctness rules
 
-- v501 и ЕПК-first mental model для новых performance workflows;
+- production API использует v501, sandbox — отдельно документированный `/json/v5/` contract;
+- service name проходит строгий allowlist до URL construction;
 - queued Reports 201/202 повторяют тот же payload/report name и учитывают `retryIn`;
 - report artifacts сохраняют goal/attribution/VAT provenance и не выдумывают currency;
 - autotargeting и keyword criteria различаются;
@@ -58,6 +76,7 @@ export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns get --params '{"SelectionCriteria":{},"FieldNames":["Id","Name","Status"]}'
 python scripts/yd_api.py campaigns update --params-file update.json # preview
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
+python scripts/yd_api.py campaigns get --params '{}' --sandbox
 python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
 ```
 
@@ -65,7 +84,7 @@ python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
 
 ```bash
 python -m unittest discover -s tests -v
-python -m py_compile scripts/yd_api.py scripts/yd_report.py
+python -m compileall -q scripts
 ```
 
-Источники и upstream attribution: `THIRD_PARTY_NOTICES.md`, `references/sources.md`.
+Источники и upstream attribution: `THIRD_PARTY_NOTICES.md`, `references/sources.md`, `references/api-2026.md`.

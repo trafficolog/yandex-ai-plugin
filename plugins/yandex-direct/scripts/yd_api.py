@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Small dependency-free Yandex Direct API v501 client.
-
-Only explicitly known read operations execute without --execute. Every other
-method is treated as consequential by default and is previewed first.
-"""
+"""Small dependency-free Yandex Direct API client."""
 from __future__ import annotations
 
 import argparse
@@ -12,17 +8,50 @@ import hmac
 import json
 import os
 import sys
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 try:
+    from . import _http
     from ._approval import preview_id, require_approval
 except ImportError:  # CLI execution from scripts directory
+    import _http
     from _approval import preview_id, require_approval
 
-API_BASE = "https://api.direct.yandex.com/json/v501"
+PRODUCTION_API_BASE = "https://api.direct.yandex.com/json/v501"
+SANDBOX_API_BASE = "https://api-sandbox.direct.yandex.com/json/v5"
+API_BASE = PRODUCTION_API_BASE
+SUPPORTED_ENVIRONMENTS = {"production", "sandbox"}
+SUPPORTED_SERVICES = {
+    "adextensions",
+    "adgroups",
+    "adimages",
+    "ads",
+    "advideos",
+    "agencyclients",
+    "audiencetargets",
+    "bids",
+    "businesses",
+    "bidmodifiers",
+    "campaigns",
+    "changes",
+    "clients",
+    "creatives",
+    "dictionaries",
+    "dynamictextadtargets",
+    "feeds",
+    "keywordbids",
+    "keywords",
+    "keywordsresearch",
+    "leads",
+    "negativekeywordsharedsets",
+    "retargetinglists",
+    "sitelinks",
+    "smartadtargets",
+    "strategies",
+    "turbopages",
+    "vcards",
+}
 READ_METHODS = {
     "check",
     "checkcampaigns",
@@ -30,11 +59,14 @@ READ_METHODS = {
     "get",
     "getchanges",
 }
+LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
 AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v1"
 
 
 class YandexDirectError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, error_type: str = "api"):
+        super().__init__(message)
+        self.error_type = error_type
 
 
 def is_read_method(method: str) -> bool:
@@ -42,12 +74,35 @@ def is_read_method(method: str) -> bool:
 
 
 def auth_principal_binding(token: str) -> str:
-    """Return a stable token-sensitive pseudonymous principal binding."""
     return hmac.new(
         token.encode("utf-8"),
         AUTH_PRINCIPAL_DOMAIN,
         hashlib.sha256,
     ).hexdigest()
+
+
+def emit_cli_error(error_type: str, message: str) -> int:
+    json.dump({"error": {"type": error_type, "message": message}}, sys.stderr, ensure_ascii=False)
+    sys.stderr.write("\n")
+    return 2
+
+
+def validate_service(service: str) -> str:
+    if service != service.strip() or service != service.lower():
+        raise ValueError("service must be an exact lowercase Yandex Direct service name")
+    if service not in SUPPORTED_SERVICES:
+        raise ValueError(f"unsupported Yandex Direct service: {service!r}")
+    return service
+
+
+def validate_environment(environment: str) -> str:
+    if environment not in SUPPORTED_ENVIRONMENTS:
+        raise ValueError(f"unsupported Yandex Direct environment: {environment!r}")
+    return environment
+
+
+def contains_legacy_token_option(argv: list[str]) -> bool:
+    return any(arg.partition("=")[0] in LEGACY_TOKEN_OPTIONS for arg in argv)
 
 
 @dataclass
@@ -56,12 +111,16 @@ class YandexDirectClient:
     client_login: str | None = None
     language: str = "ru"
     timeout: int = 60
+    opener: Callable[..., Any] = _http.urlopen
+    environment: str = "production"
+
+    def __post_init__(self) -> None:
+        validate_environment(self.environment)
 
     def endpoint(self, service: str) -> str:
-        service = service.strip().lower()
-        if not service or "/" in service:
-            raise ValueError("service must be a single Yandex Direct service name")
-        return f"{API_BASE}/{service}"
+        service = validate_service(service)
+        base = PRODUCTION_API_BASE if self.environment == "production" else SANDBOX_API_BASE
+        return f"{base}/{service}"
 
     def headers(self) -> dict[str, str]:
         headers = {
@@ -83,7 +142,7 @@ class YandexDirectClient:
         method: str,
         params: Mapping[str, Any] | None,
     ) -> dict[str, Any]:
-        normalized_service = service.strip().lower()
+        normalized_service = validate_service(service)
         normalized_method = method.strip().lower()
         return {
             "schema": "yandex-ai-approval/v1",
@@ -91,7 +150,7 @@ class YandexDirectClient:
             "operation": f"{normalized_service}.{normalized_method}",
             "method": "POST",
             "target": {
-                "environment": "production",
+                "environment": self.environment,
                 "client_login": self.client_login,
                 "auth_principal_hmac_sha256": auth_principal_binding(self.token),
             },
@@ -117,6 +176,7 @@ class YandexDirectClient:
             return {
                 "dry_run": True,
                 "preview_id": preview_id(envelope),
+                "environment": self.environment,
                 "endpoint": self.endpoint(service),
                 "headers": safe_headers,
                 "body": body,
@@ -125,26 +185,23 @@ class YandexDirectClient:
         if not is_read_method(method):
             require_approval(envelope, approve)
 
-        payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        req = urllib.request.Request(
-            self.endpoint(service), data=payload, headers=self.headers(), method="POST"
-        )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as response:
-                raw = response.read().decode("utf-8")
-                data = json.loads(raw) if raw else {}
-        except urllib.error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", errors="replace")
-            raise YandexDirectError(f"HTTP {exc.code}: {raw}") from exc
-        except urllib.error.URLError as exc:
-            raise YandexDirectError(f"Network error: {exc.reason}") from exc
+            data, transport = _http.request_json(
+                self.endpoint(service),
+                self.headers(),
+                body,
+                timeout=self.timeout,
+                opener=self.opener,
+            )
+        except _http.DirectHTTPError as exc:
+            raise YandexDirectError(str(exc), error_type=exc.error_type) from exc
 
-        if isinstance(data, dict) and data.get("error"):
+        if data.get("error"):
             err = data["error"]
-            request_id = data.get("request_id") or data.get("RequestId")
+            request_id = transport.get("request_id") or data.get("request_id") or data.get("RequestId")
             suffix = f" request_id={request_id}" if request_id else ""
-            raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}")
-        return data
+            raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}", error_type="api")
+        return {"result": data, "transport": transport}
 
 
 def _load_params(args: argparse.Namespace) -> dict[str, Any]:
@@ -159,35 +216,59 @@ def _load_params(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Yandex Direct API v501 helper")
-    parser.add_argument("service", help="campaigns, adgroups, keywords, ads, ...")
+    raw_argv = list(sys.argv[1:] if argv is None else argv)
+    if contains_legacy_token_option(raw_argv):
+        return emit_cli_error(
+            "validation",
+            "--token is no longer supported; set YANDEX_DIRECT_TOKEN in the environment",
+        )
+
+    parser = argparse.ArgumentParser(description="Yandex Direct API helper")
+    parser.add_argument("service", help="Exact supported service name, e.g. campaigns")
     parser.add_argument("method", help="get, add, update, set, ...")
     parser.add_argument("--params", help="JSON object with method params")
     parser.add_argument("--params-file", help="Path to JSON params file")
-    parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
+    parser.add_argument("--sandbox", action="store_true", help="Use the official Yandex Direct sandbox endpoint")
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_argv)
 
-    if not args.token:
-        parser.error("Provide --token or YANDEX_DIRECT_TOKEN")
-    if args.params and args.params_file:
-        parser.error("Use only one of --params or --params-file")
+    token = os.getenv("YANDEX_DIRECT_TOKEN")
+    if not token:
+        return emit_cli_error("validation", "YANDEX_DIRECT_TOKEN environment variable is required")
 
-    params = _load_params(args)
-    is_write = not is_read_method(args.method)
-    dry_run = args.dry_run or (is_write and not args.execute)
+    try:
+        if args.params and args.params_file:
+            raise ValueError("Use only one of --params or --params-file")
+        validate_service(args.service)
+        params = _load_params(args)
+        is_write = not is_read_method(args.method)
+        dry_run = args.dry_run or (is_write and not args.execute)
+        environment = "sandbox" if args.sandbox else "production"
 
-    client = YandexDirectClient(args.token, client_login=args.client_login)
-    result = client.request(
-        args.service,
-        args.method,
-        params,
-        dry_run=dry_run,
-        approve=args.approve,
-    )
+        client = YandexDirectClient(
+            token,
+            client_login=args.client_login,
+            environment=environment,
+        )
+        result = client.request(
+            args.service,
+            args.method,
+            params,
+            dry_run=dry_run,
+            approve=args.approve,
+        )
+    except json.JSONDecodeError as exc:
+        return emit_cli_error("input", str(exc))
+    except OSError as exc:
+        return emit_cli_error("input", str(exc))
+    except YandexDirectError as exc:
+        return emit_cli_error(exc.error_type, str(exc))
+    except ValueError as exc:
+        return emit_cli_error("validation", str(exc))
+
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
     if is_write and dry_run:

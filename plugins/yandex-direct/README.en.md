@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `2.0.0`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API v501 workflows.
+Version `2.0.0`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API workflows.
 
 ## Execution model
 
@@ -17,12 +17,29 @@ Preference: compatible connected MCP/app → bundled Python helper → export/fi
 python scripts/yd_api.py campaigns update --params-file update.json --execute
 
 # 2.0.0 — preview first
+export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns update --params-file update.json
 # then, only after the exact preview is approved in a later user turn
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
 ```
 
-The `preview_id` binds service, method, `Client-Login`, environment and body. A payload change requires a fresh preview/approval.
+The `preview_id` binds service, method, `Client-Login`, OAuth auth principal, environment, and body. Changing the token, payload, or environment requires a fresh preview/approval. OAuth is supplied only through `YANDEX_DIRECT_TOKEN`; the 2.0.0 CLI has no `--token` argument.
+
+## Production and sandbox
+
+The helper uses production `https://api.direct.yandex.com/json/v501/{service}` by default. Use the explicit flag for the official sandbox:
+
+```bash
+python scripts/yd_api.py campaigns get --params '{}' --sandbox
+```
+
+Sandbox uses `https://api-sandbox.direct.yandex.com/json/v5/{service}`. Production and sandbox are distinct approval-bound environments: a production preview cannot authorize a sandbox write and vice versa.
+
+## Transport metadata and errors
+
+A live call keeps the exact Yandex Direct JSON payload under `result` and exposes selected safe transport headers separately under `transport`: `RequestId` → `request_id`, `Units` → `units`, and `Units-Used-Login` → `units_used_login`. Other response headers are not copied by default.
+
+Expected CLI failures (`validation`, `input`, `network`, `http`, `api`) are emitted as JSON to stderr with exit code `2`, without a normal traceback. HTTP error bodies are capped at 4096 bytes and decoded with replacement semantics.
 
 ## Capability matrix
 
@@ -42,7 +59,8 @@ The `preview_id` binds service, method, `Client-Login`, environment and body. A 
 
 ## Key correctness rules
 
-- v501 and an EPK-first model for new performance workflows;
+- production API uses v501; sandbox uses the separately documented `/json/v5/` contract;
+- service names are checked against a strict allowlist before URL construction;
 - queued 201/202 Reports repeat the same payload/report name and honor `retryIn`;
 - report artifacts preserve goal/attribution/VAT provenance and do not invent currency;
 - autotargeting and keyword criteria stay distinct;
@@ -58,6 +76,7 @@ export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns get --params '{"SelectionCriteria":{},"FieldNames":["Id","Name","Status"]}'
 python scripts/yd_api.py campaigns update --params-file update.json # preview
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
+python scripts/yd_api.py campaigns get --params '{}' --sandbox
 python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
 ```
 
@@ -65,7 +84,7 @@ python scripts/yd_report.py campaign 2026-08-01 2026-08-31 --output report.tsv
 
 ```bash
 python -m unittest discover -s tests -v
-python -m py_compile scripts/yd_api.py scripts/yd_report.py
+python -m compileall -q scripts
 ```
 
-Sources and upstream attribution: `THIRD_PARTY_NOTICES.md`, `references/sources.md`.
+Sources and upstream attribution: `THIRD_PARTY_NOTICES.md`, `references/sources.md`, `references/api-2026.md`.

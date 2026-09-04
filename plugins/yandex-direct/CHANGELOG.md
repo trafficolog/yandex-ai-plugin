@@ -7,6 +7,12 @@
 - Breaking safety contract: consequential Direct writes теперь требуют exact `preview_id`; одного `--execute` недостаточно.
 - Новый flow: preview → approval exact preview в следующем пользовательском turn → `--execute --approve <preview_id>`.
 - Approval связывает service, method, `Client-Login`, environment, body и pseudonymous HMAC-SHA256 auth-principal binding; смена OAuth token или payload инвалидирует permission без раскрытия token.
+- OAuth credential удалён из argv: helper принимает token только из `YANDEX_DIRECT_TOKEN`.
+- Добавлен explicit `--sandbox` с официальным `https://api-sandbox.direct.yandex.com/json/v5/{service}`; production и sandbox имеют разные approval digests.
+- Direct API transport вынесен в service-local `_http.py`: HTTP error body ограничен 4096 bytes, invalid UTF-8 декодируется безопасно, opener/timeout injectable для тестов, consequential POST не получает automatic retry.
+- Live response сохраняет исходный API payload отдельно от safe metadata `RequestId`, `Units`, `Units-Used-Login`.
+- CLI operational failures возвращают structured stderr JSON (`validation`, `input`, `network`, `http`, `api`) и exit code `2` без обычного traceback.
+- Service URL строится только после strict allowlist validation текущих official v5 endpoints.
 - API/account/file content трактуется как данные, а не инструкции; adjacent service work маршрутизируется в owning plugin.
 
 Migration:
@@ -14,9 +20,13 @@ Migration:
 ```bash
 # 1.x
 python scripts/yd_api.py campaigns update --params-file update.json --execute
+
 # 2.0.0
+export YANDEX_DIRECT_TOKEN='...'
 python scripts/yd_api.py campaigns update --params-file update.json
 python scripts/yd_api.py campaigns update --params-file update.json --execute --approve <preview_id>
+# sandbox — отдельная approval-bound environment
+python scripts/yd_api.py campaigns get --params '{}' --sandbox
 ```
 
 ## [1.0.1] — 2026-09-02
