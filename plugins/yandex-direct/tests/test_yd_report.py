@@ -113,13 +113,16 @@ class TestReportHelpers(unittest.TestCase):
 
     def test_cli_rejects_token_argument(self):
         env = {**os.environ, "YANDEX_DIRECT_TOKEN": "env-token"}
+        stderr = io.StringIO()
         with patch.dict(os.environ, env, clear=True):
-            with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n"):
-                with self.assertRaises(SystemExit):
-                    yd_report.main([
+            with patch("sys.stderr", stderr):
+                with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n"):
+                    rc = yd_report.main([
                         "campaign", "2026-08-01", "2026-08-31",
                         "--token", "argv-secret",
                     ])
+        self.assertEqual(rc, 2)
+        self.assertNotIn("argv-secret", stderr.getvalue())
 
     def test_missing_env_token_does_not_advertise_argv_secret_input(self):
         env = {key: value for key, value in os.environ.items() if key != "YANDEX_DIRECT_TOKEN"}
