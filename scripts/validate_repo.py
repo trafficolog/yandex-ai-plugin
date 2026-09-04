@@ -112,6 +112,15 @@ def _validate_skill(skill_path: Path, errors: list[str]) -> None:
         errors.append(f"skill description must start with 'Use when': {skill_path}")
 
 
+def _looks_like_contract_identifier(token: str) -> bool:
+    """Distinguish exact machine/contract symbols from ordinary prose words."""
+    if any(separator in token for separator in ("_", ".", ":")):
+        return True
+    if any(char.isalpha() for char in token) and token.isupper():
+        return True
+    return any(char.isupper() for char in token[1:])
+
+
 def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
     """Collect exact plugin contract identifiers without fixture/test self-validation."""
     tokens: set[str] = set()
@@ -128,7 +137,11 @@ def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
             text = candidate.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        tokens.update(EVAL_TOKEN_SCAN_PATTERN.findall(text))
+        tokens.update(
+            token
+            for token in EVAL_TOKEN_SCAN_PATTERN.findall(text)
+            if _looks_like_contract_identifier(token)
+        )
     return tokens
 
 
@@ -216,6 +229,11 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                 if EVAL_TOKEN_PATTERN.fullmatch(token) is None:
                     errors.append(
                         f"eval scenario #{index} expect.must_mention_tokens contains non-token prose '{token}': {path}"
+                    )
+                    continue
+                if not _looks_like_contract_identifier(token):
+                    errors.append(
+                        f"eval scenario #{index} exact token '{token}' is not an identifier-like contract symbol; move semantic wording to expect.must_convey: {path}"
                     )
                     continue
                 if token not in vocabulary:
