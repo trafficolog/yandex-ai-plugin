@@ -54,7 +54,10 @@ def request_json(
             raw = response.read()
             status = getattr(response, "status", response.getcode())
     except HTTPError as exc:
-        raw = exc.read(4096)
+        try:
+            raw = exc.read(4096)
+        finally:
+            exc.close()
         code = None
         message = None
         try:
