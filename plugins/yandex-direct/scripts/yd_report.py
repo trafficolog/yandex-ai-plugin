@@ -192,7 +192,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("date_from")
     parser.add_argument("date_to")
     parser.add_argument("--report-name")
-    parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
     parser.add_argument("--include-vat", choices=["YES", "NO"], default="YES")
     parser.add_argument("--goals", help="Comma-separated Metrika goal IDs (max 10)")
@@ -203,8 +202,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--output", help="Write TSV to file instead of stdout")
     args = parser.parse_args(argv)
-    if not args.token:
-        parser.error("Provide --token or YANDEX_DIRECT_TOKEN")
+    token = os.getenv("YANDEX_DIRECT_TOKEN")
+    if not token:
+        parser.error("Set YANDEX_DIRECT_TOKEN")
 
     goals = _parse_csv_values(args.goals)
     attribution_models = _parse_csv_values(args.attribution_models)
@@ -217,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
         goals=goals,
         attribution_models=attribution_models,
     )
-    text = fetch_report(args.token, body, client_login=args.client_login)
+    text = fetch_report(token, body, client_login=args.client_login)
     if args.output:
         output_path = Path(args.output)
         output_path.write_text(text, encoding="utf-8", newline="")
