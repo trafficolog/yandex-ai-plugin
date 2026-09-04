@@ -2,13 +2,13 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.3-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.4-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace monorepo of independent AI plugins for working with Yandex services from AI agents and coding assistants. A plugin is the installation/version boundary; a skill is the workflow/knowledge boundary; volatile API contracts stay in the owning service plugin.
 
-> **Status:** Phases 1–7 are implemented. The breaking `FABLE 2.0.0` safety generation for Direct/Metrika/Webmaster is already published as immutable releases. The review-5 maintenance increment advances Direct to `2.0.1`: the Reports helper uses env-only OAuth, bounded HTTP errors, and injectable transport while preserving async polling semantics. Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, and Marketing `1.1.0` are unchanged. The repository maintenance release is `1.0.3`.
+> **Status:** Phases 1–7 are implemented. The breaking `FABLE 2.0.0` safety generation for Direct/Metrika/Webmaster is published as immutable releases, and review-5 maintenance advanced Direct to `2.0.1`. Audit-3 maintenance hardens generic validator contracts for transport-free orchestration, skills, version surfaces, bilingual docs, and robustness without changing plugin SemVer. Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, and Marketing `1.1.0` remain unchanged. The repository maintenance release is `1.0.4`.
 
 ## Quick overview
 
@@ -152,7 +152,7 @@ yandex-seo           1.1.2
 yandex-marketing     1.1.0
 ```
 
-Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`, `FABLE 2.0.0`) do not imply synchronized plugin bumps. FABLE service releases `yandex-direct-v2.0.0`, `yandex-metrika-v2.0.0`, and `yandex-webmaster-v2.0.0` are published and immutable; review-5 maintenance publishes `yandex-direct-v2.0.1` and repository `1.0.3` after the exact-main CI gate.
+Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`, `FABLE 2.0.0`) do not imply synchronized plugin bumps. FABLE service releases `yandex-direct-v2.0.0`, `yandex-metrika-v2.0.0`, `yandex-webmaster-v2.0.0`, and review-5 `yandex-direct-v2.0.1` are published and immutable; audit-3 maintenance publishes only repository `1.0.4` after the exact-main CI gate.
 
 ## Documentation
 
