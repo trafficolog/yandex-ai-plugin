@@ -517,6 +517,17 @@ def python_transport_findings(path: Path, text: str) -> list[str]:
                 findings.append("forbidden transport import urllib.request")
             elif _is_forbidden_transport_module(module):
                 findings.append(f"forbidden transport import {module}")
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "__import__"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            module = node.args[0].value
+            if _is_forbidden_transport_module(module):
+                findings.append(f"forbidden dynamic transport import {module}")
     return findings
 
 
