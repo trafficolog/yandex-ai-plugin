@@ -122,7 +122,16 @@ class ValidateRepositoryTests(unittest.TestCase):
         (root / 'CHANGELOG.md').write_text(root_changelog, encoding='utf-8')
         (root / 'CHANGELOG.en.md').write_text(root_changelog, encoding='utf-8')
 
-        for name in ('SERVICE_MATRIX', 'ROADMAP', 'PLUGIN_STANDARD', 'REVIEW_FIRST_RELEASE'):
+        for name in (
+            'SERVICE_MATRIX',
+            'ROADMAP',
+            'PLUGIN_STANDARD',
+            'REVIEW_FIRST_RELEASE',
+            'GETTING_STARTED',
+            'ARCHITECTURE',
+            'GLOSSARY',
+            'RELEASE_POLICY',
+        ):
             (root / 'docs' / f'{name}.md').write_text(
                 f'[Русский]({name}.md) · [English]({name}.en.md)\n', encoding='utf-8'
             )

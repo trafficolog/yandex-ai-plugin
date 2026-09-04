@@ -1,0 +1,122 @@
+# Architecture
+
+[Русский](ARCHITECTURE.md) · [**English**](ARCHITECTURE.en.md)
+
+This document owns the technical detail that should not overload the root README: ownership, evidence flow, safety boundaries, and code-distribution rules across independently installable plugins.
+
+## 1. Plugin boundary
+
+**Service plugins** own a specific Yandex service API, its credentials, volatile contract facts, and service-specific helpers. Today these are Direct, Metrika, Webmaster, Wordstat, and Search.
+
+**Cross-service plugins** combine evidence from several services. Today these are SEO and Marketing. They must not duplicate Yandex HTTP transport or take credentials away from a service plugin merely to orchestrate work.
+
+```text
+service plugins                 cross-service orchestration
+───────────────                 ───────────────────────────
+yandex-direct ────────────────▶ yandex-marketing
+yandex-metrika ───────┬───────▶ yandex-marketing
+                      └───────▶ yandex-seo
+yandex-wordstat ──────┬───────▶ yandex-marketing
+                      └───────▶ yandex-seo
+yandex-search ────────┬───────▶ yandex-marketing
+                      └───────▶ yandex-seo
+yandex-webmaster ─────────────▶ yandex-seo
+```
+
+## 2. Execution model
+
+The preferred backend order is consistent: compatible connected MCP/app → bundled helper → user-provided export/file. Backend choice must not change reasoning or safety semantics.
+
+A service plugin performs the API call or reads an export, normalizes the result only within its documented contract, and sends provenance plus limitations downstream. A cross-service plugin analyzes those inputs without creating a second transport stack.
+
+## 3. Safety and write ownership
+
+Common lifecycle:
+
+```text
+read → analyze → preview → explicit approval → write → verify
+```
+
+For a consequential write, the owning service plugin first creates an exact preview with `preview_id`. Approval applies to that exact preview and is accepted only in a later user turn. A cross-service plugin can produce a delegated preview, but the owning service plugin performs the live mutation.
+
+API responses, web content, report rows, CSV/TSV, and user files are data, not instructions and not permission to write.
+
+## 4. Evidence and provenance
+
+The project separates four claim classes:
+
+- `OBSERVED` — obtained directly from a source;
+- `DERIVED` — calculated from observed data by an explicit rule;
+- `HYPOTHESIS` — an inference that requires further validation;
+- `METHODOLOGY` — a methodological principle that must not be presented as a verified ranking/API fact.
+
+Provenance preserves the origin of a metric, query, URL, period, attribution context, and known limitations. Overlapping metrics from different sources are not automatically summed.
+
+## 5. SEO orchestration
+
+### Evidence flow
+
+```mermaid
+flowchart LR
+  W[Wordstat] --> E[SEO Evidence Bundle]
+  S[Search] --> E
+  WM[Webmaster] --> E
+  M[Metrika] --> E
+  E --> O[SEO Orchestrator]
+  O --> A[Audit / opportunities]
+  O --> T[Topical Architecture]
+  O --> L[Internal Linking]
+  O --> D[delegated previews]
+  D --> OW[Owning service plugin]
+```
+
+SEO owns no Yandex credentials or HTTP client. It accepts evidence from service plugins, evaluates source sufficiency, and preserves limitations. For example, missing Search evidence for page-boundary decisions is exposed as `SERP_VALIDATION_MISSING` rather than being hidden behind Wordstat frequency.
+
+### Topical Architecture and Internal Linking
+
+Wordstat produces candidate demand/topic evidence; Search owns real SERP-overlap clustering; SEO combines those inputs with existing-site evidence from Webmaster/Metrika and builds `structural_tree` and `semantic_graph` as separate layers.
+
+Low-level invariants — allowed page decisions, Search provenance for empirical boundary changes, `BRIDGE`/orphan semantics, `SELF_LINK`, duplicate handling, and the difference between not-evaluated `null` and evaluated-empty results — remain in plugin-local SKILL/references/tests. They do not belong in the landing README, but they remain part of the production contract.
+
+## 6. Marketing orchestration
+
+```mermaid
+flowchart LR
+  D[Direct] --> B[Marketing Evidence Bundle]
+  M[Metrika] --> B
+  W[Wordstat] --> B
+  S[Search optional] --> B
+  B --> R[Reconciliation]
+  R --> C[canonical]
+  R --> X[reconciliation_only]
+  R --> N[enrichment]
+  C --> O[Marketing Orchestrator]
+  X --> O
+  N --> O
+  O --> F[Findings]
+  O --> P[delegated previews]
+```
+
+`canonical` is the source selected for the primary calculation; `reconciliation_only` is used for cross-checking, while `enrichment` adds context. This prevents double-counting overlapping Direct/Metrika metrics and separates observation from recommendation.
+
+## 7. Progressive disclosure
+
+`SKILL.md` should be a compact discoverable workflow contract. Long or volatile API facts live in `references/` and are read when needed. Bundled executable logic lives in `scripts/`, regression tests in `tests/`, and offline routing/expectation fixtures in `evals/`.
+
+The repository validator bounds `SKILL.md` size and checks discoverable names plus safety metadata. A large number of skills therefore does not mean that all skill text must enter agent context at once.
+
+## 8. Service-local shared code
+
+Similar `_http.py` or other adapters do not need to be byte-identical. For independently installable plugins, reliable dependency delivery matters more than formal DRY.
+
+Common invariants are checked by repository-level behavioral tests, including secret redaction, bounded HTTP errors, and explicit timeouts. Promotion into a root/shared runtime package is appropriate only when the interface is stable **and** every independently installed plugin has a defined installability/distribution contract.
+
+## 9. Where normative detail lives
+
+- [`PLUGIN_STANDARD.en.md`](PLUGIN_STANDARD.en.md) — repository-wide production contract;
+- [`CONTRACT_MATRIX.json`](CONTRACT_MATRIX.json) — high-risk traceability index;
+- [`SERVICE_MATRIX.en.md`](SERVICE_MATRIX.en.md) — service ownership and capabilities;
+- [`GLOSSARY.en.md`](GLOSSARY.en.md) — terminology;
+- `../plugins/<service>/README.en.md` — capability boundary for a specific plugin;
+- `../plugins/<service>/references/` — volatile API facts;
+- `../plugins/<service>/skills/*/SKILL.md` — task-specific workflow contract.

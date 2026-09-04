@@ -89,7 +89,9 @@ Consequential writes use `approval`; cross-service writes are delegated previews
 
 ## 8. Versioning
 
-Plugins version independently with SemVer. Structural/documentation repository changes do not automatically change plugin versions. Recommended service tags: `yandex-direct-v1.1.0`, `yandex-metrika-v1.0.0`. Repository milestones may use `opus-*` or `docs-*`.
+Plugins version independently with SemVer. Structural/documentation repository changes do not automatically change plugin versions. Service tags use the form `yandex-<service>-vX.Y.Z`.
+
+Future repository releases use one repository SemVer line defined by [`RELEASE_POLICY.en.md`](RELEASE_POLICY.en.md). Historical `OPUS` / `PHASE` / `DOCS` / `FABLE` labels remain immutable history/codenames and are not a recommendation to create competing version schemes.
 
 ## 9. Tests and evals
 

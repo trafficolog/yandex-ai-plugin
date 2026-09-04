@@ -6,6 +6,8 @@
 
 Цель review — независимо проверить architecture boundaries, API assumptions, safety contracts, evidence semantics и соответствие implementation ↔ spec для семи shipped plugins.
 
+Release responsibilities определены в [`RELEASE_POLICY.md`](RELEASE_POLICY.md): AI audit является advisory input, CI — mechanical evidence, independent review — отдельным semantic/safety gate, а human maintainer принимает решение о merge/release. Ни один из этих сигналов не должен молча подменять другой.
+
 ## 1. Порядок review
 
 1. Repository contracts: `README.md`, `docs/PLUGIN_STANDARD.md`, `docs/SERVICE_MATRIX.md`, `docs/ROADMAP.md`, marketplaces, CI, validator, tests.
@@ -51,7 +53,7 @@ python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
-Затем запустить plugin-local suites из соответствующих README. Green CI подтверждает internal contracts, но не заменяет fresh verification внешних API facts.
+Затем запустить plugin-local suites из соответствующих README. Green CI подтверждает internal contracts, но не заменяет fresh verification внешних API facts. Если independent review недоступен из-за quota/tool limitation, это ограничение фиксируется явно; отсутствие review не считается clean review.
 
 ## 7. Intentional limitations
 

@@ -4,6 +4,28 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.5] — 2026-09-04
+
+Documentation UX/governance release уровня репозитория. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- Root README RU/EN переработаны в human-first landing: назначение marketplace, plugin selection, безопасный quick start, практический workflow, понятные границы проекта и навигация по документации теперь находятся до низкоуровневых implementation details.
+- Добавлены обязательные bilingual `GETTING_STARTED`, `ARCHITECTURE`, `GLOSSARY` и `RELEASE_POLICY`; repository validator проверяет их как key-doc pairs с reciprocal links, heading-level и SemVer parity.
+- Добавлен `CONTRIBUTING.md` как короткий entrypoint к production plugin standard, TDD/CI и release rules.
+- `PLUGIN_STANDARD` и independent review guide теперь явно фиксируют human release gate: green CI необходим, но сам по себе не разрешает merge/release; publisher запускается только после принятого изменения в `main` и успешного exact-SHA CI.
+- Wordstat README RU/EN использует однозначное название «Wordstat API в составе Yandex Search API v2» / “Wordstat API within Yandex Search API v2”, не меняя API behavior или plugin version `1.1.2`.
+- Historical repository/plugin codenames и tags остаются immutable history; текущая repository line использует одну SemVer `1.0.5`.
+
+### Release
+
+- Добавлен repository-only publisher `1.0.5` по существующему hardened exact-main pattern: successful `CI` push exact SHA, stale-main guard, immutable/draft recovery, fail-closed rollback и повторная validator/test verification на release target.
+- Publisher не создаёт plugin tags и проверяет, что manifest matrix остаётся Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.4] — 2026-09-04
 
 FABLE 5.1 audit-3 maintenance release уровня репозитория. Версии production-плагинов не меняются.

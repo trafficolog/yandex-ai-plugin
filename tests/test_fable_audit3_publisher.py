@@ -85,11 +85,7 @@ class FableAudit3PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, text)
 
-    def test_repository_release_state_is_1_0_4_in_bilingual_docs(self):
-        for filename in ("README.md", "README.en.md"):
-            text = (ROOT / filename).read_text(encoding="utf-8")
-            self.assertIn("release-1.0.4", text, filename)
-            self.assertIn("1.0.4", text, filename)
+    def test_repository_release_1_0_4_remains_documented_history(self):
         for filename in ("CHANGELOG.md", "CHANGELOG.en.md"):
             text = (ROOT / filename).read_text(encoding="utf-8")
             self.assertIn("## [1.0.4] — 2026-09-04", text, filename)
