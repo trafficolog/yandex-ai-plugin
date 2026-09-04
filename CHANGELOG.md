@@ -4,6 +4,23 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.4] — 2026-09-04
+
+FABLE 5.1 audit-3 maintenance release уровня репозитория. Версии production-плагинов не меняются.
+
+### Исправлено
+
+- Cross-service transport boundary для SEO/Marketing теперь AST-проверяется по всему Python tree, блокирует transport/dynamic import roots и реальные Yandex endpoint forms, а unreadable/non-UTF8 source обрабатывается fail-closed.
+- Generic `SKILL.md` contract проверяет `name == directory`, marketplace-wide uniqueness, bounded description/size и exact-preview/untrusted-data markers для `approval-required` writes.
+- Версии plugin manifests теперь сверяются с canonical RU/EN README, changelog, root version surfaces и `SERVICE_MATRIX`; исправлен ранее скрытый README drift SEO и Wordstat с `1.1.1` на уже опубликованный `1.1.2` без нового plugin release.
+- Bilingual validation распознаёт `PHASE 7`/`FABLE` release markers и проверяет heading-level structure и SemVer-set parity; устранены найденные реальные drift в root README и `PLUGIN_STANDARD`.
+- Validator больше не загрязняет namespace невалидными marketplace paths, обнаруживает orphan plugin directories, распознаёт `~/.agents/`, `$HOME/`, `${HOME}/` и принимает BOM/CRLF/terminal-delimiter frontmatter.
+- Добавлен repository-only immutable publisher `1.0.4`, gated на successful `CI` push exact SHA ветки `main`; plugin tags не создаются.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.3] — 2026-09-04
 
 FABLE 5.1 review-5 maintenance release после опубликованной immutable `2.0.0` safety generation.
