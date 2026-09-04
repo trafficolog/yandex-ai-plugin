@@ -56,6 +56,18 @@ class CrossServiceTransportValidationTests(unittest.TestCase):
             with self.subTest(source=source.splitlines()[0]):
                 self.assert_transport_rejected(source)
 
+    def test_builtin_dynamic_import_of_transport_module_is_rejected(self):
+        variants = [
+            "client = __import__('urllib.request', fromlist=['urlopen'])\nclient.urlopen('https://example.com')\n",
+            "requests = __import__('requests')\nrequests.get('https://example.com')\n",
+        ]
+        for source in variants:
+            with self.subTest(source=source.splitlines()[0]):
+                self.assert_transport_rejected(source)
+
+    def test_builtin_dynamic_import_of_non_transport_module_is_allowed(self):
+        self.assertEqual(self.validate_script("json = __import__('json')\n"), [])
+
     def test_cross_service_transport_is_scanned_outside_scripts(self):
         self.assert_transport_rejected(
             "from urllib.request import urlopen\n",
