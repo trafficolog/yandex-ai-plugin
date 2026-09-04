@@ -112,17 +112,8 @@ def _validate_skill(skill_path: Path, errors: list[str]) -> None:
         errors.append(f"skill description must start with 'Use when': {skill_path}")
 
 
-def _looks_like_contract_identifier(token: str) -> bool:
-    """Distinguish exact machine/contract symbols from ordinary prose words."""
-    if any(separator in token for separator in ("_", ".", ":")):
-        return True
-    if any(char.isalpha() for char in token) and token.isupper():
-        return True
-    return any(char.isupper() for char in token[1:])
-
-
 def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
-    """Collect exact plugin contract identifiers without fixture/test self-validation."""
+    """Collect plugin vocabulary without allowing evals/tests to self-validate exact tokens."""
     tokens: set[str] = set()
     eval_path = plugin_path / "evals/scenarios.json"
     for candidate in plugin_path.rglob("*"):
@@ -137,12 +128,40 @@ def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
             text = candidate.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        tokens.update(
-            token
-            for token in EVAL_TOKEN_SCAN_PATTERN.findall(text)
-            if _looks_like_contract_identifier(token)
-        )
+        tokens.update(EVAL_TOKEN_SCAN_PATTERN.findall(text))
     return tokens
+
+
+def _eval_token_registry(plugin_path: Path, errors: list[str]) -> set[str]:
+    """Load the explicit per-plugin allowlist for exact eval tokens."""
+    registry_path = plugin_path.parent.parent / "docs/EVAL_TOKEN_REGISTRY.json"
+    data = _load_json(registry_path, errors)
+    if not isinstance(data, dict):
+        return set()
+    if data.get("version") != 1:
+        errors.append(f"eval exact-token registry must use version 1: {registry_path}")
+    plugins = data.get("plugins")
+    if not isinstance(plugins, dict):
+        errors.append(f"eval exact-token registry missing plugins object: {registry_path}")
+        return set()
+    values = plugins.get(plugin_path.name)
+    if not isinstance(values, list):
+        errors.append(
+            f"eval exact-token registry missing list for plugin {plugin_path.name}: {registry_path}"
+        )
+        return set()
+
+    valid: list[str] = []
+    for token in values:
+        if not isinstance(token, str) or not token.strip() or EVAL_TOKEN_PATTERN.fullmatch(token) is None:
+            errors.append(
+                f"eval exact-token registry contains invalid token for {plugin_path.name}: {token!r}"
+            )
+            continue
+        valid.append(token)
+    if len(valid) != len(set(valid)):
+        errors.append(f"eval exact-token registry contains duplicate tokens for {plugin_path.name}")
+    return set(valid)
 
 
 def _valid_string_list(value: Any) -> bool:
@@ -168,6 +187,22 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
         return
 
     vocabulary = _eval_plugin_vocabulary(plugin_path)
+    all_mentioned_tokens = {
+        token
+        for scenario in scenarios
+        if isinstance(scenario, dict)
+        for expect in [scenario.get("expect")]
+        if isinstance(expect, dict)
+        for token in expect.get("must_mention_tokens", [])
+        if isinstance(token, str) and token.strip()
+    }
+    registered_tokens = _eval_token_registry(plugin_path, errors) if all_mentioned_tokens else set()
+    for token in sorted(registered_tokens):
+        if token not in vocabulary:
+            errors.append(
+                f"registered exact token '{token}' is absent from plugin contract vocabulary: {plugin_path}"
+            )
+
     discoverable_skills = {
         skill_file.parent.name
         for skill_file in (plugin_path / "skills").glob("*/SKILL.md")
@@ -231,9 +266,9 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                         f"eval scenario #{index} expect.must_mention_tokens contains non-token prose '{token}': {path}"
                     )
                     continue
-                if not _looks_like_contract_identifier(token):
+                if token not in registered_tokens:
                     errors.append(
-                        f"eval scenario #{index} exact token '{token}' is not an identifier-like contract symbol; move semantic wording to expect.must_convey: {path}"
+                        f"eval scenario #{index} exact token '{token}' is absent from plugin exact-token registry: {path}"
                     )
                     continue
                 if token not in vocabulary:
