@@ -9,12 +9,15 @@ from scripts import yd_api
 
 
 class DirectCLICredentialTests(unittest.TestCase):
-    def test_token_argument_is_rejected_without_echoing_secret(self):
+    def test_legacy_token_arguments_and_abbreviations_are_rejected_without_echoing_secret(self):
         secret = "argv-token-secret"
-        for argv in [
-            ["campaigns", "get", "--params", "{}", "--token", secret],
-            ["campaigns", "get", "--params", "{}", f"--token={secret}"],
-        ]:
+        legacy_spellings = ["--t", "--to", "--tok", "--toke", "--token"]
+        argv_cases = []
+        for option in legacy_spellings:
+            argv_cases.append(["campaigns", "get", "--params", "{}", option, secret])
+            argv_cases.append(["campaigns", "get", "--params", "{}", f"{option}={secret}"])
+
+        for argv in argv_cases:
             with self.subTest(argv=argv):
                 stderr = io.StringIO()
                 with patch.dict(os.environ, {"YANDEX_DIRECT_TOKEN": "env-token"}, clear=False):
