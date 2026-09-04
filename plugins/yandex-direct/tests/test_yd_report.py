@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -80,21 +81,43 @@ class TestReportHelpers(unittest.TestCase):
         self.assertIsNone(metadata["currency"])
         self.assertEqual(metadata["currency_source"], "not_returned_by_reports_helper")
 
-    def test_output_writes_metadata_sidecar(self):
+    def test_output_writes_metadata_sidecar_with_env_token(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "report.tsv"
-            with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n2026-08-01\t1\n"):
-                rc = yd_report.main([
-                    "campaign", "2026-08-01", "2026-08-31",
-                    "--token", "token", "--output", str(output),
-                    "--goals", "123", "--attribution-models", "AUTO",
-                ])
+            env = {**os.environ, "YANDEX_DIRECT_TOKEN": "token"}
+            with patch.dict(os.environ, env, clear=True):
+                with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n2026-08-01\t1\n"):
+                    rc = yd_report.main([
+                        "campaign", "2026-08-01", "2026-08-31",
+                        "--output", str(output),
+                        "--goals", "123", "--attribution-models", "AUTO",
+                    ])
             self.assertEqual(rc, 0)
             sidecar = Path(str(output) + ".metadata.json")
             self.assertTrue(sidecar.is_file())
             metadata = json.loads(sidecar.read_text(encoding="utf-8"))
             self.assertEqual(metadata["goal_ids"], ["123"])
             self.assertEqual(metadata["attribution_models"], ["AUTO"])
+
+    def test_cli_rejects_token_argument(self):
+        env = {**os.environ, "YANDEX_DIRECT_TOKEN": "env-token"}
+        with patch.dict(os.environ, env, clear=True):
+            with patch.object(yd_report, "fetch_report", return_value="Date\tClicks\n"):
+                with self.assertRaises(SystemExit):
+                    yd_report.main([
+                        "campaign", "2026-08-01", "2026-08-31",
+                        "--token", "argv-secret",
+                    ])
+
+    def test_missing_env_token_does_not_advertise_argv_secret_input(self):
+        env = {key: value for key, value in os.environ.items() if key != "YANDEX_DIRECT_TOKEN"}
+        stderr = io.StringIO()
+        with patch.dict(os.environ, env, clear=True):
+            with patch("sys.stderr", stderr):
+                with self.assertRaises(SystemExit):
+                    yd_report.main(["campaign", "2026-08-01", "2026-08-31"])
+        self.assertIn("YANDEX_DIRECT_TOKEN", stderr.getvalue())
+        self.assertNotIn("--token", stderr.getvalue())
 
     def test_obsolete_include_discount_is_not_sent(self):
         body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
