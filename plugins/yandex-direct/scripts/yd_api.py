@@ -50,6 +50,12 @@ def auth_principal_binding(token: str) -> str:
     ).hexdigest()
 
 
+def emit_cli_error(error_type: str, message: str) -> int:
+    json.dump({"error": {"type": error_type, "message": message}}, sys.stderr, ensure_ascii=False)
+    sys.stderr.write("\n")
+    return 2
+
+
 @dataclass
 class YandexDirectClient:
     token: str
@@ -162,15 +168,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("method", help="get, add, update, set, ...")
     parser.add_argument("--params", help="JSON object with method params")
     parser.add_argument("--params-file", help="Path to JSON params file")
-    parser.add_argument("--token", default=os.getenv("YANDEX_DIRECT_TOKEN"))
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
     args = parser.parse_args(argv)
 
-    if not args.token:
-        parser.error("Provide --token or YANDEX_DIRECT_TOKEN")
+    token = os.getenv("YANDEX_DIRECT_TOKEN")
+    if not token:
+        return emit_cli_error("validation", "YANDEX_DIRECT_TOKEN environment variable is required")
     if args.params and args.params_file:
         parser.error("Use only one of --params or --params-file")
 
@@ -178,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     is_write = not is_read_method(args.method)
     dry_run = args.dry_run or (is_write and not args.execute)
 
-    client = YandexDirectClient(args.token, client_login=args.client_login)
+    client = YandexDirectClient(token, client_login=args.client_login)
     result = client.request(
         args.service,
         args.method,
