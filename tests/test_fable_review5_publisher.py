@@ -47,6 +47,18 @@ class FableReview5PublisherTests(unittest.TestCase):
         self.assertIn("group: fable-review5-maintenance-release-publisher", text)
         self.assertIn("cancel-in-progress: false", text)
 
+    def test_reuses_existing_fable_publisher_shape(self):
+        text = self._text()
+        for token in (
+            "uses: actions/setup-python@v5",
+            "python-version: '3.13'",
+            'git cat-file -e "$RELEASE_TARGET^{commit}"',
+            'git worktree add --detach "$WT" "$RELEASE_TARGET"',
+        ):
+            self.assertIn(token, text)
+        self.assertNotIn("- name: Checkout release target", text)
+        self.assertNotIn("release_probe() {", text)
+
     def test_initial_publish_rejects_stale_main_and_recovery_requires_ancestor(self):
         text = self._text()
         self.assertIn('if [[ "$live_main" != "$TARGET_SHA" ]]', text)
