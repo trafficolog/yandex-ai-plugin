@@ -300,15 +300,14 @@ def _tracked_repository_paths(path: Path) -> set[Path] | None:
             ["git", "-C", str(git_root), "ls-files", "-z"],
             check=True,
             capture_output=True,
-            text=True,
             timeout=5,
         )
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
 
     tracked_paths = {
-        git_root / relative_path
-        for relative_path in tracked_result.stdout.split("\0")
+        git_root / relative_path.decode(sys.getfilesystemencoding(), errors="surrogateescape")
+        for relative_path in tracked_result.stdout.split(b"\0")
         if relative_path
     }
     return {candidate for candidate in tracked_paths if candidate.is_relative_to(requested_root)}
