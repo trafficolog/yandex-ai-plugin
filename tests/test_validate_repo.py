@@ -73,15 +73,16 @@ class ValidateRepositoryTests(unittest.TestCase):
             }],
         }), encoding='utf-8')
         (plugin / 'evals/scenarios.json').write_text(json.dumps({
-            'version': 1,
+            'version': 2,
             'scenarios': [{
                 'prompt': 'audit',
                 'skill': 'router',
                 'write': False,
                 'expect': {
                     'must_route_to': 'router',
-                    'must_refuse': False,
-                    'must_mention': [],
+                    'outcome': 'comply',
+                    'must_mention_tokens': [],
+                    'must_convey': ['Explain the supported result'],
                     'must_not_claim': ['live write completed'],
                 },
             }],
