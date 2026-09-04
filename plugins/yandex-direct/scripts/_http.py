@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from http.client import IncompleteRead
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -53,7 +54,7 @@ def request_json(
         with opener(request, timeout=timeout) as response:
             try:
                 raw = response.read()
-            except OSError as exc:
+            except (OSError, IncompleteRead) as exc:
                 raise DirectHTTPError(
                     f"Network error while reading response: {exc}",
                     error_type="network",
@@ -63,7 +64,7 @@ def request_json(
         try:
             try:
                 raw = exc.read(ERROR_BODY_LIMIT)
-            except OSError as read_exc:
+            except (OSError, IncompleteRead) as read_exc:
                 raise DirectHTTPError(
                     f"Network error while reading HTTP {exc.code} error response: {read_exc}",
                     error_type="network",
