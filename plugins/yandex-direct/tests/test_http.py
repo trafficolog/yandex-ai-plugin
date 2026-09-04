@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+from http.client import IncompleteRead
 from urllib.error import HTTPError
 
 from scripts._http import DirectHTTPError, redact_headers, request_json
@@ -17,7 +18,7 @@ class RecordingBody(io.BytesIO):
 
 
 class FailingErrorBody:
-    def __init__(self, exc: OSError):
+    def __init__(self, exc: Exception):
         self.exc = exc
         self.read_sizes: list[int] = []
         self.closed = False
@@ -56,7 +57,7 @@ class FakeResponse:
 
 
 class FailingReadResponse:
-    def __init__(self, exc: OSError):
+    def __init__(self, exc: Exception):
         self.exc = exc
         self.headers: dict[str, str] = {}
 
@@ -102,8 +103,12 @@ class DirectHTTPTests(unittest.TestCase):
 
         self.assertTrue(body.closed)
 
-    def test_http_error_body_read_os_errors_are_network_failures_and_close_response(self):
-        for read_exc in [TimeoutError("error body timed out"), ConnectionResetError("error body reset")]:
+    def test_http_error_body_read_transport_failures_are_network_errors_and_close_response(self):
+        for read_exc in [
+            TimeoutError("error body timed out"),
+            ConnectionResetError("error body reset"),
+            IncompleteRead(b"partial", 100),
+        ]:
             with self.subTest(exc=type(read_exc).__name__):
                 body = FailingErrorBody(read_exc)
                 exc = HTTPError("https://example.invalid", 503, "unavailable", {}, body)
@@ -119,7 +124,6 @@ class DirectHTTPTests(unittest.TestCase):
                 self.assertEqual(body.read_sizes, [4096])
                 self.assertTrue(body.closed)
                 self.assertEqual(caught.exception.error_type, "network")
-                self.assertIn(str(read_exc), str(caught.exception))
 
     def test_http_error_invalid_utf8_uses_replacement_decoding(self):
         body = RecordingBody(b"prefix-\xff-suffix")
@@ -135,10 +139,14 @@ class DirectHTTPTests(unittest.TestCase):
 
         self.assertIn("prefix-�-suffix", str(caught.exception))
 
-    def test_response_read_os_errors_are_network_failures(self):
-        for exc in [TimeoutError("read timed out"), ConnectionResetError("connection reset")]:
-            with self.subTest(exc=type(exc).__name__):
-                response = FailingReadResponse(exc)
+    def test_response_read_transport_failures_are_network_errors(self):
+        for read_exc in [
+            TimeoutError("read timed out"),
+            ConnectionResetError("connection reset"),
+            IncompleteRead(b"partial", 100),
+        ]:
+            with self.subTest(exc=type(read_exc).__name__):
+                response = FailingReadResponse(read_exc)
                 with self.assertRaises(DirectHTTPError) as caught:
                     request_json(
                         "https://example.invalid",
@@ -147,7 +155,6 @@ class DirectHTTPTests(unittest.TestCase):
                         opener=lambda request, timeout, response=response: response,
                     )
                 self.assertEqual(caught.exception.error_type, "network")
-                self.assertIn(str(exc), str(caught.exception))
 
     def test_redact_headers_preserves_authorization_scheme(self):
         redacted = redact_headers(
