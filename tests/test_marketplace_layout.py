@@ -122,7 +122,8 @@ class MarketplaceLayoutTests(unittest.TestCase):
         content = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("[`yandex-marketing`](plugins/yandex-marketing/)", content)
         self.assertIn("cd plugins/yandex-marketing", content)
-        self.assertIn("marketing_prioritize.py", content)
+        self.assertIn("python -m unittest discover -s tests -v", content)
+        self.assertIn("python -m compileall -q scripts", content)
         self.assertIn(f"yandex-marketing     {plugin_version('yandex-marketing')}", content)
 
 
