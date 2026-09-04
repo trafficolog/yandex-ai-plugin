@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 
-import scripts.validate_repo as validator
+from scripts.version_contracts import validate_plugin_version_mentions
 
 
 class VersionMentionValidationTests(unittest.TestCase):
@@ -30,7 +30,7 @@ class VersionMentionValidationTests(unittest.TestCase):
 
     def validate(self, root: Path, plugin: Path, version: str = "1.1.2") -> list[str]:
         errors: list[str] = []
-        validator._validate_plugin_version_mentions(root, plugin, version, errors)
+        validate_plugin_version_mentions(root, plugin, version, errors)
         return errors
 
     def test_each_canonical_version_location_rejects_stale_value(self):
