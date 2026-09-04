@@ -23,7 +23,9 @@ class TestPluginLayout(unittest.TestCase):
     def test_env_example_has_search_credentials(self):
         text=(ROOT/'.env.example').read_text(encoding='utf-8'); self.assertIn('YANDEX_SEARCH_API_KEY=',text); self.assertIn('YANDEX_SEARCH_IAM_TOKEN=',text); self.assertIn('YANDEX_SEARCH_FOLDER_ID=',text)
     def test_evals_have_scenarios(self):
-        data=json.loads((ROOT/'evals/scenarios.json').read_text(encoding='utf-8')); self.assertEqual(data['version'],1); self.assertGreaterEqual(len(data['scenarios']),9)
+        data=json.loads((ROOT/'evals/scenarios.json').read_text(encoding='utf-8')); self.assertEqual(data['version'],2); self.assertGreaterEqual(len(data['scenarios']),9)
+        for scenario in data['scenarios']:
+            expect=scenario['expect']; self.assertIn(expect['outcome'],{'comply','comply_with_limitations','refuse'}); self.assertIn('must_mention_tokens',expect); self.assertIn('must_convey',expect); self.assertIn('must_not_claim',expect)
     def test_package_docs_exist(self):
         for path in ['README.md','CHANGELOG.md','THIRD_PARTY_NOTICES.md']: self.assertTrue((ROOT/path).is_file(),path)
     def test_production_workflow_contracts(self):
