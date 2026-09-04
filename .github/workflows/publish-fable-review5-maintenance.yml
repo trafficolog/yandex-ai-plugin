@@ -318,6 +318,17 @@ jobs:
             local draft="false"
             local immutable="false"
             local target=""
+            local rollback_armed=false
+
+            cleanup_publish_failure() {
+              local rc=$?
+              trap - ERR
+              if [[ "$rollback_armed" == "true" ]]; then
+                echo "Publication failed for $tag; attempting fail-closed cleanup." >&2
+                rollback_published_release "$tag" || true
+              fi
+              exit "$rc"
+            }
 
             probe="$(release_probe "$tag")"
             state="${probe%%$'\t'*}"
@@ -365,16 +376,15 @@ jobs:
               fi
             fi
 
+            rollback_armed=true
+            trap cleanup_publish_failure ERR
             gh release edit "$tag" \
               --repo "$GITHUB_REPOSITORY" \
               --title "$title" --notes "$notes" \
               --draft=false --target "$RELEASE_TARGET"
-
-            if ! verify_published_release "$tag"; then
-              echo "Publication verification failed for $tag; rolling back fail-closed." >&2
-              rollback_published_release "$tag" || true
-              exit 1
-            fi
+            verify_published_release "$tag"
+            rollback_armed=false
+            trap - ERR
           }
 
           direct_notes=$'FABLE review-5 maintenance patch for Yandex Direct.\n\n- Reports OAuth is environment-only through YANDEX_DIRECT_TOKEN; argv --token is removed.\n- Reports HTTP error bodies are bounded to 4096 bytes with replacement decoding and secret-free URLError handling.\n- Transport opener/sleep are injectable while 201/202 retryIn polling and one HTTP 500 retry are preserved.\n- Direct Reports/provenance/creation-not-activation contracts and freshness traceability are explicit.'
