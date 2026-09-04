@@ -19,6 +19,7 @@ OFFICIAL_V5_SERVICES = {
     "clients",
     "creatives",
     "dictionaries",
+    "dynamictextadtargets",
     "feeds",
     "keywordbids",
     "keywords",
@@ -27,8 +28,10 @@ OFFICIAL_V5_SERVICES = {
     "negativekeywordsharedsets",
     "retargetinglists",
     "sitelinks",
+    "smartadtargets",
     "strategies",
     "turbopages",
+    "vcards",
 }
 
 
@@ -38,7 +41,15 @@ class DirectServiceAllowlistTests(unittest.TestCase):
 
     def test_known_services_build_endpoints(self):
         client = YandexDirectClient("token")
-        for service in ["campaigns", "strategies", "businesses", "keywordsresearch"]:
+        for service in [
+            "campaigns",
+            "strategies",
+            "businesses",
+            "keywordsresearch",
+            "dynamictextadtargets",
+            "smartadtargets",
+            "vcards",
+        ]:
             with self.subTest(service=service):
                 self.assertTrue(client.endpoint(service).endswith(f"/{service}"))
 
