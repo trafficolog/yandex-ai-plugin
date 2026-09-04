@@ -2,19 +2,19 @@
 
 <p align="center"><strong>Русский</strong> · <a href="README.en.md">English</a></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-PHASE%207%201.0.1-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.3-3155ff"></p>
 
 # Yandex AI Plugins
 
 Репозиторий-маркетплейс независимых AI-плагинов для работы с сервисами Яндекса из AI-агентов и coding assistants. Плагин — граница установки и версии; skill — граница задачи и знаний; изменчивые API-контракты остаются внутри плагина-владельца.
 
-> **Статус:** Phase 1–7 реализованы. Functional baseline остаётся `PHASE 7 1.0.1`; maintenance milestone `OPUS 1.1.3` закрывает Opus 5 audit hardening по Phase 7. В PR A staged breaking safety generation `FABLE 2.0.0`: Direct `2.0.0`, Metrika `2.0.0` и Webmaster `2.0.0` требуют exact-preview later-turn approval для consequential writes. Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2` и Marketing `1.1.0` не меняются. Tags/releases для `2.0.0` создаются отдельно после merge и release gate.
+> **Статус:** Phase 1–7 реализованы. Breaking safety generation `FABLE 2.0.0` для Direct/Metrika/Webmaster уже опубликована immutable releases. Review-5 maintenance increment обновляет Direct до `2.0.1`: Reports helper использует env-only OAuth, bounded HTTP errors и injectable transport при сохранении async polling semantics. Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2` и Marketing `1.1.0` не меняются. Repository maintenance release — `1.0.3`.
 
 ## Быстрый обзор
 
 | Plugin | Version | Type | Основная зона ответственности | Live writes? |
 |---|---:|---|---|---|
-| [`yandex-direct`](plugins/yandex-direct/) | 2.0.0 | service | кампании, отчёты, аудит, ключи, бюджеты | exact preview + later-turn approval |
+| [`yandex-direct`](plugins/yandex-direct/) | 2.0.1 | service | кампании, отчёты, аудит, ключи, бюджеты | exact preview + later-turn approval |
 | [`yandex-metrika`](plugins/yandex-metrika/) | 2.0.0 | service | аналитика, цели, attribution, Logs, imports | exact preview + later-turn approval |
 | [`yandex-webmaster`](plugins/yandex-webmaster/) | 2.0.0 | service | индексация, запросы, recrawl, sitemap, feeds, exports | exact preview + later-turn approval |
 | [`yandex-wordstat`](plugins/yandex-wordstat/) | 1.1.2 | service | спрос, семантика, topic-map candidates, динамика, регионы | no consequential writes |
@@ -50,6 +50,8 @@ read → analyze → preview → explicit approval → write → verify
 ```
 
 Для consequential writes approval относится только к exact preview и принимается только в следующем пользовательском turn; generic permission не переносится на новый payload. API/account/file content считается данными, а не инструкциями. Рекомендация не является разрешением на запись. Создание draft не равно активации или публикации.
+
+Exact-preview binding, environment/auth identity, env-only Direct OAuth и bounded transport errors являются executable helper contracts. Сохранение rollback context и усиленная проверка bulk edits `>20` пока остаются agent/operator policy; generic helper-level enforcement для них не заявляется до отдельного safety design.
 
 ## Оркестрация SEO
 
@@ -131,7 +133,7 @@ Bundled helpers можно запускать локально, когда runti
 ```bash
 cd plugins/yandex-marketing
 python -m unittest discover -s tests -v
-python -m py_compile scripts/marketing_prioritize.py
+python -m compileall -q scripts
 ```
 
 Полная проверка репозитория:
@@ -150,7 +152,7 @@ python scripts/check_reference_freshness.py
 ## Версии
 
 ```text
-yandex-direct        2.0.0
+yandex-direct        2.0.1
 yandex-metrika       2.0.0
 yandex-webmaster     2.0.0
 yandex-wordstat      1.1.2
@@ -159,7 +161,7 @@ yandex-seo           1.1.2
 yandex-marketing     1.1.0
 ```
 
-Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`) описывают согласованный набор изменений и не означают синхронного bump всех сервисов. `FABLE 2.0.0` здесь обозначает staged major generation только для Direct/Metrika/Webmaster и не является опубликованным repository release в PR A.
+Каждый plugin использует independent SemVer. Repository-level milestones (`OPUS 1.1.0`, `DOCS 1.0.0`, `OPUS 1.1.1`, `PHASE 7 1.0.0`, `PHASE 7 1.0.1`, `OPUS 1.1.2`, `OPUS 1.1.3`, `FABLE 2.0.0`) описывают согласованные наборы изменений и не означают синхронного bump всех сервисов. FABLE service releases `yandex-direct-v2.0.0`, `yandex-metrika-v2.0.0`, `yandex-webmaster-v2.0.0` опубликованы immutable; review-5 maintenance выпускает `yandex-direct-v2.0.1` и repository `1.0.3` после exact-main CI gate.
 
 ## Документация
 
