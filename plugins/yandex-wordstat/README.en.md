@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `1.1.1`. Workflow-first demand-research service plugin over Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, plus evidence-first candidate topic maps.
+Version `1.1.2`. Workflow-first demand-research service plugin over Yandex Cloud Search API Wordstat v2: GetTop, GetDynamics, GetRegionsDistribution, GetRegionsTree, plus evidence-first candidate topic maps.
 
 > Phase 7 `1.1.0` added `yandex-wordstat-topic-map` and `wordstat-topic-map/v1`; patch `1.1.1` hardens provenance by rejecting duplicate seed identifiers and candidate self-relations without changing ownership of final SERP clustering or page architecture.
 
