@@ -47,9 +47,21 @@ SECRET_PATTERNS = (
     re.compile(r"(?<![A-Za-z0-9_-])AQAA[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
     re.compile(r"(?<![A-Za-z0-9_-])t1\.[A-Za-z0-9_-]{24,}(?![A-Za-z0-9_-])"),
 )
-FORBIDDEN_TRANSPORT_MODULES = {"requests", "httpx", "aiohttp"}
+FORBIDDEN_TRANSPORT_ROOTS = {
+    "http",
+    "socket",
+    "ssl",
+    "requests",
+    "httpx",
+    "aiohttp",
+    "urllib3",
+    "pycurl",
+    "importlib",
+    "subprocess",
+}
 YANDEX_API_ENDPOINT_PATTERN = re.compile(
-    r"https://(?:api(?:-[a-z]+)?\.yandex\.(?:com|net)|searchapi\.api\.cloud\.yandex\.net)"
+    r"https://(?:[a-z0-9-]+\.)*yandex\.(?:com|net|ru)(?:[/:]|$)",
+    re.IGNORECASE,
 )
 
 
@@ -415,6 +427,13 @@ def _validate_plugin_text(plugin_path: Path, errors: list[str]) -> None:
                 break
 
 
+def _is_forbidden_transport_module(module: str) -> bool:
+    if module == "urllib.request" or module.startswith("urllib.request."):
+        return True
+    root = module.split(".", 1)[0]
+    return root in FORBIDDEN_TRANSPORT_ROOTS
+
+
 def python_transport_findings(path: Path, text: str) -> list[str]:
     """Return AST-backed transport-boundary findings for a Python source file."""
     try:
@@ -427,22 +446,14 @@ def python_transport_findings(path: Path, text: str) -> list[str]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 module = alias.name
-                if module == "urllib.request" or any(
-                    module == forbidden or module.startswith(f"{forbidden}.")
-                    for forbidden in FORBIDDEN_TRANSPORT_MODULES
-                ):
+                if _is_forbidden_transport_module(module):
                     findings.append(f"forbidden transport import {module}")
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
             imported_names = {alias.name for alias in node.names}
             if module == "urllib" and "request" in imported_names:
                 findings.append("forbidden transport import urllib.request")
-            elif module == "urllib.request":
-                findings.append("forbidden transport import urllib.request")
-            elif any(
-                module == forbidden or module.startswith(f"{forbidden}.")
-                for forbidden in FORBIDDEN_TRANSPORT_MODULES
-            ):
+            elif _is_forbidden_transport_module(module):
                 findings.append(f"forbidden transport import {module}")
     return findings
 
@@ -450,10 +461,7 @@ def python_transport_findings(path: Path, text: str) -> list[str]:
 def _validate_cross_service_transport(plugin_path: Path, errors: list[str]) -> None:
     if plugin_path.name not in CROSS_SERVICE_PLUGINS:
         return
-    scripts = plugin_path / "scripts"
-    if not scripts.is_dir():
-        return
-    for path in scripts.rglob("*.py"):
+    for path in plugin_path.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
         if python_transport_findings(path, text) or YANDEX_API_ENDPOINT_PATTERN.search(text):
             errors.append(f"cross-service transport/API client found in {path}")
