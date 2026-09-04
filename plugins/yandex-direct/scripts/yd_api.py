@@ -56,6 +56,7 @@ READ_METHODS = {
     "get",
     "getchanges",
 }
+LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
 AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v1"
 
 
@@ -95,6 +96,10 @@ def validate_environment(environment: str) -> str:
     if environment not in SUPPORTED_ENVIRONMENTS:
         raise ValueError(f"unsupported Yandex Direct environment: {environment!r}")
     return environment
+
+
+def contains_legacy_token_option(argv: list[str]) -> bool:
+    return any(arg.partition("=")[0] in LEGACY_TOKEN_OPTIONS for arg in argv)
 
 
 @dataclass
@@ -209,7 +214,7 @@ def _load_params(args: argparse.Namespace) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     raw_argv = list(sys.argv[1:] if argv is None else argv)
-    if any(arg == "--token" or arg.startswith("--token=") for arg in raw_argv):
+    if contains_legacy_token_option(raw_argv):
         return emit_cli_error(
             "validation",
             "--token is no longer supported; set YANDEX_DIRECT_TOKEN in the environment",
