@@ -17,13 +17,23 @@ KEY_DOC_NAMES = (
 )
 
 _RELEASE_MARKER = re.compile(
-    r"^##\s+(?:\[)?((?:DOCS|OPUS)\s+\d+\.\d+\.\d+|\d+\.\d+\.\d+)(?:\])?(?:\s|—|$)",
+    r"^##\s+(?:\[)?((?:(?:[A-Z][A-Z0-9]*(?:\s+[A-Z0-9]+)*)\s+)?\d+\.\d+\.\d+)(?:\])?(?:\s|—|$)",
     re.MULTILINE,
 )
+_HEADING_PATTERN = re.compile(r"^(#{2,6})\s+", re.MULTILINE)
+_SEMVER_PATTERN = re.compile(r"(?<![0-9.])\d+\.\d+\.\d+(?![0-9.])")
 
 
 def release_markers(text: str) -> list[str]:
     return _RELEASE_MARKER.findall(text)
+
+
+def _heading_structure(text: str) -> list[int]:
+    return [len(marker) for marker in _HEADING_PATTERN.findall(text)]
+
+
+def _semver_tokens(text: str) -> set[str]:
+    return set(_SEMVER_PATTERN.findall(text))
 
 
 def _read(path: Path, errors: list[str]) -> str | None:
@@ -55,6 +65,20 @@ def _validate_pair(
     if ru_path.name not in en:
         errors.append(
             f"bilingual documentation language switch missing Russian link: {en_path} -> {ru_path.name}"
+        )
+
+    ru_structure = _heading_structure(ru)
+    en_structure = _heading_structure(en)
+    if ru_structure != en_structure:
+        errors.append(
+            f"bilingual documentation heading structure differs: {ru_path}={ru_structure} vs {en_path}={en_structure}"
+        )
+
+    ru_semvers = _semver_tokens(ru)
+    en_semvers = _semver_tokens(en)
+    if ru_semvers != en_semvers:
+        errors.append(
+            f"bilingual documentation SemVer tokens differ: {ru_path}={sorted(ru_semvers)} vs {en_path}={sorted(en_semvers)}"
         )
 
     if compare_release_markers:
