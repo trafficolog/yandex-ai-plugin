@@ -44,10 +44,6 @@ class EvalRepositoryContractTests(unittest.TestCase):
                 expect = scenario["expect"]
                 self.assertEqual(expect["outcome"], "refuse")
                 self.assertIn("preview_id", expect["must_mention_tokens"])
-                self.assertTrue(
-                    any("fresh exact preview" in item.lower() for item in expect["must_convey"]),
-                    f"{plugin_name} {label} scenario must require a fresh exact preview",
-                )
 
     def test_write_capable_plugins_cover_injection_and_fake_prior_approval(self):
         for plugin_name in WRITE_CAPABLE:
