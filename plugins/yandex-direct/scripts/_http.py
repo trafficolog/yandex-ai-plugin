@@ -51,7 +51,13 @@ def request_json(
     request = Request(url, data=payload, headers=dict(headers), method="POST")
     try:
         with opener(request, timeout=timeout) as response:
-            raw = response.read()
+            try:
+                raw = response.read()
+            except OSError as exc:
+                raise DirectHTTPError(
+                    f"Network error while reading response: {exc}",
+                    error_type="network",
+                ) from exc
             transport = _transport_metadata(getattr(response, "headers", {}))
     except HTTPError as exc:
         raw = exc.read(ERROR_BODY_LIMIT)
