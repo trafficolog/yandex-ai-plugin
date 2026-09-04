@@ -19,7 +19,9 @@ except ImportError:  # CLI execution from scripts directory
     from _approval import preview_id, require_approval
 
 PRODUCTION_API_BASE = "https://api.direct.yandex.com/json/v501"
+SANDBOX_API_BASE = "https://api-sandbox.direct.yandex.com/json/v5"
 API_BASE = PRODUCTION_API_BASE
+SUPPORTED_ENVIRONMENTS = {"production", "sandbox"}
 SUPPORTED_SERVICES = {
     "adextensions",
     "adgroups",
@@ -89,6 +91,12 @@ def validate_service(service: str) -> str:
     return service
 
 
+def validate_environment(environment: str) -> str:
+    if environment not in SUPPORTED_ENVIRONMENTS:
+        raise ValueError(f"unsupported Yandex Direct environment: {environment!r}")
+    return environment
+
+
 @dataclass
 class YandexDirectClient:
     token: str
@@ -96,9 +104,15 @@ class YandexDirectClient:
     language: str = "ru"
     timeout: int = 60
     opener: Callable[..., Any] = _http.urlopen
+    environment: str = "production"
+
+    def __post_init__(self) -> None:
+        validate_environment(self.environment)
 
     def endpoint(self, service: str) -> str:
-        return f"{PRODUCTION_API_BASE}/{validate_service(service)}"
+        service = validate_service(service)
+        base = PRODUCTION_API_BASE if self.environment == "production" else SANDBOX_API_BASE
+        return f"{base}/{service}"
 
     def headers(self) -> dict[str, str]:
         headers = {
@@ -128,7 +142,7 @@ class YandexDirectClient:
             "operation": f"{normalized_service}.{normalized_method}",
             "method": "POST",
             "target": {
-                "environment": "production",
+                "environment": self.environment,
                 "client_login": self.client_login,
                 "auth_principal_hmac_sha256": auth_principal_binding(self.token),
             },
@@ -154,6 +168,7 @@ class YandexDirectClient:
             return {
                 "dry_run": True,
                 "preview_id": preview_id(envelope),
+                "environment": self.environment,
                 "endpoint": self.endpoint(service),
                 "headers": safe_headers,
                 "body": body,
@@ -199,6 +214,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--params", help="JSON object with method params")
     parser.add_argument("--params-file", help="Path to JSON params file")
     parser.add_argument("--client-login", default=os.getenv("YANDEX_DIRECT_CLIENT_LOGIN"))
+    parser.add_argument("--sandbox", action="store_true", help="Use the official Yandex Direct sandbox endpoint")
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
@@ -215,8 +231,13 @@ def main(argv: list[str] | None = None) -> int:
         params = _load_params(args)
         is_write = not is_read_method(args.method)
         dry_run = args.dry_run or (is_write and not args.execute)
+        environment = "sandbox" if args.sandbox else "production"
 
-        client = YandexDirectClient(token, client_login=args.client_login)
+        client = YandexDirectClient(
+            token,
+            client_login=args.client_login,
+            environment=environment,
+        )
         result = client.request(
             args.service,
             args.method,
