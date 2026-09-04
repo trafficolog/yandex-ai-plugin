@@ -320,36 +320,71 @@ def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
 
 
 def _read_secret_scan_text(path: Path) -> str:
-    """Read a tracked text entry without following symlinks or skipping undecodable bytes."""
+    """Read a worktree text entry without following symlinks or skipping undecodable bytes."""
     if path.is_symlink():
         return str(path.readlink())
     return path.read_bytes().decode("utf-8", errors="replace")
 
 
+def _read_index_secret_scan_entry(root: Path, path: Path) -> tuple[str, str]:
+    """Return the staged Git mode and text for a tracked repository entry."""
+    relative = path.absolute().relative_to(root.resolve()).as_posix()
+    stage_result = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--stage", "--", relative],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    first_line = stage_result.stdout.splitlines()[0]
+    mode = first_line.split(maxsplit=1)[0]
+    blob_result = subprocess.run(
+        ["git", "-C", str(root), "show", f":{relative}"],
+        check=True,
+        capture_output=True,
+        timeout=5,
+    )
+    return mode, blob_result.stdout.decode("utf-8", errors="replace")
+
+
 def _iter_repository_dotenv_files(root: Path):
     tracked_paths = _tracked_repository_paths(root)
-    candidates = tracked_paths if tracked_paths is not None else {
-        path for path in root.rglob("*") if path.is_file() or path.is_symlink()
-    }
+    if tracked_paths is not None:
+        candidates = tracked_paths
+        require_worktree_entry = False
+    else:
+        candidates = {path for path in root.rglob("*") if path.is_file() or path.is_symlink()}
+        require_worktree_entry = True
     for path in sorted(candidates):
         if path.name != ".env" and not path.name.startswith(".env."):
             continue
-        if path.is_file() or path.is_symlink():
+        if not require_worktree_entry or path.is_file() or path.is_symlink():
             yield path
 
 
 def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
+    tracked_paths = _tracked_repository_paths(root)
     for path in _iter_repository_dotenv_files(root):
-        if path.is_symlink():
-            errors.append(f"repository dotenv symlink is not allowed: {path}")
-        try:
-            text = _read_secret_scan_text(path)
-        except (OSError, UnicodeDecodeError):
-            continue
-        for pattern in SECRET_PATTERNS:
-            if pattern.search(text):
-                errors.append(f"credential-like secret found in repository dotenv file: {path}")
-                break
+        symlink_error = f"repository dotenv symlink is not allowed: {path}"
+        texts: list[str] = []
+        if tracked_paths is not None:
+            try:
+                mode, staged_text = _read_index_secret_scan_entry(root, path)
+            except (OSError, subprocess.SubprocessError, IndexError, ValueError):
+                errors.append(f"unable to read tracked repository dotenv index: {path}")
+            else:
+                if mode == "120000" and symlink_error not in errors:
+                    errors.append(symlink_error)
+                texts.append(staged_text)
+        if path.is_symlink() and symlink_error not in errors:
+            errors.append(symlink_error)
+        if path.is_file() or path.is_symlink():
+            try:
+                texts.append(_read_secret_scan_text(path))
+            except (OSError, UnicodeDecodeError):
+                pass
+        if any(pattern.search(text) for text in texts for pattern in SECRET_PATTERNS):
+            errors.append(f"credential-like secret found in repository dotenv file: {path}")
 
 
 def _iter_plugin_text_files(plugin_path: Path):
