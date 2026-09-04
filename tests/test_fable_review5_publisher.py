@@ -80,6 +80,16 @@ class FableReview5PublisherTests(unittest.TestCase):
         ):
             self.assertIn(token, text)
 
+    def test_draft_recovery_rejects_mutable_target_refs(self):
+        text = self._text()
+        state_start = text.index("- name: Detect immutable release state")
+        state_end = text.index("- name: Verify exact release target", state_start)
+        segment = text[state_start:state_end]
+        self.assertIn('if [[ ! "$target" =~ ^[0-9a-fA-F]{40}$ ]]', segment)
+        self.assertIn('Draft release $tag has non-immutable target: $target', segment)
+        self.assertIn('candidates+=("${target,,}")', segment)
+        self.assertNotIn('candidates+=("$target")', segment)
+
     def test_exact_target_contract_pins_current_versions_and_docs(self):
         text = self._text()
         for token in (
