@@ -163,6 +163,23 @@ Plugins use independent SemVer. Repository milestones (`OPUS 1.1.0`, `DOCS 1.0.0
 - [`docs/REVIEW_FIRST_RELEASE.en.md`](docs/REVIEW_FIRST_RELEASE.en.md) · [RU](docs/REVIEW_FIRST_RELEASE.md)
 - [`CHANGELOG.en.md`](CHANGELOG.en.md) · [RU](CHANGELOG.md)
 
+## Structure
+
+```text
+plugins/yandex-<service>/
+├── .codex-plugin/plugin.json
+├── .claude-plugin/plugin.json
+├── skills/*/SKILL.md
+├── references/
+├── scripts/
+├── tests/
+├── evals/
+├── README.md
+├── README.en.md
+├── CHANGELOG.md
+└── CHANGELOG.en.md
+```
+
 ## License and sources
 
 Project code and original documentation are MIT licensed. Official Yandex documentation is canonical for API behavior; donor repositories and external SEO material are methodology/workflow references, not substitutes for authoritative API/ranking evidence.
