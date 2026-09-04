@@ -208,9 +208,18 @@ jobs:
           }
 
           rollback_published_release() {
-            local tag="$1" original_rc="$2" probe_rc
+            local tag="$1" original_rc="$2" probe_rc cleanup_release_immutable
             trap - ERR
             set +e
+            if [[ "$rollback_armed" != "true" ]]; then
+              exit "$original_rc"
+            fi
+            rollback_armed=false
+            cleanup_release_immutable="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isImmutable --jq '.isImmutable' 2>/dev/null || true)"
+            if [[ "$cleanup_release_immutable" == "true" ]]; then
+              echo "Release $tag is already immutable; rollback is neither required nor safe." >&2
+              exit "$original_rc"
+            fi
             echo "Publication verification failed for $tag; attempting fail-closed cleanup." >&2
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -229,6 +238,8 @@ jobs:
           publish_one() {
             local tag="$1" title="$2" notes="$3"
             local state="" is_draft="" is_immutable="" target="" tag_sha=""
+            local published_state="" published_is_draft="" published_is_immutable="" published_target_commitish=""
+            local rollback_armed=false
 
             if state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv' 2>/dev/null)"; then
               IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
@@ -266,19 +277,33 @@ jobs:
               fi
             fi
 
+            rollback_armed=true
             trap 'rc=$?; rollback_published_release "$tag" "$rc"' ERR
             gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --target "$RELEASE_TARGET" --title "$title" --notes-file "$notes"
-            state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
-            IFS=$'\t' read -r is_draft is_immutable target <<< "$state"
-            [[ "$is_draft" != "true" && "$target" == "$RELEASE_TARGET" ]] || { echo "Invalid published state for $tag." >&2; false; }
-            if [[ "$is_immutable" != "true" ]]; then
-              echo "$tag did not become immutable." >&2
-              false
+            published_state="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isImmutable,targetCommitish --jq '[.isDraft,.isImmutable,.targetCommitish] | @tsv')"
+            IFS=$'\t' read -r published_is_draft published_is_immutable published_target_commitish <<< "$published_state"
+
+            if [[ "$published_is_draft" == "true" ]]; then
+              echo "Release $tag remained a draft after publication." >&2
+              trap - ERR
+              rollback_published_release "$tag" 1
+            fi
+            if [[ "$published_is_immutable" != "true" ]]; then
+              echo "$tag did not become immutable; rolling back before failing closed." >&2
+              trap - ERR
+              rollback_published_release "$tag" 1
+            fi
+
+            rollback_armed=false
+            trap - ERR
+
+            if [[ "$published_target_commitish" != "$RELEASE_TARGET" ]]; then
+              echo "Published immutable release $tag targets $published_target_commitish, expected $RELEASE_TARGET." >&2
+              exit 1
             fi
             git fetch origin "refs/tags/$tag:refs/tags/$tag" --force
             tag_sha="$(git rev-list -n 1 "$tag")"
-            [[ "$tag_sha" == "$RELEASE_TARGET" ]] || { echo "$tag points to $tag_sha, expected $RELEASE_TARGET." >&2; false; }
-            trap - ERR
+            [[ "$tag_sha" == "$RELEASE_TARGET" ]] || { echo "$tag points to $tag_sha, expected $RELEASE_TARGET." >&2; exit 1; }
           }
 
           git fetch origin main --prune
