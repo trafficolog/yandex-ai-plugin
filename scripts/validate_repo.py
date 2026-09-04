@@ -187,15 +187,21 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
         return
 
     vocabulary = _eval_plugin_vocabulary(plugin_path)
-    all_mentioned_tokens = {
-        token
-        for scenario in scenarios
-        if isinstance(scenario, dict)
-        for expect in [scenario.get("expect")]
-        if isinstance(expect, dict)
-        for token in expect.get("must_mention_tokens", [])
-        if isinstance(token, str) and token.strip()
-    }
+    all_mentioned_tokens: set[str] = set()
+    for scenario in scenarios:
+        if not isinstance(scenario, dict):
+            continue
+        expect = scenario.get("expect")
+        if not isinstance(expect, dict):
+            continue
+        mentioned_tokens = expect.get("must_mention_tokens")
+        if not isinstance(mentioned_tokens, list):
+            continue
+        all_mentioned_tokens.update(
+            token
+            for token in mentioned_tokens
+            if isinstance(token, str) and token.strip()
+        )
     registered_tokens = _eval_token_registry(plugin_path, errors) if all_mentioned_tokens else set()
     for token in sorted(registered_tokens):
         if token not in vocabulary:
