@@ -28,9 +28,12 @@ except ImportError:
     )
 
 FORBIDDEN_RUNTIME_PATHS = ("~/.openclaw/", "~/.claude/", "~/.codex/")
-ALLOWED_EVAL_WRITE = {False, "preview-first", "approval-required"}
+ALLOWED_EVAL_WRITE = {"preview-first", "approval-required"}
 ALLOWED_EVAL_OUTCOMES = {"comply", "comply_with_limitations", "refuse"}
 EVAL_TOKEN_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]*$")
+EVAL_TOKEN_SCAN_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_.:-])([A-Za-z][A-Za-z0-9_.:-]*)(?![A-Za-z0-9_.:-])"
+)
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml"}
 CAPABILITY_HEADER = "| Capability | Read | Write | MCP/App | Bundled API | File fallback |"
 CROSS_SERVICE_PLUGINS = {"yandex-seo", "yandex-marketing"}
@@ -109,26 +112,34 @@ def _validate_skill(skill_path: Path, errors: list[str]) -> None:
         errors.append(f"skill description must start with 'Use when': {skill_path}")
 
 
-def _eval_plugin_vocabulary(plugin_path: Path) -> str:
-    """Collect plugin contract vocabulary without letting the eval fixture self-validate."""
-    chunks: list[str] = []
+def _eval_plugin_vocabulary(plugin_path: Path) -> set[str]:
+    """Collect exact plugin contract identifiers without fixture/test self-validation."""
+    tokens: set[str] = set()
     eval_path = plugin_path / "evals/scenarios.json"
     for candidate in plugin_path.rglob("*"):
         if not candidate.is_file() or candidate == eval_path:
             continue
+        relative = candidate.relative_to(plugin_path)
+        if relative.parts and relative.parts[0] in {"evals", "tests"}:
+            continue
         if candidate.name != ".env.example" and candidate.suffix.lower() not in TEXT_SUFFIXES:
             continue
         try:
-            chunks.append(candidate.read_text(encoding="utf-8"))
+            text = candidate.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-    return "\n".join(chunks)
+        tokens.update(EVAL_TOKEN_SCAN_PATTERN.findall(text))
+    return tokens
 
 
 def _valid_string_list(value: Any) -> bool:
     return isinstance(value, list) and all(
         isinstance(item, str) and bool(item.strip()) for item in value
     )
+
+
+def _valid_eval_write(value: Any) -> bool:
+    return value is False or (isinstance(value, str) and value in ALLOWED_EVAL_WRITE)
 
 
 def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
@@ -144,6 +155,11 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
         return
 
     vocabulary = _eval_plugin_vocabulary(plugin_path)
+    discoverable_skills = {
+        skill_file.parent.name
+        for skill_file in (plugin_path / "skills").glob("*/SKILL.md")
+        if skill_file.is_file()
+    }
     for index, scenario in enumerate(scenarios):
         if not isinstance(scenario, dict):
             errors.append(f"invalid eval scenario #{index}: {path}")
@@ -154,13 +170,13 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
             errors.append(f"eval scenario #{index} missing prompt: {path}")
         if not isinstance(skill, str) or not skill.strip():
             errors.append(f"eval scenario #{index} missing skill: {path}")
-        else:
-            skill_path = plugin_path / "skills" / skill / "SKILL.md"
-            if not skill_path.is_file():
-                errors.append(
-                    f"eval scenario #{index} skill '{skill}' has no matching SKILL.md: {skill_path}"
-                )
-        if scenario.get("write") not in ALLOWED_EVAL_WRITE:
+        elif skill not in discoverable_skills:
+            errors.append(
+                f"eval scenario #{index} skill '{skill}' is not a discoverable immediate-child skill name with SKILL.md: {path}"
+            )
+
+        write_mode = scenario.get("write")
+        if not _valid_eval_write(write_mode):
             errors.append(f"eval scenario #{index} has invalid write mode: {path}")
 
         expect = scenario.get("expect")
@@ -174,7 +190,7 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
             errors.append(f"eval scenario #{index} expect.must_route_to must match skill: {path}")
 
         outcome = expect.get("outcome")
-        if outcome not in ALLOWED_EVAL_OUTCOMES:
+        if not isinstance(outcome, str) or outcome not in ALLOWED_EVAL_OUTCOMES:
             errors.append(
                 f"eval scenario #{index} expect.outcome must be one of {sorted(ALLOWED_EVAL_OUTCOMES)}: {path}"
             )
@@ -192,9 +208,9 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                     f"eval scenario #{index} expect.{field} must be a list of nonempty strings: {path}"
                 )
 
-        tokens = expect.get("must_mention_tokens")
-        if isinstance(tokens, list):
-            for token in tokens:
+        mentioned_tokens = expect.get("must_mention_tokens")
+        if isinstance(mentioned_tokens, list):
+            for token in mentioned_tokens:
                 if not isinstance(token, str) or not token.strip():
                     continue
                 if EVAL_TOKEN_PATTERN.fullmatch(token) is None:
