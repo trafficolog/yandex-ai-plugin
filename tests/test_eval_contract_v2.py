@@ -14,7 +14,7 @@ class EvalContractV2Tests(unittest.TestCase):
         (plugin / "skills/router").mkdir(parents=True)
         (plugin / "skills/router/SKILL.md").write_text(
             "---\nname: router\ndescription: Use when routing.\n---\n\n"
-            "Exact contract tokens: SAFE_TOKEN, wordstat_count.\n",
+            "Exact contract tokens: SAFE_TOKEN, wordstat_count\n",
             encoding="utf-8",
         )
         if data is None:
