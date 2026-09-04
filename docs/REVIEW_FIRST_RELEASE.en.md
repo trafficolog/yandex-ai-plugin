@@ -4,6 +4,8 @@
 
 The goal is an independent challenge of architecture boundaries, API assumptions, safety contracts, evidence semantics and implementation-vs-spec consistency across the seven shipped plugins.
 
+Release responsibilities are defined in [`RELEASE_POLICY.en.md`](RELEASE_POLICY.en.md): AI audit is advisory input, CI is mechanical evidence, independent review is a separate semantic/safety gate, and a human maintainer decides whether to merge/release. None of these signals silently replaces another.
+
 ## 1. Review order
 
 1. Repository contracts: `README.en.md`, plugin standard, service matrix, roadmap, marketplaces, CI, validator and root tests.
@@ -49,7 +51,7 @@ python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
-Then run plugin-local suites documented in each README. Green CI validates internal contracts but does not replace fresh verification of external API facts.
+Then run plugin-local suites documented in each README. Green CI validates internal contracts but does not replace fresh verification of external API facts. If independent review is unavailable because of a quota/tool limitation, record that limitation explicitly; absence of review is not a clean review.
 
 ## 7. Intentional limitations
 
