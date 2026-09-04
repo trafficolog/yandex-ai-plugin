@@ -1,3 +1,4 @@
+from http.client import IncompleteRead
 import unittest
 import urllib.error
 
@@ -10,6 +11,20 @@ class _FailingResponse:
 
     def read(self):
         raise TimeoutError("response read timed out")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+class _IncompleteResponse:
+    status = 200
+    headers = {"Content-Length": "12"}
+
+    def read(self):
+        raise IncompleteRead(b"partial", 5)
 
     def __enter__(self):
         return self
@@ -41,6 +56,17 @@ class ReportReadFailureTests(unittest.TestCase):
     def test_success_response_read_failure_is_typed_network_error(self):
         def opener(request, timeout=0):
             return _FailingResponse()
+
+        with self.assertRaises(yd_report.ReportError) as ctx:
+            yd_report.fetch_report("secret-token-value", self.body, opener=opener)
+
+        self.assertEqual(ctx.exception.error_type, "network")
+        self.assertIn("reading response", str(ctx.exception))
+        self.assertNotIn("secret-token-value", str(ctx.exception))
+
+    def test_truncated_success_response_is_typed_network_error(self):
+        def opener(request, timeout=0):
+            return _IncompleteResponse()
 
         with self.assertRaises(yd_report.ReportError) as ctx:
             yd_report.fetch_report("secret-token-value", self.body, opener=opener)
