@@ -284,20 +284,20 @@ def _validate_evals(plugin_path: Path, errors: list[str]) -> None:
                     )
 
 
-def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
-    """Return Git-tracked plugin paths, or None when Git metadata is unavailable."""
+def _tracked_repository_paths(path: Path) -> set[Path] | None:
+    """Return Git-tracked paths under path, or None when Git metadata is unavailable."""
+    requested_root = path.resolve()
     try:
         root_result = subprocess.run(
-            ["git", "-C", str(plugin_path), "rev-parse", "--show-toplevel"],
+            ["git", "-C", str(requested_root), "rev-parse", "--show-toplevel"],
             check=True,
             capture_output=True,
             text=True,
             timeout=5,
         )
-        root = Path(root_result.stdout.strip()).resolve()
-        relative_plugin = plugin_path.resolve().relative_to(root).as_posix()
+        git_root = Path(root_result.stdout.strip()).resolve()
         tracked_result = subprocess.run(
-            ["git", "-C", str(root), "ls-files", "-z", "--", relative_plugin],
+            ["git", "-C", str(git_root), "ls-files", "-z"],
             check=True,
             capture_output=True,
             text=True,
@@ -306,11 +306,41 @@ def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
 
-    return {
-        (root / relative_path).resolve()
+    tracked_paths = {
+        (git_root / relative_path).resolve()
         for relative_path in tracked_result.stdout.split("\0")
         if relative_path
     }
+    return {candidate for candidate in tracked_paths if candidate.is_relative_to(requested_root)}
+
+
+def _tracked_plugin_paths(plugin_path: Path) -> set[Path] | None:
+    """Return Git-tracked plugin paths, or None when Git metadata is unavailable."""
+    return _tracked_repository_paths(plugin_path)
+
+
+def _iter_repository_dotenv_files(root: Path):
+    tracked_paths = _tracked_repository_paths(root)
+    candidates = tracked_paths if tracked_paths is not None else {
+        path.resolve() for path in root.rglob("*") if path.is_file()
+    }
+    for path in sorted(candidates):
+        if not path.is_file():
+            continue
+        if path.name == ".env" or path.name.startswith(".env."):
+            yield path
+
+
+def _validate_repository_dotenv(root: Path, errors: list[str]) -> None:
+    for path in _iter_repository_dotenv_files(root):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (FileNotFoundError, UnicodeDecodeError):
+            continue
+        for pattern in SECRET_PATTERNS:
+            if pattern.search(text):
+                errors.append(f"credential-like secret found in repository dotenv file: {path}")
+                break
 
 
 def _iter_plugin_text_files(plugin_path: Path):
@@ -507,6 +537,7 @@ def validate_repository(
 ) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
+    _validate_repository_dotenv(root, errors)
     agent_marketplace_path = root / ".agents/plugins/marketplace.json"
     claude_marketplace_path = root / ".claude-plugin/marketplace.json"
     agent_marketplace = _load_json(agent_marketplace_path, errors)
