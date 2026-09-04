@@ -53,6 +53,22 @@ jobs:
             git rev-parse "${raw}^{commit}" 2>/dev/null || return 1
           }
 
+          remote_tag_exists() {
+            local tag="$1" rc
+            set +e
+            git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1
+            rc=$?
+            set -e
+            case "$rc" in
+              0) return 0 ;;
+              2) return 1 ;;
+              *)
+                echo "Unable to determine remote tag state for $tag (git ls-remote rc=$rc)." >&2
+                exit "$rc"
+                ;;
+            esac
+          }
+
           inspect_release() {
             local tag="$1"
             local json=""
@@ -74,7 +90,7 @@ jobs:
                   exit 1
                 fi
                 candidates+=("$resolved")
-                if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+                if remote_tag_exists "$tag"; then
                   echo "Draft $tag unexpectedly has a materialized tag." >&2
                   exit 1
                 fi
@@ -84,7 +100,9 @@ jobs:
                   echo "Published release $tag is not immutable." >&2
                   exit 1
                 fi
-                if ! git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+                if remote_tag_exists "$tag"; then
+                  :
+                else
                   echo "Published release $tag is missing its tag." >&2
                   exit 1
                 fi
@@ -93,7 +111,7 @@ jobs:
                 candidates+=("$tag_sha")
               fi
             else
-              if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
+              if remote_tag_exists "$tag"; then
                 echo "Tag-only release state is not allowed for $tag." >&2
                 exit 1
               fi
@@ -228,17 +246,24 @@ jobs:
             printf 'absent\t\n'
           }
 
-          tag_probe() {
-            local tag="$1"
-            if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
-              printf 'present\n'
-              return 0
-            fi
-            printf 'absent\n'
+          remote_tag_exists() {
+            local tag="$1" rc
+            set +e
+            git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1
+            rc=$?
+            set -e
+            case "$rc" in
+              0) return 0 ;;
+              2) return 1 ;;
+              *)
+                echo "Unable to determine remote tag state for $tag (git ls-remote rc=$rc)." >&2
+                exit "$rc"
+                ;;
+            esac
           }
 
           rollback_published_release() {
-            local tag="$1"
+            local tag="$1" probe_rc
             set +e
             gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1
             git fetch origin --prune --tags --force >/dev/null 2>&1
@@ -247,10 +272,19 @@ jobs:
               echo "Rollback residue: release $tag remains." >&2
               residue=1
             fi
-            if git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1; then
-              echo "Rollback residue: tag $tag remains." >&2
-              residue=1
-            fi
+            git ls-remote --exit-code origin "refs/tags/$tag" >/dev/null 2>&1
+            probe_rc=$?
+            case "$probe_rc" in
+              0)
+                echo "Rollback residue: tag $tag remains." >&2
+                residue=1
+                ;;
+              2) ;;
+              *)
+                echo "Rollback verification could not determine tag state for $tag (rc=$probe_rc)." >&2
+                residue=1
+                ;;
+            esac
             set -e
             return "$residue"
           }
@@ -312,12 +346,12 @@ jobs:
                 echo "Draft $tag targets $target ($resolved_target), expected $RELEASE_TARGET" >&2
                 exit 1
               fi
-              if [[ "$(tag_probe "$tag")" != "absent" ]]; then
+              if remote_tag_exists "$tag"; then
                 echo "Draft $tag unexpectedly materialized a tag." >&2
                 exit 1
               fi
             else
-              if [[ "$(tag_probe "$tag")" != "absent" ]]; then
+              if remote_tag_exists "$tag"; then
                 echo "Cannot reserve $tag: tag exists without a release." >&2
                 exit 1
               fi
@@ -325,7 +359,7 @@ jobs:
                 --repo "$GITHUB_REPOSITORY" \
                 --draft --target "$RELEASE_TARGET" \
                 --title "$title" --notes "$notes"
-              if [[ "$(tag_probe "$tag")" != "absent" ]]; then
+              if remote_tag_exists "$tag"; then
                 echo "Draft reservation $tag unexpectedly materialized a tag." >&2
                 exit 1
               fi
