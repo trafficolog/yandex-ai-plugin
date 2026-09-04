@@ -14,9 +14,11 @@ class FableReview5PublisherErrtraceTests(unittest.TestCase):
         segment = text[publish_step:verify_step]
 
         self.assertIn("set -Eeuo pipefail", segment)
-        trap = segment.index("trap cleanup_publish_failure ERR")
-        verify = segment.index('verify_published_release "$tag"', trap)
-        self.assertLess(trap, verify)
+        trap = segment.index("trap 'rc=$?; rollback_published_release \"$tag\" \"$rc\"' ERR")
+        publish = segment.index('gh release edit "$tag"', trap)
+        verify = segment.index('state="$(gh release view "$tag"', publish)
+        self.assertLess(trap, publish)
+        self.assertLess(publish, verify)
 
 
 if __name__ == "__main__":
