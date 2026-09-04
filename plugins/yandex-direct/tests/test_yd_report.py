@@ -27,6 +27,18 @@ class _Response:
         return False
 
 
+class _TrackingBody:
+    def __init__(self, body: bytes):
+        self.body = body
+        self.read_sizes = []
+
+    def read(self, size=-1):
+        self.read_sizes.append(size)
+        if size is None or size < 0:
+            return self.body
+        return self.body[:size]
+
+
 class TestReportHelpers(unittest.TestCase):
     def test_report_name_is_stable_when_supplied(self):
         body1 = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="audit-42")
@@ -123,7 +135,37 @@ class TestReportHelpers(unittest.TestCase):
         body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="campaign")
         self.assertNotIn("IncludeDiscount", body["params"])
 
-    def test_first_http_500_is_retried_once(self):
+    def test_http_error_body_is_bounded_and_replacement_decoded(self):
+        tracking = _TrackingBody(b"bad:\xff" + (b"x" * 5000) + b"TAIL-SENTINEL")
+        error = urllib.error.HTTPError(
+            yd_report.REPORTS_URL,
+            400,
+            "bad request",
+            {},
+            tracking,
+        )
+        body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="bounded-error")
+
+        def opener(request, timeout=0):
+            raise error
+
+        with self.assertRaises(RuntimeError) as ctx:
+            fetch_report("token", body, opener=opener)
+        self.assertEqual(tracking.read_sizes, [4096])
+        self.assertIn("bad:�", str(ctx.exception))
+        self.assertNotIn("TAIL-SENTINEL", str(ctx.exception))
+
+    def test_url_error_is_converted_to_secret_free_operational_failure(self):
+        body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="network-error")
+
+        def opener(request, timeout=0):
+            raise urllib.error.URLError("temporary DNS failure")
+
+        with self.assertRaisesRegex(RuntimeError, "Direct Reports network error") as ctx:
+            fetch_report("secret-token-value", body, opener=opener)
+        self.assertNotIn("secret-token-value", str(ctx.exception))
+
+    def test_first_http_500_is_retried_once_with_injected_transport(self):
         first = urllib.error.HTTPError(
             yd_report.REPORTS_URL,
             500,
@@ -132,12 +174,20 @@ class TestReportHelpers(unittest.TestCase):
             io.BytesIO(b"temporary"),
         )
         second = _Response(200, b"Date\tClicks\n2026-08-01\t1\n")
+        responses = [first, second]
+        sleeps = []
+
+        def opener(request, timeout=0):
+            current = responses.pop(0)
+            if isinstance(current, Exception):
+                raise current
+            return current
+
         body = build_report_body("campaign", "2026-08-01", "2026-08-31", report_name="retry-500")
-        with patch.object(yd_report.urllib.request, "urlopen", side_effect=[first, second]) as opener:
-            with patch.object(yd_report.time, "sleep"):
-                text = fetch_report("token", body, max_attempts=3)
+        text = fetch_report("token", body, max_attempts=3, opener=opener, sleep=sleeps.append)
         self.assertIn("2026-08-01", text)
-        self.assertEqual(opener.call_count, 2)
+        self.assertEqual(len(responses), 0)
+        self.assertEqual(sleeps, [1])
 
 
 if __name__ == "__main__":
