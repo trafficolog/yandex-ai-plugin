@@ -79,15 +79,19 @@ A future plugin release may add entries such as:
 ### Manifest invariants
 
 - `schema_version` must equal `1`.
+- A repository release declaration is always required; every new release set gets a new repository SemVer/tag even when only one plugin changes.
 - Repository `version` must be strict SemVer and `tag` must equal that version.
+- An already-immutable repository release declaration must never be reused to append/remove plugin release entries later; that is a new release set and requires the next repository SemVer.
 - Repository notes file must be a repository-relative Markdown path under `.github/releases/` and must exist.
 - Plugin identifiers must match an existing plugin directory and marketplace/plugin manifests.
-- Plugin `version` must equal the plugin's owning manifest version at the release target.
+- Plugin `version` must equal both owning plugin manifest versions at the release target (`.codex-plugin/plugin.json` and `.claude-plugin/plugin.json`).
 - Plugin tag must be exactly `yandex-<service>-v<version>`.
 - Plugin entries must be unique by plugin and tag.
 - No release tag may appear twice across repository/plugin entries.
 - `plugins: []` means a repository-only release.
 - The manifest is human-authorized release intent; file-change detection must not silently add release entries.
+
+This preserves independent plugin SemVer without permitting a release set to be extended after its repository record has become immutable.
 
 A small repository-owned validator/helper should parse this contract so CI and the publisher use the same local interpretation instead of duplicating JSON parsing rules in shell.
 
@@ -170,10 +174,10 @@ At minimum it runs:
 - `python scripts/validate_repo.py`;
 - `python -m unittest discover -s tests -v`.
 
-The manifest validator also checks repository release surfaces for `1.0.6`:
+The manifest validator also checks repository release surfaces against the repository version declared by `release.json` (which is `1.0.6` in PR B):
 
-- root RU/EN changelog contains `1.0.6`;
-- root RU/EN README current release badge/version contains `1.0.6`;
+- root RU/EN changelog contains the declared repository version;
+- root RU/EN README current release badge/version contains the declared repository version;
 - plugin entries, when present, agree with their plugin manifests and version surfaces.
 
 The generic publisher must not hardcode all seven plugin versions for a repository-only release. Plugin versions remain validator-owned repository state unless a plugin is explicitly listed for publication.
@@ -212,7 +216,8 @@ New generic tests should establish these contracts:
 12. cleanup probes immutability before delete and never deletes immutable history;
 13. rollback is disarmed before any post-immutability tag/target probe;
 14. final verification covers every declared release item;
-15. the publisher never creates plugin tags when `plugins` is empty.
+15. the publisher never creates plugin tags when `plugins` is empty;
+16. a release-set change cannot reuse the same already-current repository SemVer while altering plugin entries.
 
 Workflow-specific tests that only pin removed historical YAML are deleted or rewritten into the generic contract suite. Safety assertions with continuing value are migrated, not silently discarded.
 
@@ -233,7 +238,9 @@ Release notes describe the single-publisher migration, manifest contract, legacy
 
 ## 13. Future release procedure
 
-After `1.0.6`, a normal repository release does not add another workflow.
+After `1.0.6`, a normal release does not add another workflow.
+
+Every new release set receives the next repository SemVer, even when only selected plugins change. Independent plugin SemVer still changes only for the plugins whose own contract changes.
 
 The release PR updates:
 
