@@ -29,6 +29,12 @@ The preferred backend order is consistent: compatible connected MCP/app → bund
 
 A service plugin performs the API call or reads an export, normalizes the result only within its documented contract, and sends provenance plus limitations downstream. A cross-service plugin analyzes those inputs without creating a second transport stack.
 
+### Cross-service authentication metadata
+
+The `.agents` marketplace schema requires a supported authentication policy, so transport-free `yandex-seo` and `yandex-marketing` use `policy.authentication: ON_USE`. In this case it is **schema-compatible deferred-auth metadata**: authentication is deferred until an owning service plugin is invoked, and that service plugin owns the real credentials and transport. `ON_USE` does not give SEO/Marketing Yandex credentials, an HTTP client, or authority to bypass service ownership; repository validation separately rejects those transport/credential surfaces in cross-service plugins.
+
+Other documents may retain a concise reminder, but `ARCHITECTURE` is the canonical explanatory source for `ON_USE` semantics in transport-free orchestration.
+
 ## 3. Safety and write ownership
 
 Common lifecycle:
@@ -59,7 +65,7 @@ Provenance preserves the origin of a metric, query, URL, period, attribution con
 ```mermaid
 flowchart LR
   W[Wordstat] --> E[SEO Evidence Bundle]
-  S[Search] --> E
+  S --> E
   WM[Webmaster] --> E
   M[Metrika] --> E
   E --> O[SEO Orchestrator]
