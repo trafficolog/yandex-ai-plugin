@@ -81,7 +81,7 @@ Cross-service/adjacent work is routed to the owning installed plugin. An orchest
 
 Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning and safety semantics remain backend-independent.
 
-Cross-service plugins may prepare delegated previews but own no service transport or credentials. In the `.agents` marketplace they use `policy.authentication: ON_USE` because the marketplace schema requires an authentication policy from the supported `ON_INSTALL` / `ON_USE` values. For transport-free orchestration this is **schema-compatible deferred-auth metadata**, not a claim that the plugin owns credentials: repository validation separately rejects `.env.example` and service transport inside `yandex-seo` / `yandex-marketing`.
+Cross-service plugins may prepare delegated previews but own no service transport or credentials. Their `.agents` entries use `policy.authentication: ON_USE`; the canonical explanation of deferred authentication and ownership is in [`ARCHITECTURE.en.md`](ARCHITECTURE.en.md). Validation separately rejects `.env.example` and service transport inside `yandex-seo` / `yandex-marketing`.
 
 ## 5. Skill conventions
 
