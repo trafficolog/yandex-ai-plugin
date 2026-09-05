@@ -29,11 +29,14 @@ class ReleaseManifestTests(unittest.TestCase):
         *,
         repository_version="1.0.6",
         repository_tag="1.0.6",
+        repository_title=None,
         notes_file=".github/releases/1.0.6.md",
         create_notes=True,
+        surface_version=None,
         plugin=None,
         plugin_version=None,
         plugin_tag=None,
+        plugin_title=None,
         actual_plugin_version=None,
         duplicate_plugin=False,
     ):
@@ -47,6 +50,12 @@ class ReleaseManifestTests(unittest.TestCase):
             notes_path = root / notes_file
             notes_path.parent.mkdir(parents=True, exist_ok=True)
             notes_path.write_text("release notes\n", encoding="utf-8")
+
+        declared_surface_version = surface_version or repository_version
+        (root / "README.md").write_text(f"release-{declared_surface_version}\n", encoding="utf-8")
+        (root / "README.en.md").write_text(f"release-{declared_surface_version}\n", encoding="utf-8")
+        (root / "CHANGELOG.md").write_text(f"## [{declared_surface_version}] — 2026-09-05\n", encoding="utf-8")
+        (root / "CHANGELOG.en.md").write_text(f"## [{declared_surface_version}] — 2026-09-05\n", encoding="utf-8")
 
         plugins = []
         if plugin is not None:
@@ -62,7 +71,7 @@ class ReleaseManifestTests(unittest.TestCase):
                 "plugin": plugin,
                 "version": declared_version,
                 "tag": plugin_tag or f"{plugin}-v{declared_version}",
-                "title": f"{plugin} {declared_version}",
+                "title": plugin_title or f"{plugin} {declared_version}",
                 "notes_file": f".github/releases/{plugin}-v{declared_version}.md",
             }
             (releases / f"{plugin}-v{declared_version}.md").write_text("plugin notes\n", encoding="utf-8")
@@ -75,7 +84,7 @@ class ReleaseManifestTests(unittest.TestCase):
             "repository": {
                 "version": repository_version,
                 "tag": repository_tag,
-                "title": f"Repository {repository_version}",
+                "title": repository_title or f"Repository {repository_version}",
                 "notes_file": notes_file,
             },
             "plugins": plugins,
@@ -142,6 +151,29 @@ class ReleaseManifestTests(unittest.TestCase):
         errors = self.validate(root)
         self.assertTrue(any("duplicate plugin" in error for error in errors))
         self.assertTrue(any("duplicate release tag" in error for error in errors))
+
+    def test_tsv_emitted_scalars_reject_tabs_and_line_breaks(self):
+        repository_root = self.make_fixture(repository_title="Repository 1.0.6\ninjected")
+        repository_errors = self.validate(repository_root)
+        self.assertTrue(any("TSV control character" in error for error in repository_errors), repository_errors)
+
+        plugin_root = self.make_fixture(
+            plugin="yandex-wordstat",
+            plugin_version="1.1.2",
+            plugin_title="Yandex Wordstat\t1.1.2",
+        )
+        plugin_errors = self.validate(plugin_root)
+        self.assertTrue(any("TSV control character" in error for error in plugin_errors), plugin_errors)
+
+    def test_repository_release_surfaces_must_match_declared_version(self):
+        root = self.make_fixture(repository_version="1.0.6", surface_version="1.0.5")
+        errors = self.validate(root)
+        for filename in ("README.md", "README.en.md", "CHANGELOG.md", "CHANGELOG.en.md"):
+            with self.subTest(filename=filename):
+                self.assertTrue(
+                    any(filename in error and "1.0.6" in error for error in errors),
+                    errors,
+                )
 
 
 if __name__ == "__main__":
