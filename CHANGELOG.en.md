@@ -4,6 +4,24 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.8] — 2026-09-05
+
+Repository-only release closing the remaining Fable Round 2 governance/documentation gaps. Production runtime and plugin SemVer are unchanged.
+
+### Changed
+
+- Production-facing plugin documentation no longer treats `docs/superpowers/` as a normative source; historical implementation context remains available while canonical contracts live in production docs/tests.
+- Current Wordstat naming is normalized, Russian remains the primary prose language, and RU/EN pairs are mechanically checked.
+- `PLUGIN_STANDARD` adds `REQ-SKILL-CONTENT`, linking progressive disclosure, body semantics, and validator-enforced bounds under one explicit repository requirement.
+- Long-form cross-service `authentication: ON_USE` / deferred-auth semantics are centralized in `ARCHITECTURE`; SEO/Marketing retain concise references plus the transport-ownership boundary.
+- The ROADMAP separates initial shipped versions from current versions and explicitly leaves a model semantic eval runner/backend equivalence in backlog rather than treating structural fixture validation as semantic model proof.
+- Added community-governance templates/Code of Conduct and a bilingual dated Fable Round 2 closure artifact.
+- Release intent remains repository-only: `.github/releases/release.json` contains `plugins: []`, so no new plugin tags are published.
+
+### Plugin versions unchanged
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.7] — 2026-09-05
 
 Repository-only release for governance and contract-traceability hardening. Production runtime and plugin SemVer are unchanged.
