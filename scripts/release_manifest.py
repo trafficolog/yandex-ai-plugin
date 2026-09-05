@@ -22,6 +22,7 @@ SEMVER_RE = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?"
     r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
 )
+TSV_CONTROL_CHARS = ("\t", "\r", "\n")
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,9 @@ def _required_string(obj: dict[str, Any], key: str, label: str, errors: list[str
     if not isinstance(value, str) or not value.strip():
         errors.append(f"{label}.{key} must be a non-empty string")
         return None
+    if any(control in value for control in TSV_CONTROL_CHARS):
+        errors.append(f"{label}.{key} must not contain a TSV control character")
+        return None
     return value.strip()
 
 
@@ -99,6 +103,31 @@ def _validate_notes_file(root: Path, notes_file: str | None, label: str, errors:
         errors.append(f"{label}.notes_file must be a Markdown file under .github/releases")
     if not resolved.is_file():
         errors.append(f"{label} notes file does not exist: {notes_file}")
+
+
+def _validate_repository_release_surfaces(root: Path, version: str | None, errors: list[str]) -> None:
+    if version is None:
+        return
+    required_markers = {
+        "README.md": f"release-{version}",
+        "README.en.md": f"release-{version}",
+        "CHANGELOG.md": f"## [{version}]",
+        "CHANGELOG.en.md": f"## [{version}]",
+    }
+    for filename, marker in required_markers.items():
+        path = root / filename
+        try:
+            text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            errors.append(f"{filename} does not exist for declared repository release {version}")
+            continue
+        except (OSError, UnicodeError) as exc:
+            errors.append(f"{filename} is unreadable for declared repository release {version}: {exc}")
+            continue
+        if marker not in text:
+            errors.append(
+                f"{filename} must contain declared repository release {version} marker {marker!r}"
+            )
 
 
 def validate_release_manifest(root: Path, manifest_path: Path | None = None) -> list[str]:
@@ -140,6 +169,7 @@ def validate_release_manifest(root: Path, manifest_path: Path | None = None) -> 
             f"repository tag must equal version: tag={repository_tag!r} version={repository_version!r}"
         )
     _validate_notes_file(root, repository_notes, "repository", errors)
+    _validate_repository_release_surfaces(root, repository_version, errors)
 
     seen_plugins: set[str] = set()
     seen_tags: set[str] = set()
