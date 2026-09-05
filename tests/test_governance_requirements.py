@@ -19,7 +19,10 @@ def parse_rows(text: str) -> list[list[str]]:
     for line in text.splitlines():
         if not line.startswith("| REQ-"):
             continue
-        rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells[0] == "REQ-ID":
+            continue
+        rows.append(cells)
     return rows
 
 
