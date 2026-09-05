@@ -28,7 +28,7 @@ Status reflects what this repository actually ships, not upstream product availa
 - `yandex-marketing`: **available 1.1.0** — Direct + Metrika + Wordstat, Search optional; `canonical` / `reconciliation_only` / `enrichment` roles are explicit.
 - `yandex-ecommerce`, `yandex-mobile-growth`, `yandex-growth`: backlog ideas only.
 
-Cross-service `.agents` entries use `authentication: ON_USE` as schema-compatible deferred-auth metadata; SEO/Marketing still own no Yandex credentials or HTTP transport.
+Cross-service `.agents` entries use `authentication: ON_USE`; SEO/Marketing still own no Yandex credentials or HTTP transport. Canonical explanation: [`ARCHITECTURE.en.md`](ARCHITECTURE.en.md).
 
 ## Phase 7 — Topical Architecture & Semantic Cocoons
 
