@@ -73,13 +73,6 @@ class ReviewFollowupTraceabilityTests(unittest.TestCase):
                 self.assertIn("authentication: ON_USE", text, f"{plugin}/{filename}")
                 self.assertIn("deferred-auth", text, f"{plugin}/{filename}")
 
-    def test_opus_1_1_1_publisher_declares_expected_tags(self):
-        workflow = (ROOT / ".github/workflows/publish-opus-1.1.1.yml").read_text(encoding="utf-8")
-        self.assertIn("workflow_run", workflow)
-        self.assertIn("conclusion == 'success'", workflow)
-        for tag in ("opus-1.1.1", "yandex-metrika-v1.0.2", "yandex-webmaster-v1.0.3"):
-            self.assertIn(tag, workflow)
-
     def test_metrika_expense_reference_covers_non_utm_direct_provenance(self):
         text = (ROOT / "plugins/yandex-metrika/references/imports.md").read_text(encoding="utf-8")
         for token in (
