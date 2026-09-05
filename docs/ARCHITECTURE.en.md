@@ -65,7 +65,7 @@ Provenance preserves the origin of a metric, query, URL, period, attribution con
 ```mermaid
 flowchart LR
   W[Wordstat] --> E[SEO Evidence Bundle]
-  S --> E
+  S[Search] --> E
   WM[Webmaster] --> E
   M[Metrika] --> E
   E --> O[SEO Orchestrator]

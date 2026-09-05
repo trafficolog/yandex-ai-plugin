@@ -38,8 +38,8 @@ class DocumentationGuardTests(unittest.TestCase):
         marker = "### Phase 6B — Yandex Marketing"
         self.assertIn(marker, content)
         phase = content.split(marker, 1)[1].split("# Future release backlog", 1)[0]
-        self.assertIn("Implemented as plugin `1.0.0`", phase)
-        self.assertIn("no Yandex API clients", phase)
+        self.assertIn("Изначально выпущен как plugin `1.0.0`", phase)
+        self.assertIn("не содержит Yandex API clients", phase)
 
     def test_release_history_documents_prior_releases(self):
         self.assertTrue((ROOT / "CHANGELOG.md").is_file())
