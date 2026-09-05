@@ -2,13 +2,13 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.7-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.8-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace of independent AI plugins **for Yandex services** — Direct, Metrika, Webmaster, Wordstat, Search, plus cross-service SEO/Marketing orchestration — used from AI agents and coding assistants. This is not a plugin set for YandexGPT: each plugin gives an agent specialized skills, verifiable API/workflow contracts, and a safe path to the owning Yandex service.
 
-The current repository release is `1.0.7`. Plugins version independently; published release/tag records are treated as immutable.
+The current repository release is `1.0.8`. Plugins version independently; published release/tag records are treated as immutable.
 
 ## What this is and who it is for
 
@@ -170,8 +170,11 @@ Strict reference freshness is checked separately with `python scripts/check_refe
 - [`docs/RELEASE_POLICY.en.md`](docs/RELEASE_POLICY.en.md) — repository/plugin versioning and release gates;
 - [`docs/REVIEW_FIRST_RELEASE.en.md`](docs/REVIEW_FIRST_RELEASE.en.md) — independent review guide;
 - [`docs/reviews/README.en.md`](docs/reviews/README.en.md) — index of dated independent review artifacts;
-- [`docs/reviews/2026-09-05-opus-codex-governance.en.md`](docs/reviews/2026-09-05-opus-codex-governance.en.md) — latest dated governance review artifact;
+- [`docs/reviews/2026-09-05-fable-round2-closure.en.md`](docs/reviews/2026-09-05-fable-round2-closure.en.md) — latest dated Fable Round 2 remediation artifact;
+- [`docs/reviews/2026-09-05-opus-codex-governance.en.md`](docs/reviews/2026-09-05-opus-codex-governance.en.md) — previous governance review artifact;
+- [`SECURITY.en.md`](SECURITY.en.md) — security-sensitive reporting guidance;
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contributor entrypoint;
+- [`CODE_OF_CONDUCT.en.md`](CODE_OF_CONDUCT.en.md) — repository community interaction baseline;
 - [`CHANGELOG.en.md`](CHANGELOG.en.md) · [Russian changelog](CHANGELOG.md).
 
 ## Structure

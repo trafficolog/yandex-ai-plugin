@@ -6,7 +6,7 @@ Version `1.1.0`. Read/analyze/recommend/preview cross-service paid-acquisition p
 
 > `DOCS 1.0.0` changes documentation only.
 
-Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that Marketing owns a credential surface.
+Marketplace policy: the `.agents` entry uses `authentication: ON_USE`; for transport-free Marketing, authentication occurs only in owning service plugins. Full deferred-authentication and transport-ownership semantics: [`docs/ARCHITECTURE.en.md`](../../docs/ARCHITECTURE.en.md).
 
 ## Orchestration
 
@@ -51,7 +51,7 @@ Generic `metric: demand` is forbidden. Money evidence without currency/VAT/perio
 
 ## Finding taxonomy
 
-`IMPLEMENTED_FINDING_TYPES` contains only the nine deterministic classes actually produced locally. Future classes live in `DEFERRED_FINDING_TYPES`; unknown/deferred findings sort after implemented types with `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` is accepted only as an approved external finding for narrow goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` routing is removed. The normative mapping between design vocabulary and the executable taxonomy is pinned in `docs/superpowers/specs/2026-09-02-yandex-marketing-plugin-design.md`.
+`IMPLEMENTED_FINDING_TYPES` contains only the nine deterministic classes actually produced locally. Future classes live in `DEFERRED_FINDING_TYPES`; unknown/deferred findings sort after implemented types with `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` is accepted only as an approved external finding for narrow goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` routing is removed. The normative vocabulary-to-executable taxonomy mapping is defined by the current Marketing scripts/tests and repository production contracts; historical design specs may be consulted only as non-normative implementation context.
 
 ```bash
 python -m unittest discover -s tests -v

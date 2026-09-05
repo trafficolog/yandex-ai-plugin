@@ -4,6 +4,24 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.8] — 2026-09-05
+
+Repository-only release для закрытия остаточных Fable Round 2 governance/documentation gaps. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- Production-facing plugin docs больше не используют `docs/superpowers/` как нормативный источник; historical implementation context остаётся доступным, но canonical contracts находятся в production docs/tests.
+- Текущее именование Wordstat унифицировано, русский текст закреплён как primary prose, а RU/EN pairs проверяются механически.
+- `PLUGIN_STANDARD` получил `REQ-SKILL-CONTENT`: progressive disclosure, body semantics и validator-enforced bounds теперь связаны одним явным repository requirement.
+- Длинная семантика cross-service `authentication: ON_USE` / deferred-auth централизована в `ARCHITECTURE`; SEO/Marketing сохраняют только краткую ссылку и transport ownership boundary.
+- ROADMAP отделяет initial shipped versions от текущих и явно оставляет model semantic eval runner/backend equivalence в backlog, не выдавая structural eval validation за semantic model proof.
+- Добавлены community governance templates/Code of Conduct и bilingual dated Fable Round 2 closure artifact.
+- Release intent остаётся repository-only: `.github/releases/release.json` содержит `plugins: []`, поэтому новые plugin tags не публикуются.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.7] — 2026-09-05
 
 Repository-only release для hardening governance и contract traceability. Production runtime и SemVer плагинов не меняются.

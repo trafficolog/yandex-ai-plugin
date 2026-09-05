@@ -11,7 +11,7 @@
 | Yandex Direct | 1 | **available** | 2.0.1 | campaigns, audit, reports, optimization, keywords, budget; exact-preview write approval; hardened Reports transport | bundled API helper; future MCP/app adapter |
 | Yandex Metrika | 1 | **available** | 2.0.0 | reporting, conversions, ecommerce, attribution, goals, Logs API, imports; provenance-aware Direct expense duplication guard; exact-preview write approval | bundled API helpers; optional MCP/app backend |
 | Yandex Webmaster | 1 | **available** | 2.0.0 | indexing, diagnostics, queries, sitemaps, recrawl, links, feeds, exports; verified indexing archive `state` contract; exact-preview write approval | bundled API helpers; optional MCP/app backend |
-| Yandex Wordstat | 1 | **available** | 1.1.2 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Cloud Wordstat v2 helpers; optional MCP/app backend |
+| Yandex Wordstat | 1 | **available** | 1.1.2 | demand, frequency, semantics, dynamics, regions, trends; candidate topic maps; 20-association cap; unambiguous seed/topic relation provenance | bundled Wordstat API в составе Yandex Search API v2 helpers; optional MCP/app backend |
 | Yandex Search | 1 | **available** | 1.0.2 | web SERP, batch, rankings, competitors, URL-overlap clustering; 250-result depth | bundled Search API v2 helpers; optional MCP/app backend |
 | Yandex SEO | X | **available** | 1.1.2 | cross-service demand, visibility, performance, gaps, cannibalization, topical architecture, internal-link planning, prioritization; hardened structural/link artifact validation | pure-data orchestration over Wordstat + Search + Webmaster + Metrika |
 | Yandex Marketing | X | **available** | 1.1.0 | paid performance, KPI reconciliation, evidence roles, demand/query intelligence, landing/budget opportunities | pure-data orchestration over Direct + Metrika + Wordstat with optional Search context |
@@ -28,7 +28,7 @@
 - `yandex-marketing`: **available 1.1.0** — Direct + Metrika + Wordstat, Search optional; `canonical` / `reconciliation_only` / `enrichment` roles explicit.
 - `yandex-ecommerce`, `yandex-mobile-growth`, `yandex-growth`: backlog ideas only.
 
-Cross-service `.agents` entries use `authentication: ON_USE` as schema-compatible deferred-auth metadata; SEO/Marketing still own no Yandex credentials or HTTP transport.
+Cross-service `.agents` entries используют `authentication: ON_USE`; SEO/Marketing по-прежнему не владеют Yandex credentials или HTTP transport. Canonical explanation: [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Phase 7 — Topical Architecture & Semantic Cocoons
 

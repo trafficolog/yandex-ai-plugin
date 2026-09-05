@@ -6,7 +6,7 @@
 
 > Phase 7 `1.1.0` добавил Topical Architecture и Internal Linking; patch `1.1.1` усиливает transport-free artifact integrity: structural nodes используют field whitelist, а candidate-link `evidence` обязан быть list. Search остаётся владельцем SERP-overlap clustering.
 
-Marketplace policy: `.agents` entry использует `authentication: ON_USE` как schema-compatible deferred-auth metadata. Для этого transport-free плагина это означает отложенную авторизацию в сервисных плагинах-владельцах, а не собственную credential surface.
+Marketplace policy: `.agents` entry использует `authentication: ON_USE`; для transport-free SEO authentication выполняется только в owning service plugins. Полная семантика deferred-auth metadata и transport ownership: [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 
 ## Оркестрация
 

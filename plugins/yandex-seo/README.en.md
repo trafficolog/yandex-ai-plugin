@@ -6,7 +6,7 @@ Version `1.1.2`. Read-only cross-service orchestration over structured Wordstat,
 
 > Phase 7 `1.1.0` added Topical Architecture and Internal Linking; patch `1.1.1` hardens transport-free artifact integrity with a structural-node field whitelist and list-typed candidate-link `evidence`. Search remains the owner of SERP-overlap clustering.
 
-Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that SEO owns a credential surface.
+Marketplace policy: the `.agents` entry uses `authentication: ON_USE`; for transport-free SEO, authentication occurs only in owning service plugins. Full deferred-authentication and transport-ownership semantics: [`docs/ARCHITECTURE.en.md`](../../docs/ARCHITECTURE.en.md).
 
 ## Orchestration
 

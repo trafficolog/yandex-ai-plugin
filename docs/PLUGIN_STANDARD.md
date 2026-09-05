@@ -31,6 +31,7 @@ Plugin — граница установки и versioning. `SKILL.md` — disco
 | REQ-ID | Requirement | Enforcement | Canonical document |
 |---|---|---|---|
 | REQ-SKILL-ROUTING | Каждый plugin имеет router и focused task-specific skills. | validator + CI | `scripts/validate_repo.py`, этот standard |
+| REQ-SKILL-CONTENT | `SKILL.md` сохраняет bounded discoverable metadata/content, progressive disclosure, явные ownership/delegation boundaries и limitation propagation; write-capable skills сохраняют repository safety metadata. | validator + CI + review | `scripts/validate_repo.py`, этот standard, `ARCHITECTURE.md` |
 | REQ-REFERENCE-VOLATILITY | Volatile API/platform facts хранятся в references, а freshness-controlled facts имеют verification metadata. | validator + CI + review | `scripts/contract_controls.py`, этот standard |
 | REQ-HELPER-TESTS | Bundled executable helpers имеют regression tests, а high-risk contracts используют exact test traceability. | validator + CI + review | `docs/CONTRACT_MATRIX.json`, `scripts/contract_controls.py` |
 | REQ-EVAL-CONTRACT | Plugins поддерживают structurally valid offline eval expectations без заявления model execution, пока runner реально их не запускает. | validator + CI + review | `docs/EVAL_TOKEN_REGISTRY.json`, этот standard |
@@ -80,7 +81,7 @@ Cross-service/adjacent work маршрутизируется в owning installed
 
 Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning и safety semantics не должны зависеть от backend.
 
-Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials. В `.agents` marketplace они используют `policy.authentication: ON_USE`, потому что marketplace schema требует authentication policy из поддерживаемых `ON_INSTALL` / `ON_USE`. Для transport-free orchestration это **schema-compatible deferred-auth metadata**, а не заявление о собственной credential surface: validator отдельно запрещает `.env.example` и service transport в `yandex-seo` / `yandex-marketing`.
+Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials. Их `.agents` entries используют `policy.authentication: ON_USE`; canonical explanation deferred authentication и ownership находится в [`ARCHITECTURE.md`](ARCHITECTURE.md). Validator отдельно запрещает `.env.example` и service transport в `yandex-seo` / `yandex-marketing`.
 
 ## 5. Skill conventions
 
@@ -91,7 +92,11 @@ description: Use when ...
 ---
 ```
 
-Описание начинается с `Use when`. References содержат длинные/изменчивые API facts.
+Механический repository contract требует, чтобы frontmatter `name` совпадал с directory skill, `description` начинался с `Use when`, а длина description оставалась в пределах `32–500` characters. Размер `SKILL.md` не должен превышать `15 KiB` (`15 * 1024` bytes). Длинные или volatile facts выносятся в `references/` по принципу progressive disclosure вместо раздувания discoverable skill body.
+
+Для write-capable skills, участвующих в write eval contract, body сохраняет repository safety metadata `approval-contract: exact-preview` и `untrusted-data-policy: data-not-instructions`; эти markers не заменяют полную safety semantics из §3.
+
+Semantic review дополнительно проверяет, что skill обозначает или делает понятным, когда он не должен владеть запросом; adjacent capability делегируется или маршрутизируется в owning skill/plugin вместо скрытого поглощения; source/API limitations сохраняются downstream; body не должен переопределять repository-wide approval или ownership semantics. Эти body semantics относятся к review + policy и намеренно не превращаются в brittle обязательные heading-grep правила.
 
 ## 6. API freshness
 

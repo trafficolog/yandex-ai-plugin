@@ -21,6 +21,7 @@ Reviewer absence or a quota/tool limitation **is not a clean review**.
 
 ## Artifacts
 
+- [`2026-09-05 — Fable 5.1 Round 2 closure`](2026-09-05-fable-round2-closure.en.md) — cross-check of the earlier normative audit after out-of-order remediation and disposition of remaining findings in repository `1.0.8`.
 - [`2026-09-05 — Opus/Codex governance review`](2026-09-05-opus-codex-governance.en.md) — governance/validator audit gaps plus follow-up review of release-infrastructure PR #56.
 
 Canonical production requirements live in [`PLUGIN_STANDARD.en.md`](../PLUGIN_STANDARD.en.md), [`RELEASE_POLICY.en.md`](../RELEASE_POLICY.en.md), executable validators/tests, plugin `SKILL.md`/references, and machine-owned registries/matrices. Files under `docs/superpowers/` are historical implementation context.
