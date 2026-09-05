@@ -308,13 +308,17 @@ def main(argv: list[str] | None = None) -> int:
             client_login=args.client_login,
             environment=environment,
         )
+        request_kwargs: dict[str, Any] = {
+            "dry_run": dry_run,
+            "approve": args.approve,
+        }
+        if is_write:
+            request_kwargs["ack_bulk"] = args.ack_bulk
         result = client.request(
             args.service,
             args.method,
             params,
-            dry_run=dry_run,
-            approve=args.approve,
-            ack_bulk=args.ack_bulk,
+            **request_kwargs,
         )
     except json.JSONDecodeError as exc:
         return emit_cli_error("input", str(exc))
