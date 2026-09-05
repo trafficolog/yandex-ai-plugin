@@ -4,6 +4,23 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.10] — 2026-09-05
+
+Repository-only supply-chain hardening release closing issue #43. Production runtime and plugin SemVer are unchanged.
+
+### Changed
+
+- Every external GitHub Action in the three active workflows is pinned to a full immutable 40-hex commit SHA instead of a mutable major tag.
+- Active workflows also move to the Node 24 action generation: `actions/checkout` v5, `actions/setup-python` v6, and `actions/github-script` v8.
+- Added `.github/dependabot.yml` for weekly `github-actions` update PRs so pinned SHA refreshes arrive as reviewable changes.
+- Added a fail-closed regression contract rejecting mutable/non-SHA external `uses:` refs and requiring the Dependabot GitHub Actions update contract.
+- Exact-head PR CI verifies that the previous Node 20 action-runtime deprecation warning is no longer emitted.
+- Release intent remains repository-only: `.github/releases/release.json` contains `plugins: []`, so no new plugin tags are published.
+
+### Plugin versions unchanged
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.9] — 2026-09-05
 
 Repository-only release defining a depth-first product strategy after the Fable 5.1 review. Production runtime and plugin SemVer are unchanged.
