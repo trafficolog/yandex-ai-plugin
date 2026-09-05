@@ -194,6 +194,7 @@ class YandexDirectClient:
         *,
         dry_run: bool = False,
         approve: str | None = None,
+        ack_bulk: bool = False,
     ) -> dict[str, Any]:
         body = self.body(method, params)
         envelope = self.approval_envelope(service, method, params)
@@ -212,8 +213,11 @@ class YandexDirectClient:
                 "safety": envelope["safety"],
             }
 
-        if not is_read_method(method):
-            require_approval(envelope, approve)
+        approved_preview: str | None = None
+        consequential = not is_read_method(method)
+        if consequential:
+            approved_preview = require_approval(envelope, approve)
+            _safety.require_bulk_ack(envelope["cardinality"], ack_bulk)
 
         try:
             data, transport = _http.request_json(
@@ -231,6 +235,22 @@ class YandexDirectClient:
             request_id = transport.get("request_id") or data.get("request_id") or data.get("RequestId")
             suffix = f" request_id={request_id}" if request_id else ""
             raise YandexDirectError(f"Yandex Direct API error: {err}{suffix}", error_type="api")
+
+        if consequential:
+            receipt = _safety.execution_receipt(
+                preview_id=approved_preview or "",
+                plugin="yandex-direct",
+                operation=envelope["operation"],
+                target=envelope["target"],
+                cardinality=envelope["cardinality"],
+                result=data,
+                verification_capability="RESPONSE_ONLY",
+                verification_state="UNVERIFIED",
+                rollback_capability="NOT_AVAILABLE",
+            )
+            receipt["transport"] = transport
+            return receipt
+
         return {"result": data, "transport": transport}
 
 
@@ -262,6 +282,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sandbox", action="store_true", help="Use the official Yandex Direct sandbox endpoint")
     parser.add_argument("--execute", action="store_true", help="Execute consequential operation")
     parser.add_argument("--approve", help="Full preview_id for the exact consequential preview")
+    parser.add_argument(
+        "--ack-bulk",
+        action="store_true",
+        help="Acknowledge bulk or unknown operation scale after reviewing the exact preview",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Preview any operation")
     args = parser.parse_args(raw_argv)
 
@@ -289,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
             params,
             dry_run=dry_run,
             approve=args.approve,
+            ack_bulk=args.ack_bulk,
         )
     except json.JSONDecodeError as exc:
         return emit_cli_error("input", str(exc))
