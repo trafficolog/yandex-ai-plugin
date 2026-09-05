@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "repository": {
+    "version": "1.0.6",
+    "tag": "1.0.6",
+    "title": "Repository 1.0.6",
+    "notes_file": ".github/releases/1.0.6.md"
+  },
+  "plugins": []
+}
