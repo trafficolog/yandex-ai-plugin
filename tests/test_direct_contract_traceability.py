@@ -16,13 +16,13 @@ class DirectContractTraceabilityTests(unittest.TestCase):
         cls.matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
         cls.contracts = {item["id"]: item for item in cls.matrix["contracts"]}
 
-    def assert_contract_traces(self, contract_id, *, skill, helper, test, reference):
+    def assert_contract_traces(self, contract_id, *, skill, helper, test_ref, reference):
         contract = self.contracts[contract_id]
         self.assertEqual(contract["plugin"], "yandex-direct")
         self.assertEqual(contract["status"], "implemented")
         self.assertIn(skill, contract["skills"])
         self.assertIn(helper, contract["helpers"])
-        self.assertIn(test, contract["tests"])
+        self.assertIn(test_ref, contract["test_refs"])
         self.assertIn(reference, contract["references"])
 
     def test_reports_async_transport_contract_is_explicit(self):
@@ -30,7 +30,7 @@ class DirectContractTraceabilityTests(unittest.TestCase):
             "direct.reports-async-transport",
             skill="plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md",
             helper="plugins/yandex-direct/scripts/yd_report.py",
-            test="plugins/yandex-direct/tests/test_yd_report.py",
+            test_ref="plugins/yandex-direct/tests/test_yd_report.py::TestReportHelpers::test_first_http_500_is_retried_once_with_injected_transport",
             reference="plugins/yandex-direct/references/api-2026.md",
         )
 
@@ -39,7 +39,7 @@ class DirectContractTraceabilityTests(unittest.TestCase):
             "direct.reports-kpi-provenance",
             skill="plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md",
             helper="plugins/yandex-direct/scripts/yd_report.py",
-            test="plugins/yandex-direct/tests/test_yd_report.py",
+            test_ref="plugins/yandex-direct/tests/test_yd_report.py::TestReportHelpers::test_report_metadata_preserves_kpi_context_without_inventing_currency",
             reference="plugins/yandex-direct/references/reporting.md",
         )
 
@@ -48,7 +48,7 @@ class DirectContractTraceabilityTests(unittest.TestCase):
             "direct.creation-not-activation",
             skill="plugins/yandex-direct/skills/yandex-direct-create/SKILL.md",
             helper="plugins/yandex-direct/scripts/yd_api.py",
-            test="plugins/yandex-direct/tests/test_yd_api.py",
+            test_ref="plugins/yandex-direct/tests/test_yd_api.py::TestYandexDirectClient::test_set_defaults_to_preview_without_execute",
             reference="plugins/yandex-direct/references/create-workflow.md",
         )
 
