@@ -4,16 +4,16 @@
 
 > Compatibility title: **First Release Independent Review Guide**
 
-Цель review — независимо проверить architecture boundaries, API assumptions, safety contracts, evidence semantics и соответствие implementation ↔ spec для семи shipped plugins.
+Цель review — независимо проверить architecture boundaries, API assumptions, safety contracts, evidence semantics и соответствие implementation ↔ canonical production contracts для семи shipped plugins.
 
-Release responsibilities определены в [`RELEASE_POLICY.md`](RELEASE_POLICY.md): AI audit является advisory input, CI — mechanical evidence, independent review — отдельным semantic/safety gate, а human maintainer принимает решение о merge/release. Ни один из этих сигналов не должен молча подменять другой.
+Release responsibilities определены в [`RELEASE_POLICY.md`](RELEASE_POLICY.md): AI audit является advisory input, CI — mechanical evidence, independent review — отдельным semantic/safety gate, а human maintainer принимает решение о merge/release. Ни один из этих сигналов не должен молча подменять другой. Датированные артефакты выполненных проверок хранятся в [`docs/reviews/`](reviews/README.md).
 
 ## 1. Порядок review
 
 1. Repository contracts: `README.md`, `docs/PLUGIN_STANDARD.md`, `docs/SERVICE_MATRIX.md`, `docs/ROADMAP.md`, marketplaces, CI, validator, tests.
 2. Service plugins: Direct → Metrika → Webmaster → Wordstat → Search.
 3. Cross-service plugins: SEO → Marketing.
-4. Approved specs/plans под `docs/superpowers/`.
+4. Исторический implementation context под `docs/superpowers/` можно использовать для понимания design intent и решений конкретного PR, но эти specs/plans **не являются normative/canonical production source**. При расхождении приоритет имеют текущие canonical governance docs, executable validators/tests, plugin contracts и machine-owned registries/matrices.
 
 ## 2. Главные invariants
 
@@ -30,7 +30,7 @@ Release responsibilities определены в [`RELEASE_POLICY.md`](RELEASE_P
 
 **Metrika:** attribution omission provenance, sampling/data lag, Logs lifecycle, import duplication guards, goal semantics.
 
-**Webmaster:** v4/v4.1 routing, crawl/index/search distinction, recrawl quotas, sitemap/feed safety, PRO export lifecycle and 24h URL semantics.
+**Webmaster:** v4/v4.1 routing, crawl/index/search distinction, recrawl quotas, sitemap/feed safety, PRO export lifecycle и 24h URL semantics.
 
 **Wordstat:** GetTop relation distinction, overlap no-sum invariant, 20-association cap, Dynamics operator policy, regions/trends.
 
@@ -38,7 +38,7 @@ Release responsibilities определены в [`RELEASE_POLICY.md`](RELEASE_P
 
 ## 4. Cross-service checks
 
-**SEO:** Wordstat demand, Webmaster visibility, Search snapshot and Metrika visitor context remain distinct. Period/geo/device alignment must surface mismatches. Wordstat-only candidate is not automatically a validated content gap. No magic SEO score.
+**SEO:** Wordstat demand, Webmaster visibility, Search snapshot и Metrika visitor context remain distinct. Period/geo/device alignment must surface mismatches. Wordstat-only candidate is not automatically a validated content gap. No magic SEO score.
 
 **Marketing:** Direct evidence is required. Direct/Metrika values are reconciled, not summed. KPI fingerprint/money context controls comparability. Evidence roles `canonical`, `reconciliation_only`, `enrichment` remain explicit. Delegated actions stay preview-only. No universal marketing score.
 
