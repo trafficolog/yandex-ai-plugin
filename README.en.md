@@ -170,6 +170,7 @@ Strict reference freshness is checked separately with `python scripts/check_refe
 - [`docs/RELEASE_POLICY.en.md`](docs/RELEASE_POLICY.en.md) — repository/plugin versioning and release gates;
 - [`docs/REVIEW_FIRST_RELEASE.en.md`](docs/REVIEW_FIRST_RELEASE.en.md) — independent review guide;
 - [`docs/reviews/README.en.md`](docs/reviews/README.en.md) — index of dated independent review artifacts;
+- [`docs/reviews/2026-09-05-opus-codex-governance.en.md`](docs/reviews/2026-09-05-opus-codex-governance.en.md) — latest dated governance review artifact;
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contributor entrypoint;
 - [`CHANGELOG.en.md`](CHANGELOG.en.md) · [Russian changelog](CHANGELOG.md).
 
