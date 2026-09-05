@@ -5,9 +5,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_PLUGINS = {
-    "yandex-direct": ("yandex-direct-suite", "2.0.1"),
-    "yandex-metrika": ("yandex-metrika", "2.0.0"),
-    "yandex-webmaster": ("yandex-webmaster", "2.0.0"),
+    "yandex-direct": ("yandex-direct-suite", "2.1.0"),
+    "yandex-metrika": ("yandex-metrika", "2.1.0"),
+    "yandex-webmaster": ("yandex-webmaster", "2.1.0"),
     "yandex-wordstat": ("yandex-wordstat", "1.1.2"),
     "yandex-search": ("yandex-search", "1.0.2"),
     "yandex-seo": ("yandex-seo", "1.1.2"),
@@ -50,12 +50,12 @@ class DocumentationUXGovernanceContractTests(unittest.TestCase):
                 for token in required_links:
                     self.assertIn(token, text)
 
-    def test_root_readmes_stage_repository_1_0_10_without_plugin_bumps(self):
+    def test_root_readmes_stage_repository_1_1_0(self):
         for filename in ("README.md", "README.en.md"):
             text = self._read(filename)
             with self.subTest(filename=filename):
-                self.assertIn("release-1.0.10", text)
-                self.assertIn("1.0.10", text)
+                self.assertIn("release-1.1.0", text)
+                self.assertIn("1.1.0", text)
                 for plugin, (_, version) in EXPECTED_PLUGINS.items():
                     row = [line for line in text.splitlines() if f"plugins/{plugin}/" in line]
                     self.assertTrue(row, plugin)
@@ -126,7 +126,7 @@ class DocumentationUXGovernanceContractTests(unittest.TestCase):
         self.assertIn("позднем разговорном ходе", ru)
         self.assertIn("later conversational turn", en)
 
-    def test_docs_release_does_not_change_plugin_or_marketplace_versions(self):
+    def test_current_plugin_and_marketplace_versions_match_release_matrix(self):
         expected_by_marketplace_name = {
             marketplace_name: version
             for _, (marketplace_name, version) in EXPECTED_PLUGINS.items()
