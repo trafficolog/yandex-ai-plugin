@@ -170,6 +170,7 @@ Strict reference freshness проверяется отдельно через `p
 - [`docs/RELEASE_POLICY.md`](docs/RELEASE_POLICY.md) — repository/plugin versioning и release gates;
 - [`docs/REVIEW_FIRST_RELEASE.md`](docs/REVIEW_FIRST_RELEASE.md) — independent review guide;
 - [`docs/reviews/README.md`](docs/reviews/README.md) — индекс датированных independent review-артефактов;
+- [`docs/reviews/2026-09-05-opus-codex-governance.md`](docs/reviews/2026-09-05-opus-codex-governance.md) — последний датированный governance review artifact;
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contributor entrypoint;
 - [`CHANGELOG.md`](CHANGELOG.md) · [English changelog](CHANGELOG.en.md).
 
