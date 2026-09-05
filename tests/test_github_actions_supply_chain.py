@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
-USES = re.compile(r"^\s*-\s+uses:\s*([^\s#]+)")
+USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)")
 
 
 class GitHubActionsSupplyChainTests(unittest.TestCase):
