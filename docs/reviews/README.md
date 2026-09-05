@@ -21,6 +21,7 @@
 
 ## Артефакты
 
+- [`2026-09-05 — Fable 5.1 Round 2 closure`](2026-09-05-fable-round2-closure.md) — cross-check раннего нормативного аудита после out-of-order remediation и disposition остаточных findings в repository `1.0.8`.
 - [`2026-09-05 — Opus/Codex governance review`](2026-09-05-opus-codex-governance.md) — аудит governance/validator gaps и follow-up review release infrastructure PR #56.
 
 Canonical production requirements находятся в [`PLUGIN_STANDARD.md`](../PLUGIN_STANDARD.md), [`RELEASE_POLICY.md`](../RELEASE_POLICY.md), executable validators/tests, plugin `SKILL.md`/references и machine-owned registries/matrices. Файлы `docs/superpowers/` — исторический implementation context.
