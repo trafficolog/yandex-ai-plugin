@@ -19,6 +19,10 @@ KEY_DOC_NAMES = (
     "GLOSSARY",
     "RELEASE_POLICY",
 )
+ROOT_POLICY_NAMES = (
+    "SECURITY",
+    "CODE_OF_CONDUCT",
+)
 
 _RELEASE_MARKER = re.compile(
     r"^##\s+(?:\[)?((?:(?:[A-Z][A-Z0-9]*(?:\s+[A-Z0-9]+)*)\s+)?\d+\.\d+\.\d+)(?:\])?(?:\s|—|$)",
@@ -105,6 +109,9 @@ def validate_bilingual_docs(root: Path, plugin_dirs: set[str]) -> list[str]:
         errors,
         compare_release_markers=True,
     )
+
+    for name in ROOT_POLICY_NAMES:
+        _validate_pair(root / f"{name}.md", root / f"{name}.en.md", errors)
 
     for name in KEY_DOC_NAMES:
         _validate_pair(
