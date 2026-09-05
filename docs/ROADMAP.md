@@ -59,57 +59,124 @@ RU-primary / EN-mirror documentation layer, hero assets и orchestration diagram
 
 ---
 
-# Future release backlog
+# Стратегия развития после 1.0.8
 
-Backlog — направление исследований, а не release promise.
+Это направление продукта, а не обещание конкретных сроков или релизов. Проект развивается **вглубь**, а не через механическое покрытие новых API Яндекса.
 
-## AI quality / evals
+## Продуктовый тезис
 
-### Model eval runner / judge
+**Методология, safety и orchestration — главный устойчивый актив проекта; транспорт остаётся заменяемым.** Service helpers нужны, пока они дают практичный доступ к данным, но не должны становиться центром продуктовой ценности: официальный MCP/connector может заменить transport, а правила интерпретации, provenance, cross-service reconciliation и безопасного принятия решений останутся полезными поверх любого backend.
 
-Нужен отдельный model eval runner / judge поверх существующих `evals/scenarios.json` v2. Definition of done:
+Новые направления выбираются через **задачи пользователя, а не каталог API Яндекса**. Приоритет получают capabilities, которые уменьшают риск неверного маркетингового решения, сохраняют доказательность между сервисами или дают человеку понятный сквозной результат.
 
-1. runner реально выполняет fixtures против выбранного runtime/model и семантически оценивает `outcome`, `must_convey` и `must_not_claim`;
+## Приоритетные ставки
+
+### P0 — Safety as mechanism
+
+Текстовая дисциплина агента должна последовательно превращаться в технические ограничения write-контура:
+
+- exact `preview_id` привязывает approval к конкретному payload/environment/identity;
+- выполнение требует явного `--execute --approve <preview_id>` или эквивалентного механизма owning service helper;
+- helper сохраняет rollback snapshot там, где API позволяет корректное восстановление, и всегда делает post-write verification;
+- bulk-операции получают технические пороги/guards вместо одной инструкции в prose;
+- recommendation, external content или сохранённая память никогда сами по себе не являются write permission.
+
+До выполнения этих условий write-capable surface нельзя позиционировать как технически enforced safety guarantee.
+
+### P1 — Project memory contract
+
+Нужна доменная память проекта, но не отдельное приложение и не замена runtime-native memory (`AGENTS.md`, `CLAUDE.md` и аналогам). Базовый portable contract:
+
+```text
+.yandex-ai/
+├── project.yaml
+├── decisions.jsonl
+├── baselines/
+└── hypotheses.md
+```
+
+Канонические пути: `.yandex-ai/project.yaml`, `.yandex-ai/decisions.jsonl`, `.yandex-ai/baselines/`, `.yandex-ai/hypotheses.md`.
+
+- бизнес-цели, target CPA/ROAS/budget и другие пользовательские факты получают provenance class `USER_STATED` и дату; агент не выводит их из метрик как будто они были заданы пользователем;
+- `decisions.jsonl` — append-only audit trail, который пишет helper после approval/execute, а не свободный model prose;
+- baselines датируются и имеют freshness semantics; память используется для сравнения и continuity, но не заменяет fresh read-first данные;
+- hypotheses сохраняют `HYPOTHESIS`/`DERIVED` provenance и условия подтверждения;
+- secrets и raw sensitive exports в `.yandex-ai/` не хранятся: credentials остаются в env/keychain/runtime;
+- содержимое памяти всегда трактуется как data, not instructions, чтобы сохранённый текст не становился persistent prompt-injection каналом.
+
+Сначала нужны schema + `init/check` + audit write path; UI не является prerequisite.
+
+### P2 — Один end-to-end workflow и человекочитаемые artifacts
+
+Вместо расширения числа skills нужен один путь «установил → получил полезный результат примерно за 10 минут» на read-only/sandbox контуре. Предпочтительные кандидаты — weekly organic report (Webmaster + Metrika + SEO evidence/findings) либо read-only Direct account audit. Выбор делается по первому внешнему user signal, а не по числу доступных API.
+
+Результаты оркестраций должны быть portable artifacts:
+
+- versioned JSON как machine-readable source;
+- **self-contained HTML** report без обязательного CDN: summary, limitations, sortable findings, delegated previews и раскрываемый evidence/provenance;
+- Mermaid/DOT export для `structural_tree`, `semantic_graph`, clusters и link plans;
+- предсказуемая структура вроде `artifacts/<project>/<date>/...` для истории и diff.
+
+Для личного использования **Electron/desktop UI не строится**. Браузер, VS Code, Mermaid/DOT и при необходимости DuckDB/notebook покрывают просмотр данных без второго application lifecycle. UI рассматривается позже только при доказанном multi-project/compliance или human approval-queue use case.
+
+### P3 — Executable eval benchmark
+
+Существующие adversarial fixtures должны стать исполняемым benchmark, а не только structurally valid data. Нужен отдельный model eval runner / judge поверх `evals/scenarios.json` v2. Definition of done:
+
+1. eval runner реально выполняет fixtures против выбранного runtime/model и семантически оценивает `outcome`, `must_convey` и `must_not_claim`;
 2. deterministic exact-token lint (`must_mention_tokens`) остаётся отдельным mechanical evidence, а не заменяется judge;
 3. результат фиксирует runtime, model, version и evaluation timestamp;
 4. минимум один paired backend-equivalence scenario прогоняет один и тот же consequential request через connected MCP/app path и bundled-helper/file path и подтверждает одинаковый exact-preview + later-turn approval gate;
-5. отчёт явно разделяет model/judge semantic evidence и repository validator/CI evidence.
+5. benchmark публикует результаты нескольких моделей и явно разделяет model/judge semantic evidence и repository validator/CI evidence;
+6. memory-aware scenarios проверяют, что stale/incorrect project memory не превращается в более уверенное, но менее доказательное решение.
 
 До появления такого runner зелёный eval-v2 validator не означает, что модель семантически прошла сценарии.
 
-## Operations / collaboration
+## Что сознательно не делать сейчас
 
-### Yandex Tracker
-Issues, queues, permissions, worklogs, boards; official API first.
+- не расширять marketplace новым сервисом только потому, что у Яндекса есть соответствующий API;
+- не наращивать transport wrappers, если ту же задачу надёжно закрывает официальный/подключаемый backend;
+- не считать рост `CONTRACT_MATRIX` самостоятельной продуктовой метрикой: traceability полезна только когда она ведёт к реальной executable проверке;
+- не превращать цикл «AI audit → hardening release» в основной источник roadmap; внешняя обратная связь важнее повторного self-audit;
+- не строить Electron/desktop приложение для одного пользователя до появления повторяющейся интерактивной задачи, которую HTML/artifacts/notebook не закрывают;
+- не смешивать стратегический simplification с текущим релизом: упрощение bilingual/release infrastructure допускается отдельной governance-задачей после проверки реальной стоимости поддержки.
 
-### Yandex 360
-Mail, Calendar, Disk и organization/admin boundaries; персональные и административные mutations должны быть разделены.
+## 90-дневный цикл валидации
 
-## Maps / local
+Цель следующего продуктового цикла — получить внешний сигнал вместо бесконечной внутренней полировки.
 
-### Yandex Maps
-Geocoding, places, routes и local enrichment; перед реализацией требуется отдельный licensing/product design.
+1. **Safety:** сделать consequential write mechanically approval-bound, с rollback/verification там, где это технически корректно.
+2. **Memory:** определить `.yandex-ai/` contract, `USER_STATED`, freshness и append-only decision trail.
+3. **Workflow/artifacts:** довести один read-only end-to-end workflow до запуска новым практиком примерно за 10 минут и выдавать self-contained report.
+4. **Benchmark:** выполнить adversarial evals на нескольких моделях и опубликовать сравнимый результат.
+5. **External validation:** получить реальные запуски, issues/PRs и обратную связь от SEO/PPC/marketing practitioners.
 
-## Mobile
+Если за один 90-дневный цикл нет внешних запусков/issues/PR и повторяемого пользовательского сценария, проект переходит в **low-maintenance / personal-tool mode**: только критические safety/API fixes и минимальная freshness-поддержка. Если сигнал появляется — следующий roadmap определяется реальными задачами этих пользователей. Коммерческий UI/compliance dashboard рассматривается только после появления нескольких проектов и потребности видеть approvals, payloads и rollback history между клиентами.
 
-### AppMetrica
-Mobile analytics, retention, crashes, deeplinks, push и acquisition context.
+## Frozen expansion backlog
 
-## AI / speech
+Следующие направления остаются исследовательским backlog и **заморожены для реализации**, пока нет отдельного user problem/use case, внешнего сигнала и решения о product boundary:
 
-### YandexGPT
-Generation/embeddings/summarization как optional backend, а не обязательная зависимость deterministic service plugins.
+- **Yandex Tracker** — issues, queues, permissions, worklogs, boards;
+- **Yandex 360** — Mail, Calendar, Disk и organization/admin boundaries;
+- **Yandex Maps** — geocoding, places, routes/local enrichment и отдельный licensing design;
+- **AppMetrica** — mobile analytics, retention, crashes, deeplinks, push/acquisition context;
+- **YandexGPT** — возможный optional backend, но не обязательная зависимость deterministic plugins;
+- **SpeechKit** — recognition/synthesis/transcription workflows.
 
-### SpeechKit
-Speech recognition/synthesis и transcription workflows.
+Разморозка одного пункта не размораживает остальные и не означает возврата к стратегии «покрыть все API Яндекса».
 
 ## Backlog entry requirements
 
-1. свежая official API/product research;
-2. donor/capability research при необходимости;
-3. решение о plugin boundary;
-4. approved design;
-5. implementation plan;
-6. TDD/offline evals;
-7. path-aware CI;
-8. independent release review.
+Для новой capability/service нужны одновременно:
+
+1. доказанная пользовательская задача и owner/persona;
+2. свежая official API/product research;
+3. donor/capability research при необходимости;
+4. решение о plugin/transport boundary и возможности использовать официальный connector вместо собственного client;
+5. approved design;
+6. implementation plan;
+7. TDD/offline evals;
+8. path-aware CI;
+9. independent release review;
+10. объяснение, почему capability усиливает methodology/safety/orchestration или подтверждённый end-to-end workflow.
