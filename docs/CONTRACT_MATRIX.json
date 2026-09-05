@@ -1,34 +1,436 @@
 {
-  "version": 1,
+  "version": 2,
   "contracts": [
-    {"id":"direct.preview-bound-write","plugin":"yandex-direct","status":"implemented","skills":["plugins/yandex-direct/skills/yandex-direct-api/SKILL.md","plugins/yandex-direct/skills/yandex-direct-create/SKILL.md","plugins/yandex-direct/skills/yandex-direct-budget/SKILL.md","plugins/yandex-direct/skills/yandex-direct-keywords/SKILL.md","plugins/yandex-direct/skills/yandex-direct-optimize/SKILL.md"],"helpers":["plugins/yandex-direct/scripts/yd_api.py"],"tests":["plugins/yandex-direct/tests/test_approval.py","plugins/yandex-direct/tests/test_yd_api.py"],"references":["plugins/yandex-direct/references/safety.md","plugins/yandex-direct/references/api-2026.md"],"freshness_controlled_references":["plugins/yandex-direct/references/api-2026.md"]},
-    {"id":"direct.reports-async-transport","plugin":"yandex-direct","status":"implemented","skills":["plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md"],"helpers":["plugins/yandex-direct/scripts/yd_report.py"],"tests":["plugins/yandex-direct/tests/test_yd_report.py"],"references":["plugins/yandex-direct/references/api-2026.md","plugins/yandex-direct/references/reporting.md"],"freshness_controlled_references":["plugins/yandex-direct/references/api-2026.md"]},
-    {"id":"direct.reports-kpi-provenance","plugin":"yandex-direct","status":"implemented","skills":["plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md"],"helpers":["plugins/yandex-direct/scripts/yd_report.py"],"tests":["plugins/yandex-direct/tests/test_yd_report.py"],"references":["plugins/yandex-direct/references/reporting.md"],"freshness_controlled_references":[]},
-    {"id":"direct.creation-not-activation","plugin":"yandex-direct","status":"implemented","skills":["plugins/yandex-direct/skills/yandex-direct-create/SKILL.md"],"helpers":["plugins/yandex-direct/scripts/yd_api.py"],"tests":["plugins/yandex-direct/tests/test_yd_api.py"],"references":["plugins/yandex-direct/references/create-workflow.md","plugins/yandex-direct/references/safety.md"],"freshness_controlled_references":[]},
-    {"id":"metrika.preview-bound-write","plugin":"yandex-metrika","status":"implemented","skills":["plugins/yandex-metrika/skills/yandex-metrika-api/SKILL.md","plugins/yandex-metrika/skills/yandex-metrika-goals/SKILL.md","plugins/yandex-metrika/skills/yandex-metrika-imports/SKILL.md","plugins/yandex-metrika/skills/yandex-metrika-logs/SKILL.md"],"helpers":["plugins/yandex-metrika/scripts/ym_api.py","plugins/yandex-metrika/scripts/ym_logs.py","plugins/yandex-metrika/scripts/ym_import.py"],"tests":["plugins/yandex-metrika/tests/test_approval.py","plugins/yandex-metrika/tests/test_ym_api.py","plugins/yandex-metrika/tests/test_ym_logs.py","plugins/yandex-metrika/tests/test_ym_import.py"],"references":["plugins/yandex-metrika/references/safety.md"],"freshness_controlled_references":[]},
-    {"id":"webmaster.preview-bound-write","plugin":"yandex-webmaster","status":"implemented","skills":["plugins/yandex-webmaster/skills/yandex-webmaster-api/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-site-management/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-recrawl/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-sitemaps/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-feeds/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-indexing/SKILL.md","plugins/yandex-webmaster/skills/yandex-webmaster-exports/SKILL.md"],"helpers":["plugins/yandex-webmaster/scripts/yw_api.py"],"tests":["plugins/yandex-webmaster/tests/test_approval.py","plugins/yandex-webmaster/tests/test_yw_api.py"],"references":["plugins/yandex-webmaster/references/safety.md"],"freshness_controlled_references":[]},
-    {"id":"metrika.attribution-omission-provenance","plugin":"yandex-metrika","status":"implemented","skills":["plugins/yandex-metrika/skills/yandex-metrika-attribution/SKILL.md"],"helpers":["plugins/yandex-metrika/scripts/ym_report.py"],"tests":["plugins/yandex-metrika/tests/test_ym_report.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"metrika.direct-expense-duplication-guard","plugin":"yandex-metrika","status":"implemented","skills":["plugins/yandex-metrika/skills/yandex-metrika-imports/SKILL.md"],"helpers":["plugins/yandex-metrika/scripts/ym_import.py"],"tests":["plugins/yandex-metrika/tests/test_ym_import.py"],"references":["plugins/yandex-metrika/references/imports.md"],"freshness_controlled_references":[]},
-    {"id":"webmaster.feed-batch-safety","plugin":"yandex-webmaster","status":"implemented","skills":["plugins/yandex-webmaster/skills/yandex-webmaster-feeds/SKILL.md"],"helpers":["plugins/yandex-webmaster/scripts/yw_feeds.py"],"tests":["plugins/yandex-webmaster/tests/test_yw_feeds.py"],"references":["plugins/yandex-webmaster/references/feeds.md"],"freshness_controlled_references":[]},
-    {"id":"webmaster.pro-export-contract","plugin":"yandex-webmaster","status":"implemented","skills":["plugins/yandex-webmaster/skills/yandex-webmaster-exports/SKILL.md"],"helpers":["plugins/yandex-webmaster/scripts/yw_export.py"],"tests":["plugins/yandex-webmaster/tests/test_yw_export.py"],"references":["plugins/yandex-webmaster/references/api-2026.md","plugins/yandex-webmaster/references/exports.md"],"freshness_controlled_references":["plugins/yandex-webmaster/references/api-2026.md"]},
-    {"id":"webmaster.indexing-archive-lifecycle","plugin":"yandex-webmaster","status":"implemented","skills":["plugins/yandex-webmaster/skills/yandex-webmaster-indexing/SKILL.md"],"helpers":["plugins/yandex-webmaster/scripts/yw_indexing.py"],"tests":["plugins/yandex-webmaster/tests/test_yw_indexing.py"],"references":["plugins/yandex-webmaster/references/api-2026.md"],"freshness_controlled_references":[]},
-    {"id":"wordstat.overlap-no-sum","plugin":"yandex-wordstat","status":"implemented","skills":["plugins/yandex-wordstat/skills/yandex-wordstat-semantics/SKILL.md"],"helpers":["plugins/yandex-wordstat/scripts/ywstat_top.py"],"tests":["plugins/yandex-wordstat/tests/test_ywstat_top.py"],"references":["plugins/yandex-wordstat/references/semantics.md"],"freshness_controlled_references":[]},
-    {"id":"wordstat.association-cap","plugin":"yandex-wordstat","status":"implemented","skills":["plugins/yandex-wordstat/skills/yandex-wordstat-semantics/SKILL.md"],"helpers":["plugins/yandex-wordstat/scripts/ywstat_top.py"],"tests":["plugins/yandex-wordstat/tests/test_ywstat_top.py"],"references":["plugins/yandex-wordstat/references/api-2026.md","plugins/yandex-wordstat/references/semantics.md"],"freshness_controlled_references":["plugins/yandex-wordstat/references/api-2026.md"]},
-    {"id":"wordstat.topic-map-candidate-boundary","plugin":"yandex-wordstat","status":"implemented","skills":["plugins/yandex-wordstat/skills/yandex-wordstat-topic-map/SKILL.md"],"helpers":["plugins/yandex-wordstat/scripts/ywstat_topic_map.py"],"tests":["plugins/yandex-wordstat/tests/test_ywstat_topic_map.py"],"references":["plugins/yandex-wordstat/references/topic-map.md"],"freshness_controlled_references":[]},
-    {"id":"search.result-depth-ceiling","plugin":"yandex-search","status":"implemented","skills":["plugins/yandex-search/skills/yandex-search-api/SKILL.md","plugins/yandex-search/skills/yandex-search-serp/SKILL.md"],"helpers":["plugins/yandex-search/scripts/ys_request.py","plugins/yandex-search/scripts/ys_serp.py"],"tests":["plugins/yandex-search/tests/test_ys_request.py","plugins/yandex-search/tests/test_ys_serp.py"],"references":["plugins/yandex-search/references/api-2026.md"],"freshness_controlled_references":["plugins/yandex-search/references/api-2026.md"]},
-    {"id":"search.presence-not-market-share","plugin":"yandex-search","status":"implemented","skills":["plugins/yandex-search/skills/yandex-search-competitors/SKILL.md"],"helpers":["plugins/yandex-search/scripts/ys_serp.py"],"tests":["plugins/yandex-search/tests/test_ys_serp.py"],"references":["plugins/yandex-search/references/serp.md"],"freshness_controlled_references":[]},
-    {"id":"seo.evidence-period-geo-semantics","plugin":"yandex-seo","status":"implemented","skills":["plugins/yandex-seo/skills/yandex-seo-audit/SKILL.md"],"helpers":["plugins/yandex-seo/scripts/seo_context.py"],"tests":["plugins/yandex-seo/tests/test_seo_context.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"seo.webmaster-impressions-unknown","plugin":"yandex-seo","status":"implemented","skills":["plugins/yandex-seo/skills/yandex-seo-content-gaps/SKILL.md"],"helpers":["plugins/yandex-seo/scripts/seo_opportunities.py"],"tests":["plugins/yandex-seo/tests/test_seo_opportunities.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"seo.topical-architecture-structural-tree","plugin":"yandex-seo","status":"implemented","skills":["plugins/yandex-seo/skills/yandex-seo-topical-architecture/SKILL.md"],"helpers":["plugins/yandex-seo/scripts/seo_topical_architecture.py"],"tests":["plugins/yandex-seo/tests/test_seo_topical_architecture.py"],"references":["plugins/yandex-seo/references/topical-architecture.md"],"freshness_controlled_references":[]},
-    {"id":"seo.topical-architecture-evidence-classes","plugin":"yandex-seo","status":"implemented","skills":["plugins/yandex-seo/skills/yandex-seo-topical-architecture/SKILL.md"],"helpers":["plugins/yandex-seo/scripts/seo_topical_architecture.py"],"tests":["plugins/yandex-seo/tests/test_seo_topical_architecture.py"],"references":["plugins/yandex-seo/references/topical-architecture.md"],"freshness_controlled_references":[]},
-    {"id":"seo.internal-linking-preview-only","plugin":"yandex-seo","status":"implemented","skills":["plugins/yandex-seo/skills/yandex-seo-internal-linking/SKILL.md"],"helpers":["plugins/yandex-seo/scripts/seo_internal_linking.py"],"tests":["plugins/yandex-seo/tests/test_seo_internal_linking.py"],"references":["plugins/yandex-seo/references/internal-linking.md"],"freshness_controlled_references":[]},
-    {"id":"marketing.direct-required-routing","plugin":"yandex-marketing","status":"implemented","skills":["plugins/yandex-marketing/skills/yandex-marketing/SKILL.md"],"helpers":["plugins/yandex-marketing/scripts/marketing_bundle.py"],"tests":["plugins/yandex-marketing/tests/test_marketing_bundle.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"marketing.money-context-compatibility","plugin":"yandex-marketing","status":"implemented","skills":["plugins/yandex-marketing/skills/yandex-marketing-performance/SKILL.md"],"helpers":["plugins/yandex-marketing/scripts/marketing_quality.py"],"tests":["plugins/yandex-marketing/tests/test_marketing_quality.py","plugins/yandex-marketing/tests/test_marketing_bundle.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"marketing.evidence-roles","plugin":"yandex-marketing","status":"implemented","skills":["plugins/yandex-marketing/skills/yandex-marketing-audit/SKILL.md"],"helpers":["plugins/yandex-marketing/scripts/marketing_bundle.py","plugins/yandex-marketing/scripts/marketing_quality.py"],"tests":["plugins/yandex-marketing/tests/test_marketing_bundle.py","plugins/yandex-marketing/tests/test_marketing_quality.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"marketing.quality-metadata-shape","plugin":"yandex-marketing","status":"implemented","skills":["plugins/yandex-marketing/skills/yandex-marketing-audit/SKILL.md"],"helpers":["plugins/yandex-marketing/scripts/marketing_quality.py"],"tests":["plugins/yandex-marketing/tests/test_marketing_quality.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"repository.cross-service-no-transport-credentials","plugin":"repository","status":"infrastructure","skills":[],"helpers":["scripts/validate_repo.py"],"tests":["tests/test_validate_repo.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"repository.eval-expectation-contract","plugin":"repository","status":"infrastructure","skills":[],"helpers":["scripts/validate_repo.py"],"tests":["tests/test_validate_repo.py","tests/test_eval_contract_v2.py","tests/test_eval_repository_contracts.py"],"references":[],"freshness_controlled_references":[]},
-    {"id":"repository.api-reference-freshness","plugin":"repository","status":"infrastructure","skills":[],"helpers":["scripts/contract_controls.py","scripts/validate_repo.py","scripts/check_reference_freshness.py"],"tests":["tests/test_contract_controls.py","tests/test_direct_contract_traceability.py"],"references":["plugins/yandex-direct/references/api-2026.md","plugins/yandex-direct/references/sources.md","plugins/yandex-metrika/references/imports.md","plugins/yandex-webmaster/references/api-2026.md","plugins/yandex-wordstat/references/api-2026.md","plugins/yandex-wordstat/references/sources.md","plugins/yandex-search/references/api-2026.md"],"freshness_controlled_references":["plugins/yandex-direct/references/api-2026.md","plugins/yandex-direct/references/sources.md","plugins/yandex-metrika/references/imports.md","plugins/yandex-webmaster/references/api-2026.md","plugins/yandex-wordstat/references/api-2026.md","plugins/yandex-wordstat/references/sources.md","plugins/yandex-search/references/api-2026.md"]},
-    {"id":"repository.bilingual-documentation","plugin":"repository","status":"infrastructure","skills":[],"helpers":["scripts/bilingual_docs.py","scripts/validate_repo.py"],"tests":["tests/test_bilingual_docs.py","tests/test_validate_repo.py"],"references":[],"freshness_controlled_references":[]}
+    {
+      "id": "direct.preview-bound-write",
+      "plugin": "yandex-direct",
+      "status": "implemented",
+      "skills": [
+        "plugins/yandex-direct/skills/yandex-direct-api/SKILL.md",
+        "plugins/yandex-direct/skills/yandex-direct-create/SKILL.md",
+        "plugins/yandex-direct/skills/yandex-direct-budget/SKILL.md",
+        "plugins/yandex-direct/skills/yandex-direct-keywords/SKILL.md",
+        "plugins/yandex-direct/skills/yandex-direct-optimize/SKILL.md"
+      ],
+      "helpers": ["plugins/yandex-direct/scripts/yd_api.py"],
+      "test_refs": [
+        "plugins/yandex-direct/tests/test_yd_api.py::TestYandexDirectClient::test_write_execute_requires_approval_before_transport",
+        "plugins/yandex-direct/tests/test_yd_api.py::TestYandexDirectClient::test_exact_approval_calls_transport_once"
+      ],
+      "references": [
+        "plugins/yandex-direct/references/safety.md",
+        "plugins/yandex-direct/references/api-2026.md"
+      ],
+      "freshness_controlled_references": ["plugins/yandex-direct/references/api-2026.md"]
+    },
+    {
+      "id": "direct.reports-async-transport",
+      "plugin": "yandex-direct",
+      "status": "implemented",
+      "skills": ["plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md"],
+      "helpers": ["plugins/yandex-direct/scripts/yd_report.py"],
+      "test_refs": [
+        "plugins/yandex-direct/tests/test_yd_report.py::TestReportHelpers::test_first_http_500_is_retried_once_with_injected_transport"
+      ],
+      "references": [
+        "plugins/yandex-direct/references/api-2026.md",
+        "plugins/yandex-direct/references/reporting.md"
+      ],
+      "freshness_controlled_references": ["plugins/yandex-direct/references/api-2026.md"]
+    },
+    {
+      "id": "direct.reports-kpi-provenance",
+      "plugin": "yandex-direct",
+      "status": "implemented",
+      "skills": ["plugins/yandex-direct/skills/yandex-direct-reporting/SKILL.md"],
+      "helpers": ["plugins/yandex-direct/scripts/yd_report.py"],
+      "test_refs": [
+        "plugins/yandex-direct/tests/test_yd_report.py::TestReportHelpers::test_report_metadata_preserves_kpi_context_without_inventing_currency"
+      ],
+      "references": ["plugins/yandex-direct/references/reporting.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "direct.creation-not-activation",
+      "plugin": "yandex-direct",
+      "status": "implemented",
+      "skills": ["plugins/yandex-direct/skills/yandex-direct-create/SKILL.md"],
+      "helpers": ["plugins/yandex-direct/scripts/yd_api.py"],
+      "test_refs": [
+        "plugins/yandex-direct/tests/test_yd_api.py::TestYandexDirectClient::test_set_defaults_to_preview_without_execute"
+      ],
+      "references": [
+        "plugins/yandex-direct/references/create-workflow.md",
+        "plugins/yandex-direct/references/safety.md"
+      ],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "metrika.preview-bound-write",
+      "plugin": "yandex-metrika",
+      "status": "implemented",
+      "skills": [
+        "plugins/yandex-metrika/skills/yandex-metrika-api/SKILL.md",
+        "plugins/yandex-metrika/skills/yandex-metrika-goals/SKILL.md",
+        "plugins/yandex-metrika/skills/yandex-metrika-imports/SKILL.md",
+        "plugins/yandex-metrika/skills/yandex-metrika-logs/SKILL.md"
+      ],
+      "helpers": [
+        "plugins/yandex-metrika/scripts/ym_api.py",
+        "plugins/yandex-metrika/scripts/ym_logs.py",
+        "plugins/yandex-metrika/scripts/ym_import.py"
+      ],
+      "test_refs": [
+        "plugins/yandex-metrika/tests/test_ym_api.py::TestMetrikaApi::test_execute_without_approval_is_blocked_before_transport",
+        "plugins/yandex-metrika/tests/test_ym_logs.py::TestMetrikaLogs::test_clean_execute_without_approval_is_blocked_before_transport",
+        "plugins/yandex-metrika/tests/test_ym_import.py::TestMetrikaImport::test_execute_without_approval_is_blocked_before_upload"
+      ],
+      "references": ["plugins/yandex-metrika/references/safety.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "webmaster.preview-bound-write",
+      "plugin": "yandex-webmaster",
+      "status": "implemented",
+      "skills": [
+        "plugins/yandex-webmaster/skills/yandex-webmaster-api/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-site-management/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-recrawl/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-sitemaps/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-feeds/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-indexing/SKILL.md",
+        "plugins/yandex-webmaster/skills/yandex-webmaster-exports/SKILL.md"
+      ],
+      "helpers": ["plugins/yandex-webmaster/scripts/yw_api.py"],
+      "test_refs": [
+        "plugins/yandex-webmaster/tests/test_yw_api.py::TestWebmasterApi::test_specialized_write_descriptors_are_all_bound_at_transport_boundary"
+      ],
+      "references": ["plugins/yandex-webmaster/references/safety.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "metrika.attribution-omission-provenance",
+      "plugin": "yandex-metrika",
+      "status": "implemented",
+      "skills": ["plugins/yandex-metrika/skills/yandex-metrika-attribution/SKILL.md"],
+      "helpers": ["plugins/yandex-metrika/scripts/ym_report.py"],
+      "test_refs": [
+        "plugins/yandex-metrika/tests/test_ym_report.py::TestMetrikaReport::test_omitted_attribution_is_not_invented"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "metrika.direct-expense-duplication-guard",
+      "plugin": "yandex-metrika",
+      "status": "implemented",
+      "skills": ["plugins/yandex-metrika/skills/yandex-metrika-imports/SKILL.md"],
+      "helpers": ["plugins/yandex-metrika/scripts/ym_import.py"],
+      "test_refs": [
+        "plugins/yandex-metrika/tests/test_ym_import.py::TestMetrikaImport::test_direct_traffic_source_detail_without_utm_requires_explicit_override",
+        "plugins/yandex-metrika/tests/test_ym_import.py::TestMetrikaImport::test_unverifiable_expense_source_requires_explicit_override"
+      ],
+      "references": ["plugins/yandex-metrika/references/imports.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "webmaster.feed-batch-safety",
+      "plugin": "yandex-webmaster",
+      "status": "implemented",
+      "skills": ["plugins/yandex-webmaster/skills/yandex-webmaster-feeds/SKILL.md"],
+      "helpers": ["plugins/yandex-webmaster/scripts/yw_feeds.py"],
+      "test_refs": [
+        "plugins/yandex-webmaster/tests/test_yw_feeds.py::TestFeeds::test_batch_add_wraps_feeds_key_and_limits_batch_size"
+      ],
+      "references": ["plugins/yandex-webmaster/references/feeds.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "webmaster.pro-export-contract",
+      "plugin": "yandex-webmaster",
+      "status": "implemented",
+      "skills": ["plugins/yandex-webmaster/skills/yandex-webmaster-exports/SKILL.md"],
+      "helpers": ["plugins/yandex-webmaster/scripts/yw_export.py"],
+      "test_refs": [
+        "plugins/yandex-webmaster/tests/test_yw_export.py::TestExport::test_export_state_expires_only_when_age_is_proven_over_24_hours",
+        "plugins/yandex-webmaster/tests/test_yw_export.py::TestExport::test_quota_plan_does_not_assume_missing_usage_is_available"
+      ],
+      "references": [
+        "plugins/yandex-webmaster/references/api-2026.md",
+        "plugins/yandex-webmaster/references/exports.md"
+      ],
+      "freshness_controlled_references": ["plugins/yandex-webmaster/references/api-2026.md"]
+    },
+    {
+      "id": "webmaster.indexing-archive-lifecycle",
+      "plugin": "yandex-webmaster",
+      "status": "implemented",
+      "skills": ["plugins/yandex-webmaster/skills/yandex-webmaster-indexing/SKILL.md"],
+      "helpers": ["plugins/yandex-webmaster/scripts/yw_indexing.py"],
+      "test_refs": [
+        "plugins/yandex-webmaster/tests/test_yw_indexing.py::TestIndexing::test_archive_lifecycle_uses_documented_state_field"
+      ],
+      "references": ["plugins/yandex-webmaster/references/api-2026.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "wordstat.overlap-no-sum",
+      "plugin": "yandex-wordstat",
+      "status": "implemented",
+      "skills": ["plugins/yandex-wordstat/skills/yandex-wordstat-semantics/SKILL.md"],
+      "helpers": ["plugins/yandex-wordstat/scripts/ywstat_top.py"],
+      "test_refs": [
+        "plugins/yandex-wordstat/tests/test_ywstat_top.py::TestWordstatTop::test_normalize_keeps_results_and_associations_distinct"
+      ],
+      "references": ["plugins/yandex-wordstat/references/semantics.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "wordstat.association-cap",
+      "plugin": "yandex-wordstat",
+      "status": "implemented",
+      "skills": ["plugins/yandex-wordstat/skills/yandex-wordstat-semantics/SKILL.md"],
+      "helpers": ["plugins/yandex-wordstat/scripts/ywstat_top.py"],
+      "test_refs": [
+        "plugins/yandex-wordstat/tests/test_ywstat_top.py::TestWordstatTop::test_association_coverage_marks_exact_cap_as_truncated"
+      ],
+      "references": [
+        "plugins/yandex-wordstat/references/api-2026.md",
+        "plugins/yandex-wordstat/references/semantics.md"
+      ],
+      "freshness_controlled_references": ["plugins/yandex-wordstat/references/api-2026.md"]
+    },
+    {
+      "id": "wordstat.topic-map-candidate-boundary",
+      "plugin": "yandex-wordstat",
+      "status": "implemented",
+      "skills": ["plugins/yandex-wordstat/skills/yandex-wordstat-topic-map/SKILL.md"],
+      "helpers": ["plugins/yandex-wordstat/scripts/ywstat_topic_map.py"],
+      "test_refs": [
+        "plugins/yandex-wordstat/tests/test_ywstat_topic_map.py::TestWordstatTopicMap::test_preserves_provenance_without_summing_overlapping_demand",
+        "plugins/yandex-wordstat/tests/test_ywstat_topic_map.py::TestWordstatTopicMap::test_candidate_relation_requires_known_topics_and_is_hypothesis"
+      ],
+      "references": ["plugins/yandex-wordstat/references/topic-map.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "search.result-depth-ceiling",
+      "plugin": "yandex-search",
+      "status": "implemented",
+      "skills": [
+        "plugins/yandex-search/skills/yandex-search-api/SKILL.md",
+        "plugins/yandex-search/skills/yandex-search-serp/SKILL.md"
+      ],
+      "helpers": [
+        "plugins/yandex-search/scripts/ys_request.py",
+        "plugins/yandex-search/scripts/ys_serp.py"
+      ],
+      "test_refs": [
+        "plugins/yandex-search/tests/test_ys_request.py::TestSearchRequest::test_partial_window_crossing_250_is_rejected",
+        "plugins/yandex-search/tests/test_ys_serp.py::TestSerp::test_snapshot_rejects_window_crossing_250"
+      ],
+      "references": ["plugins/yandex-search/references/api-2026.md"],
+      "freshness_controlled_references": ["plugins/yandex-search/references/api-2026.md"]
+    },
+    {
+      "id": "search.presence-not-market-share",
+      "plugin": "yandex-search",
+      "status": "implemented",
+      "skills": ["plugins/yandex-search/skills/yandex-search-competitors/SKILL.md"],
+      "helpers": ["plugins/yandex-search/scripts/ys_serp.py"],
+      "test_refs": [
+        "plugins/yandex-search/tests/test_ys_serp.py::TestSerp::test_snapshot_has_fingerprint_and_url_keys"
+      ],
+      "references": ["plugins/yandex-search/references/serp.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "seo.evidence-period-geo-semantics",
+      "plugin": "yandex-seo",
+      "status": "implemented",
+      "skills": ["plugins/yandex-seo/skills/yandex-seo-audit/SKILL.md"],
+      "helpers": ["plugins/yandex-seo/scripts/seo_context.py"],
+      "test_refs": [
+        "plugins/yandex-seo/tests/test_seo_context.py::ContextTests::test_period_alignment",
+        "plugins/yandex-seo/tests/test_seo_context.py::ContextTests::test_geo_alignment_requires_same_semantic_context"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "seo.webmaster-impressions-unknown",
+      "plugin": "yandex-seo",
+      "status": "implemented",
+      "skills": ["plugins/yandex-seo/skills/yandex-seo-content-gaps/SKILL.md"],
+      "helpers": ["plugins/yandex-seo/scripts/seo_opportunities.py"],
+      "test_refs": [
+        "plugins/yandex-seo/tests/test_seo_opportunities.py::OpportunityTests::test_missing_webmaster_impressions_is_not_high_confidence_gap"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "seo.topical-architecture-structural-tree",
+      "plugin": "yandex-seo",
+      "status": "implemented",
+      "skills": ["plugins/yandex-seo/skills/yandex-seo-topical-architecture/SKILL.md"],
+      "helpers": ["plugins/yandex-seo/scripts/seo_topical_architecture.py"],
+      "test_refs": [
+        "plugins/yandex-seo/tests/test_seo_topical_architecture.py::TestSeoTopicalArchitecture::test_unknown_parent_and_structural_cycle_are_rejected",
+        "plugins/yandex-seo/tests/test_seo_topical_architecture.py::TestSeoTopicalArchitecture::test_duplicate_proposed_urls_are_rejected"
+      ],
+      "references": ["plugins/yandex-seo/references/topical-architecture.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "seo.topical-architecture-evidence-classes",
+      "plugin": "yandex-seo",
+      "status": "implemented",
+      "skills": ["plugins/yandex-seo/skills/yandex-seo-topical-architecture/SKILL.md"],
+      "helpers": ["plugins/yandex-seo/scripts/seo_topical_architecture.py"],
+      "test_refs": [
+        "plugins/yandex-seo/tests/test_seo_topical_architecture.py::TestSeoTopicalArchitecture::test_methodology_edge_stays_methodology_and_existing_site_decision_is_preserved",
+        "plugins/yandex-seo/tests/test_seo_topical_architecture.py::TestSeoTopicalArchitecture::test_missing_search_adds_limitation_and_preserves_hypothesis"
+      ],
+      "references": ["plugins/yandex-seo/references/topical-architecture.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "seo.internal-linking-preview-only",
+      "plugin": "yandex-seo",
+      "status": "implemented",
+      "skills": ["plugins/yandex-seo/skills/yandex-seo-internal-linking/SKILL.md"],
+      "helpers": ["plugins/yandex-seo/scripts/seo_internal_linking.py"],
+      "test_refs": [
+        "plugins/yandex-seo/tests/test_seo_internal_linking.py::TestSeoInternalLinking::test_link_plan_is_preview_only_and_preserves_claim_class"
+      ],
+      "references": ["plugins/yandex-seo/references/internal-linking.md"],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "marketing.direct-required-routing",
+      "plugin": "yandex-marketing",
+      "status": "implemented",
+      "skills": ["plugins/yandex-marketing/skills/yandex-marketing/SKILL.md"],
+      "helpers": ["plugins/yandex-marketing/scripts/marketing_bundle.py"],
+      "test_refs": [
+        "plugins/yandex-marketing/tests/test_marketing_bundle.py::MarketingBundleTests::test_bundle_requires_explicit_direct_coverage_key"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "marketing.money-context-compatibility",
+      "plugin": "yandex-marketing",
+      "status": "implemented",
+      "skills": ["plugins/yandex-marketing/skills/yandex-marketing-performance/SKILL.md"],
+      "helpers": ["plugins/yandex-marketing/scripts/marketing_quality.py"],
+      "test_refs": [
+        "plugins/yandex-marketing/tests/test_marketing_quality.py::MarketingQualityTests::test_monetary_reconciliation_without_full_context_is_incomparable",
+        "plugins/yandex-marketing/tests/test_marketing_quality.py::MarketingQualityTests::test_reconciliation_returns_role_bearing_records_without_summing"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "marketing.evidence-roles",
+      "plugin": "yandex-marketing",
+      "status": "implemented",
+      "skills": ["plugins/yandex-marketing/skills/yandex-marketing-audit/SKILL.md"],
+      "helpers": [
+        "plugins/yandex-marketing/scripts/marketing_bundle.py",
+        "plugins/yandex-marketing/scripts/marketing_quality.py"
+      ],
+      "test_refs": [
+        "plugins/yandex-marketing/tests/test_marketing_bundle.py::MarketingBundleTests::test_evidence_roles_are_stable_and_overlapping_metrics_stay_separate",
+        "plugins/yandex-marketing/tests/test_marketing_quality.py::MarketingQualityTests::test_canonical_source_rules_select_source_of_truth"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "marketing.quality-metadata-shape",
+      "plugin": "yandex-marketing",
+      "status": "implemented",
+      "skills": ["plugins/yandex-marketing/skills/yandex-marketing-audit/SKILL.md"],
+      "helpers": ["plugins/yandex-marketing/scripts/marketing_quality.py"],
+      "test_refs": [
+        "plugins/yandex-marketing/tests/test_marketing_quality.py::MarketingQualityTests::test_metrika_limitations_use_nested_producer_quality_shape",
+        "plugins/yandex-marketing/tests/test_marketing_quality.py::MarketingQualityTests::test_missing_metrika_quality_metadata_is_explicit"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "repository.cross-service-no-transport-credentials",
+      "plugin": "repository",
+      "status": "infrastructure",
+      "skills": [],
+      "helpers": ["scripts/validate_repo.py"],
+      "test_refs": [
+        "tests/test_validate_repo.py::ValidateRepositoryTests::test_cross_service_transport_is_rejected"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "repository.eval-expectation-contract",
+      "plugin": "repository",
+      "status": "infrastructure",
+      "skills": [],
+      "helpers": ["scripts/validate_repo.py"],
+      "test_refs": [
+        "tests/test_eval_contract_v2.py::EvalContractV2Tests::test_valid_v2_fixture_passes",
+        "tests/test_validate_repo.py::ValidateRepositoryTests::test_evals_require_verifiable_expectations"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    },
+    {
+      "id": "repository.api-reference-freshness",
+      "plugin": "repository",
+      "status": "infrastructure",
+      "skills": [],
+      "helpers": [
+        "scripts/contract_controls.py",
+        "scripts/validate_repo.py",
+        "scripts/check_reference_freshness.py"
+      ],
+      "test_refs": [
+        "tests/test_contract_controls.py::FreshnessContractTests::test_exactly_90_days_is_valid_and_91_days_is_stale",
+        "tests/test_contract_controls.py::ContractMatrixTests::test_stale_changed_reference_is_a_hard_error"
+      ],
+      "references": [
+        "plugins/yandex-direct/references/api-2026.md",
+        "plugins/yandex-direct/references/sources.md",
+        "plugins/yandex-metrika/references/imports.md",
+        "plugins/yandex-webmaster/references/api-2026.md",
+        "plugins/yandex-wordstat/references/api-2026.md",
+        "plugins/yandex-wordstat/references/sources.md",
+        "plugins/yandex-search/references/api-2026.md"
+      ],
+      "freshness_controlled_references": [
+        "plugins/yandex-direct/references/api-2026.md",
+        "plugins/yandex-direct/references/sources.md",
+        "plugins/yandex-metrika/references/imports.md",
+        "plugins/yandex-webmaster/references/api-2026.md",
+        "plugins/yandex-wordstat/references/api-2026.md",
+        "plugins/yandex-wordstat/references/sources.md",
+        "plugins/yandex-search/references/api-2026.md"
+      ]
+    },
+    {
+      "id": "repository.bilingual-documentation",
+      "plugin": "repository",
+      "status": "infrastructure",
+      "skills": [],
+      "helpers": ["scripts/bilingual_docs.py", "scripts/validate_repo.py"],
+      "test_refs": [
+        "tests/test_bilingual_docs.py::BilingualDocumentationTests::test_all_plugins_have_ru_en_readme_and_changelog_pairs",
+        "tests/test_bilingual_docs.py::BilingualDocumentationTests::test_changelog_release_markers_match_between_languages"
+      ],
+      "references": [],
+      "freshness_controlled_references": []
+    }
   ]
 }
