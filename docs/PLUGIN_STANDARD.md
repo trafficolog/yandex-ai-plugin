@@ -81,7 +81,7 @@ Cross-service/adjacent work маршрутизируется в owning installed
 
 Preferred order: compatible connected MCP/app → bundled helper → user-provided export/file. Reasoning и safety semantics не должны зависеть от backend.
 
-Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials. В `.agents` marketplace они используют `policy.authentication: ON_USE`, потому что marketplace schema требует authentication policy из поддерживаемых `ON_INSTALL` / `ON_USE`. Для transport-free orchestration это **schema-compatible deferred-auth metadata**, а не заявление о собственной credential surface: validator отдельно запрещает `.env.example` и service transport в `yandex-seo` / `yandex-marketing`.
+Cross-service plugins могут создавать delegated previews, но не владеют transport или service credentials. Их `.agents` entries используют `policy.authentication: ON_USE`; canonical explanation deferred authentication и ownership находится в [`ARCHITECTURE.md`](ARCHITECTURE.md). Validator отдельно запрещает `.env.example` и service transport в `yandex-seo` / `yandex-marketing`.
 
 ## 5. Skill conventions
 
