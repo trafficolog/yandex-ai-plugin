@@ -4,6 +4,23 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.6] — 2026-09-05
+
+Repository-only release consolidating release infrastructure. Production runtime and plugin SemVer are unchanged.
+
+### Changed
+
+- Release intent now lives in declarative `.github/releases/release.json`; one `publish-current-release.yml` handles future repository and explicitly declared plugin releases without adding a workflow per release.
+- The generic manifest validator checks schema, strict repository SemVer, notes paths, existing plugin directories, Codex/Claude manifest versions, canonical plugin tags, and release-set uniqueness.
+- The hardened publisher preserves successful exact-main CI gating, stale-main no-op, common-target draft recovery, fail-closed remote tag probes, detached-target validation, immutable verification, and a safe rollback window.
+- All 12 historical OPUS/FABLE/PHASE/DOCS/release-specific publisher workflows are removed from the active default-branch workflow set after their completed immutable releases; their exact source remains available through Git history/tags.
+- Workflow-specific publisher tests are replaced by generic manifest/publisher/migration contracts while preserving reusable safety assertions.
+- Release policy now requires every new release set to receive a new repository SemVer/tag; `plugins: []` means repository-only and creates no plugin tags.
+
+### Plugin versions unchanged
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.5] — 2026-09-04
 
 Repository-level documentation UX/governance release. Production runtime and plugin SemVer are unchanged.
