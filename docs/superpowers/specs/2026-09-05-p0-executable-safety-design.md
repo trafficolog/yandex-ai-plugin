@@ -139,6 +139,7 @@ The conceptual structure is:
   },
   "artifacts": [],
   "cardinality": {
+    "scale": "KNOWN",
     "items": 3,
     "threshold": 20,
     "bulk": false
@@ -148,6 +149,17 @@ The conceptual structure is:
     "rollback": "SNAPSHOT_RESTORE|COMPENSATING_ACTION|NOT_AVAILABLE",
     "risk_flags": []
   }
+}
+```
+
+For uncomputable operation scale, the canonical representation is:
+
+```json
+{
+  "scale": "UNKNOWN",
+  "items": null,
+  "threshold": 20,
+  "bulk": true
 }
 ```
 
@@ -180,7 +192,7 @@ Changing any consequential field MUST invalidate the previous approval. At minim
 - exact body;
 - artifact content digest;
 - artifact identity where meaningful;
-- bulk cardinality;
+- bulk scale state and cardinality;
 - bulk threshold used for classification;
 - risk override flags that change whether execution is permitted;
 - declared safety capability when that declaration changes the user's decision context.
@@ -238,6 +250,7 @@ Metrika import approval MUST preserve:
 - provider/source label;
 - `allow_direct_risk` state;
 - exact file size and SHA-256;
+- CSV row count as bound scale/risk context;
 - expense provenance risk flags;
 - authenticated-principal binding.
 
@@ -272,33 +285,47 @@ This is a repository safety policy, not a Yandex API limit.
 
 The threshold MUST be present in the consequential envelope so changing repository/helper policy invalidates an old approval.
 
+For known scale, `bulk=true` when `items > threshold`; exactly 20 items remains a normal-scale operation under the default policy.
+
 ### 9.2 Cardinality
 
 Each supported consequential helper MUST compute operation cardinality deterministically from the actual mutation payload where meaningful.
 
 Examples:
 
-- Direct `campaigns.update` with 3 campaign items -> `items=3`;
-- a single Webmaster recrawl submission -> `items=1`;
-- a Metrika file import is one upload operation, but row count is relevant risk context. Its v2 contract should expose both operation cardinality and artifact row count, without pretending that every CSV row maps to an independently reversible API mutation.
+- Direct `campaigns.update` with 3 campaign items -> `scale=KNOWN`, `items=3`, `bulk=false`;
+- a single Webmaster recrawl submission -> `scale=KNOWN`, `items=1`, `bulk=false`;
+- a Metrika file import is one upload operation, but CSV row count remains separately bound risk/scale context; the helper must not pretend that every CSV row maps to an independently reversible API mutation.
 
-If cardinality cannot be derived reliably, the helper MUST fail closed for any code path that claims a normal non-bulk classification; it may instead classify the operation as `UNKNOWN_SCALE` and require the stronger bulk acknowledgement path.
+If cardinality cannot be derived reliably, the canonical state is `scale=UNKNOWN`, `items=null`, `bulk=true`. Unknown scale therefore always takes the stronger acknowledgement path and can never silently fall back to normal-scale execution.
 
 ### 9.3 Bulk acknowledgement
 
-For `items > 20` or `UNKNOWN_SCALE`, exact `--approve <preview_id>` alone is insufficient.
+For `bulk=true`, exact `--approve <preview_id>` alone is insufficient.
 
-The CLI/API execution surface MUST require an additional explicit acknowledgement. The exact flag name is an implementation detail to settle in the implementation plan, but the semantics are fixed:
+The CLI flag is standardized as:
+
+```text
+--ack-bulk
+```
+
+The equivalent programmatic helper parameter is:
+
+```text
+ack_bulk=True
+```
+
+Execution semantics are therefore:
 
 ```text
 normal write:
   --execute --approve <preview_id>
 
-bulk/unknown-scale write:
-  --execute --approve <preview_id> + explicit bulk acknowledgement
+bulk or unknown-scale write:
+  --execute --approve <preview_id> --ack-bulk
 ```
 
-The bulk acknowledgement is not a second preview identifier; it acknowledges operation scale that is already bound into the exact preview.
+The bulk acknowledgement is not a second preview identifier; it acknowledges operation scale that is already bound into the exact preview. Supplying `--ack-bulk` for a non-bulk operation is permitted but has no authorization effect beyond the exact `preview_id`.
 
 ## 10. Safety capability declaration
 
@@ -316,19 +343,29 @@ Allowed values:
 
 Allowed values:
 
-- `SNAPSHOT_RESTORE` — helper can capture sufficient previous state and restore it with a supported inverse write;
-- `COMPENSATING_ACTION` — no exact state restore exists, but a defined compensating operation is available;
-- `NOT_AVAILABLE` — no reliable rollback path is provided.
+- `SNAPSHOT_RESTORE` — helper can capture sufficient previous state and expose a tested restore operation;
+- `COMPENSATING_ACTION` — no exact state restore exists, but a defined tested compensating operation is available;
+- `NOT_AVAILABLE` — no reliable invocable rollback path is provided.
 
 Capability metadata is descriptive of implemented mechanics. A plugin MUST NOT advertise a stronger capability than tests demonstrate.
 
-## 11. Rollback snapshots
+## 11. Rollback semantics
 
-P0 does not create a universal rollback framework.
+P0 does not create a universal rollback framework and MUST NOT auto-rollback silently after a verification failure.
 
-For operations marked `SNAPSHOT_RESTORE`, the owning helper MUST perform the necessary pre-write read and construct an in-memory or explicitly requested local snapshot before mutation. Secrets MUST NOT be stored in the snapshot.
+Rollback is itself consequential. A restore or compensating action MUST go through its own preview -> exact approval -> execution lifecycle.
 
-P0 does not yet define durable project-level snapshot storage. If a rollback requires persistence beyond the process lifetime, the operation MUST NOT claim durable `SNAPSHOT_RESTORE` until such persistence has an explicit safe design.
+An operation may advertise `SNAPSHOT_RESTORE` only when all of the following are true:
+
+1. the helper can read and capture sufficient pre-write state;
+2. the captured state is secret-free;
+3. the helper can materialize enough restore input in a safe execution receipt/artifact or other explicitly designed local mechanism so restoration remains invocable after the original write returns;
+4. a supported restore operation exists and has executable tests;
+5. the restore operation itself uses `yandex-ai-approval/v2`.
+
+If any of these conditions is absent, the operation MUST advertise `NOT_AVAILABLE` rather than implying rollback support.
+
+P0 does not require any current operation to advertise rollback. Shipping explicit `NOT_AVAILABLE` is correct when no safe tested restore path exists.
 
 Operations that are naturally queue submissions, imports, or irreversible server-side actions should normally declare `NOT_AVAILABLE` unless the Yandex API exposes and the helper implements a reliable compensating operation.
 
@@ -343,8 +380,8 @@ Consequential helper execution follows:
 4. build approval/v2 envelope
 5. produce preview_id and human-readable preview
 6. require exact preview_id
-7. require bulk acknowledgement when applicable
-8. capture rollback snapshot if capability requires it
+7. require --ack-bulk / ack_bulk=True when bulk=true
+8. capture rollback material if and only if advertised capability requires it
 9. execute the exact bound request
 10. verify according to declared capability
 11. return execution receipt
@@ -371,6 +408,7 @@ Conceptual shape:
     "account": "..."
   },
   "cardinality": {
+    "scale": "KNOWN",
     "items": 3,
     "bulk": false
   },
@@ -382,8 +420,7 @@ Conceptual shape:
     "state": "VERIFIED"
   },
   "rollback": {
-    "capability": "SNAPSHOT_RESTORE",
-    "snapshot_available": true
+    "capability": "NOT_AVAILABLE"
   },
   "result": {}
 }
@@ -413,7 +450,7 @@ Verification:
 
 A successful mutation with failed read-back is therefore represented as executed but verification-failed, not as a clean success.
 
-If execution fails before the server can plausibly accept the mutation, no success receipt is emitted. If the transport outcome is ambiguous, the helper must not invent certainty; a service-specific ambiguous/unknown result may be added if required by implementation evidence.
+If execution fails before the server can plausibly accept the mutation, no success receipt is emitted. If the transport outcome is ambiguous, the helper must not invent certainty; a service-specific ambiguous/unknown execution state may be added only when implementation evidence proves that the API/transport can produce such ambiguity.
 
 ## 14. Post-write verification
 
@@ -434,6 +471,8 @@ For `RESPONSE_ONLY` operations:
 - capture stable server-provided identifiers/state from the mutation response;
 - label the result as response-only verification;
 - do not call it equivalent to read-back verification.
+
+For `NOT_AVAILABLE`, the execution receipt MUST make the absence of verification explicit rather than treating a successful HTTP/API response as verified final state.
 
 ## 15. Human approval boundary
 
@@ -467,7 +506,7 @@ preview by default for consequential operation
 --execute --approve <preview_id>
 ```
 
-P0 may add one explicit bulk acknowledgement flag. Existing `--approve` remains a full exact `preview_id`, not a free-form confirmation string.
+P0 adds `--ack-bulk` only for the stronger bulk/unknown-scale acknowledgement path. Existing `--approve` remains a full exact `preview_id`, not a free-form confirmation string.
 
 Read methods remain executable without preview approval.
 
@@ -481,7 +520,7 @@ Minimum categories:
 
 - approval missing/mismatch;
 - bulk acknowledgement missing;
-- unknown/uncomputable scale;
+- unknown/uncomputable scale classification failure;
 - invalid target identity;
 - snapshot/precondition failure;
 - mutation transport/API failure;
@@ -502,14 +541,16 @@ The contract MUST prove at least:
 5. environment/API-version mutation invalidates approval;
 6. artifact-byte mutation invalidates approval;
 7. risk-override mutation invalidates approval;
-8. bulk cardinality mutation invalidates approval;
-9. normal approval cannot execute bulk operation without scale acknowledgement;
-10. secrets are absent from preview/receipt/errors;
-11. v1 preview IDs do not authorize v2 writes;
-12. read-only paths remain approval-free;
-13. receipt distinguishes execution from verification;
-14. advertised rollback/verification capabilities match executable tests;
-15. SEO/Marketing retain no credential-owning Yandex transport or direct execution path.
+8. bulk scale/cardinality mutation invalidates approval;
+9. normal approval cannot execute `bulk=true` operation without `--ack-bulk` / `ack_bulk=True`;
+10. unknown scale is represented explicitly and uses the bulk path;
+11. secrets are absent from preview/receipt/errors;
+12. v1 preview IDs do not authorize v2 writes;
+13. read-only paths remain approval-free;
+14. receipt distinguishes execution from verification;
+15. advertised rollback/verification capabilities match executable tests;
+16. rollback, where advertised, is a separately approved consequential operation;
+17. SEO/Marketing retain no credential-owning Yandex transport or direct execution path.
 
 The tests validate semantics, not source-code duplication.
 
@@ -552,11 +593,12 @@ P0 is complete only when all of the following are true:
 - all supported Direct/Metrika/Webmaster consequential writes use `yandex-ai-approval/v2`;
 - no active supported v1 path can authorize a v2 write;
 - exact payload/target/principal/artifact/scale/risk changes invalidate approval;
-- bulk/unknown-scale operations require the separate scale acknowledgement;
+- bulk/unknown-scale operations require `--ack-bulk` / `ack_bulk=True` in addition to exact approval;
 - consequential previews declare verification and rollback capability;
 - consequential executions return structured execution receipts;
 - operations claiming `READ_BACK` are actually verified with tested read-back logic;
-- operations claiming rollback have tested mechanics matching the advertised capability;
+- operations claiming rollback have a separately invocable, separately approved, tested mechanism matching the advertised capability;
+- no operation is required to claim rollback when no safe restore path exists;
 - no secret appears in preview, receipt, error, or committed fixture;
 - repository behavioural convergence tests are green on Python 3.10 and 3.13;
 - all seven plugin CI jobs are green;
