@@ -9,7 +9,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/release_manifest.py"
 MANIFEST = ROOT / ".github/releases/release.json"
-NOTES = ROOT / ".github/releases/1.0.6.md"
 
 
 class ReleaseManifestTests(unittest.TestCase):
@@ -100,13 +99,17 @@ class ReleaseManifestTests(unittest.TestCase):
         module = self.load_module()
         return module.release_items(root)
 
-    def test_repository_only_1_0_6_manifest_is_valid(self):
+    def test_current_repository_only_manifest_is_valid(self):
         self.assertTrue(MANIFEST.exists(), ".github/releases/release.json must exist")
-        self.assertTrue(NOTES.exists(), ".github/releases/1.0.6.md must exist")
+        data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        repository = data["repository"]
+        notes = ROOT / repository["notes_file"]
+        self.assertEqual(data["plugins"], [])
+        self.assertTrue(notes.exists(), f"{repository['notes_file']} must exist")
         self.assertEqual(self.validate(ROOT), [])
         self.assertEqual(
             [(item.kind, item.name, item.version, item.tag) for item in self.items(ROOT)],
-            [("repository", "repository", "1.0.6", "1.0.6")],
+            [("repository", "repository", repository["version"], repository["tag"])],
         )
 
     def test_repository_tag_must_equal_version(self):
