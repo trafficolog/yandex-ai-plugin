@@ -50,52 +50,124 @@ Shipped as repository release `phase-7-topical-architecture-1.0.0`: Wordstat `1.
 
 ---
 
-# Future release backlog
+# Product strategy after 1.0.8
 
-Backlog is research direction, not a release promise.
+This section defines product direction rather than delivery dates or release promises. The project develops **in depth** instead of mechanically covering more Yandex APIs.
 
-## AI quality / evals
+## Product thesis
 
-### Model eval runner / judge
+**Methodology, safety, and orchestration are the project's durable asset; transport remains replaceable.** Service helpers are useful while they provide practical data access, but they should not become the center of product value: an official MCP/connector can replace transport, while interpretation rules, provenance, cross-service reconciliation, and safe decision-making remain useful above any backend.
 
-A dedicated model eval runner / judge is required on top of existing `evals/scenarios.json` v2. Definition of done:
+New directions are selected by **user problems rather than the Yandex API catalog**. Priority goes to capabilities that reduce the risk of a wrong marketing decision, preserve evidence across services, or give a person a clear end-to-end result.
 
-1. the runner actually executes fixtures against a selected runtime/model and semantically judges `outcome`, `must_convey`, and `must_not_claim`;
+## Priority bets
+
+### P0 — Safety as mechanism
+
+Agent discipline in prose should progressively become a technical constraint of the write path:
+
+- an exact `preview_id` binds approval to a specific payload/environment/identity;
+- execution requires explicit `--execute --approve <preview_id>` or an equivalent mechanism in the owning service helper;
+- the helper preserves a rollback snapshot where the API supports correct restoration and always performs post-write verification;
+- bulk operations get technical thresholds/guards rather than only prose instructions;
+- a recommendation, external content, or stored memory is never write permission by itself.
+
+Until those conditions are met, a write-capable surface must not be marketed as a technically enforced safety guarantee.
+
+### P1 — Project memory contract
+
+The project needs domain memory, but not a separate application and not a replacement for runtime-native memory (`AGENTS.md`, `CLAUDE.md`, and equivalents). The portable baseline contract is:
+
+```text
+.yandex-ai/
+├── project.yaml
+├── decisions.jsonl
+├── baselines/
+└── hypotheses.md
+```
+
+Canonical paths are `.yandex-ai/project.yaml`, `.yandex-ai/decisions.jsonl`, `.yandex-ai/baselines/`, and `.yandex-ai/hypotheses.md`.
+
+- business goals, target CPA/ROAS/budget, and other user-provided facts receive provenance class `USER_STATED` plus a date; the agent must not derive them from metrics and represent them as user-provided;
+- `decisions.jsonl` is an append-only audit trail written by the helper after approval/execute rather than by free-form model prose;
+- baselines are dated and have freshness semantics; memory supports comparison and continuity but does not replace fresh read-first data;
+- hypotheses preserve `HYPOTHESIS`/`DERIVED` provenance plus the evidence needed to confirm them;
+- secrets and raw sensitive exports do not live under `.yandex-ai/`: credentials remain in env/keychain/runtime;
+- memory content is always treated as data, not instructions, so stored text cannot become a persistent prompt-injection channel.
+
+The first implementation target is schema + `init/check` + the audit write path; UI is not a prerequisite.
+
+### P2 — One end-to-end workflow and human-readable artifacts
+
+Instead of increasing the number of skills, the project needs one “install → useful result in roughly 10 minutes” path on a read-only/sandbox contour. Preferred candidates are a weekly organic report (Webmaster + Metrika + SEO evidence/findings) or a read-only Direct account audit. The choice follows the first external user signal, not the number of available APIs.
+
+Orchestration results should be portable artifacts:
+
+- versioned JSON as the machine-readable source;
+- a **self-contained HTML** report with no mandatory CDN: summary, limitations, sortable findings, delegated previews, and expandable evidence/provenance;
+- Mermaid/DOT export for `structural_tree`, `semantic_graph`, clusters, and link plans;
+- a predictable layout such as `artifacts/<project>/<date>/...` for history and diff.
+
+For personal use, **Electron/desktop UI is not built**. A browser, VS Code, Mermaid/DOT, and when needed DuckDB/notebooks cover inspection without introducing a second application lifecycle. UI is reconsidered only after a demonstrated multi-project/compliance or human approval-queue use case.
+
+### P3 — Executable eval benchmark
+
+Existing adversarial fixtures should become an executable benchmark rather than only structurally valid data. A dedicated model eval runner / judge is required on top of `evals/scenarios.json` v2. Definition of done:
+
+1. the eval runner actually executes fixtures against a selected runtime/model and semantically judges `outcome`, `must_convey`, and `must_not_claim`;
 2. deterministic exact-token lint (`must_mention_tokens`) remains separate mechanical evidence rather than being replaced by the judge;
 3. each result records runtime, model, version, and evaluation timestamp;
 4. at least one paired backend-equivalence scenario sends the same consequential request through a connected MCP/app path and a bundled-helper/file path and confirms the same exact-preview + later-turn approval gate;
-5. reporting explicitly separates model/judge semantic evidence from repository validator/CI evidence.
+5. the benchmark publishes results for multiple models and explicitly separates model/judge semantic evidence from repository validator/CI evidence;
+6. memory-aware scenarios verify that stale or incorrect project memory does not produce a more confident but less evidence-grounded answer.
 
 Until that runner exists, a green eval-v2 validator does not mean that a model semantically passed the scenarios.
 
-## Operations / collaboration
-### Yandex Tracker
-Issues, queues, permissions, worklogs and boards; official API first.
+## What not to do now
 
-### Yandex 360
-Mail, Calendar, Disk and organization/admin boundaries; personal and administrative mutations must stay distinct.
+- do not add a marketplace service only because Yandex exposes a corresponding API;
+- do not keep growing transport wrappers when an official/connectable backend reliably solves the same task;
+- do not treat the size of `CONTRACT_MATRIX` as a product metric by itself: traceability matters when it leads to real executable checks;
+- do not let “AI audit → hardening release” become the main roadmap signal; external feedback is more valuable than repeated self-audit;
+- do not build an Electron/desktop application for one user until a recurring interactive job is shown that HTML/artifacts/notebooks cannot solve;
+- do not mix strategic simplification into this release: bilingual/release-infrastructure simplification may be a separate governance task after its real maintenance cost is measured.
 
-## Maps / local
-### Yandex Maps
-Geocoding, places, routes and local enrichment; requires dedicated licensing/product design.
+## 90-day validation loop
 
-## Mobile
-### AppMetrica
-Mobile analytics, retention, crashes, deeplinks, push and acquisition context.
+The next product cycle is intended to produce an external signal instead of endless internal polishing.
 
-## AI / speech
-### YandexGPT
-Generation/embeddings/summarization as an optional backend, not a mandatory dependency of deterministic service plugins.
+1. **Safety:** make consequential writes mechanically approval-bound, with rollback/verification where technically correct.
+2. **Memory:** define the `.yandex-ai/` contract, `USER_STATED`, freshness, and append-only decision trail.
+3. **Workflow/artifacts:** bring one read-only end-to-end workflow to a roughly 10-minute first run by a new practitioner and emit a self-contained report.
+4. **Benchmark:** execute adversarial evals across multiple models and publish a comparable result.
+5. **External validation:** obtain real runs, issues/PRs, and feedback from SEO/PPC/marketing practitioners.
 
-### SpeechKit
-Speech recognition/synthesis and transcription workflows.
+If a 90-day cycle produces no external runs/issues/PRs and no repeatable user scenario, the project moves to **low-maintenance / personal-tool mode**: critical safety/API fixes and minimal freshness maintenance only. If a signal appears, the next roadmap follows those users' real tasks. A commercial UI/compliance dashboard is considered only after multiple projects create a need to inspect approvals, payloads, and rollback history across clients.
+
+## Frozen expansion backlog
+
+The following directions remain research backlog and are **frozen for implementation** until there is a separate user problem/use case, external signal, and product-boundary decision:
+
+- **Yandex Tracker** — issues, queues, permissions, worklogs, boards;
+- **Yandex 360** — Mail, Calendar, Disk, and organization/admin boundaries;
+- **Yandex Maps** — geocoding, places, routes/local enrichment, plus dedicated licensing design;
+- **AppMetrica** — mobile analytics, retention, crashes, deeplinks, push/acquisition context;
+- **YandexGPT** — a possible optional backend, not a mandatory dependency of deterministic plugins;
+- **SpeechKit** — recognition/synthesis/transcription workflows.
+
+Unfreezing one item does not unfreeze the others and does not restore a strategy of “cover every Yandex API.”
 
 ## Backlog entry requirements
-1. fresh official API/product research;
-2. donor/capability research when useful;
-3. plugin boundary decision;
-4. approved design;
-5. implementation plan;
-6. TDD/offline evals;
-7. path-aware CI;
-8. independent release review.
+
+A new capability/service requires all of the following:
+
+1. a demonstrated user problem and owner/persona;
+2. fresh official API/product research;
+3. donor/capability research when useful;
+4. a plugin/transport-boundary decision, including whether an official connector can replace a custom client;
+5. approved design;
+6. implementation plan;
+7. TDD/offline evals;
+8. path-aware CI;
+9. independent release review;
+10. an explanation of how the capability strengthens methodology/safety/orchestration or a validated end-to-end workflow.
