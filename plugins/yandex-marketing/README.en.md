@@ -51,7 +51,7 @@ Generic `metric: demand` is forbidden. Money evidence without currency/VAT/perio
 
 ## Finding taxonomy
 
-`IMPLEMENTED_FINDING_TYPES` contains only the nine deterministic classes actually produced locally. Future classes live in `DEFERRED_FINDING_TYPES`; unknown/deferred findings sort after implemented types with `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` is accepted only as an approved external finding for narrow goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` routing is removed. The normative mapping between design vocabulary and the executable taxonomy is pinned in `docs/superpowers/specs/2026-09-02-yandex-marketing-plugin-design.md`.
+`IMPLEMENTED_FINDING_TYPES` contains only the nine deterministic classes actually produced locally. Future classes live in `DEFERRED_FINDING_TYPES`; unknown/deferred findings sort after implemented types with `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` is accepted only as an approved external finding for narrow goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` routing is removed. The normative vocabulary-to-executable taxonomy mapping is defined by the current Marketing scripts/tests and repository production contracts; historical design specs may be consulted only as non-normative implementation context.
 
 ```bash
 python -m unittest discover -s tests -v
