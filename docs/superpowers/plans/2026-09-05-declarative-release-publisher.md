@@ -4,7 +4,7 @@
 
 **Goal:** Replace all release-specific active GitHub Actions publishers with one manifest-driven hardened publisher and ship the migration as repository-only `1.0.6` without changing plugin SemVer or historical releases/tags.
 
-**Architecture:** A repository-owned Python helper validates `.github/releases/release.json` and exposes a stable release-item representation. One `.github/workflows/publish-current-release.yml` consumes that declaration after successful exact-main CI and applies the hardened immutable/draft-recovery/rollback algorithm currently proven by the `1.0.5` publisher. Historical `publish-*.yml` files and tests that only pin their source are removed from current `main`; continuing safety assertions are migrated into generic tests.
+**Architecture:** `scripts/release_manifest.py` owns validation and normalization of `.github/releases/release.json`. `.github/workflows/publish-current-release.yml` owns one reusable exact-main publication algorithm derived from the hardened `1.0.5` publisher. Historical `publish-*.yml` files disappear from current tip after their safety assertions have been migrated into generic tests; Git history/tags remain the immutable archive.
 
 **Tech Stack:** Python 3.10+, `unittest`, JSON, Bash, GitHub Actions, GitHub CLI (`gh`), Git.
 
@@ -12,17 +12,17 @@
 
 ## Global Constraints
 
-- Base is `main` at repository `1.0.5`; target repository release is `1.0.6`.
-- Plugin versions stay exactly: Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+- Base is repository `1.0.5`; target repository release is `1.0.6`.
+- Plugin versions remain exactly: Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
 - PR B creates no plugin tags.
-- Existing GitHub releases/tags are never deleted, retargeted, recreated, or otherwise mutated.
-- Exactly one automatic `publish-*.yml` remains in current-tip `.github/workflows/`: `publish-current-release.yml`.
-- Publisher remains gated by successful canonical-repository `CI` from `push` to `main`, checked out at exact upstream `head_sha`.
-- Remote tag probes fail closed; probe errors are not treated as absence.
-- Draft recovery requires one common ancestor target for the entire declared release set.
-- Rollback is armed only during the mutable publication window, re-checks `isImmutable` before deletion, and is disarmed immediately after immutability is confirmed.
-- Every new release set requires a new repository SemVer/tag; an already immutable repository release is never reused for a later plugin release set.
-- No workflow commits release state back to the repository.
+- Existing GitHub releases/tags are never deleted, retargeted, recreated, or mutated.
+- Current tip ends with exactly one automatic `publish-*.yml`: `.github/workflows/publish-current-release.yml`.
+- Publisher is gated by successful canonical-repository `CI` from `push` to `main`, checked out at exact upstream `head_sha`.
+- Remote tag probes fail closed; transport/auth/probe errors are not interpreted as absence.
+- Draft recovery requires one common ancestor target for the whole declared release set.
+- Rollback is armed only during the mutable publication window, probes `isImmutable` before deletion, and is disarmed immediately after immutability is confirmed.
+- Every new release set receives a new repository SemVer/tag; an immutable repository release is never reused for a later plugin release set.
+- No workflow commits state back into the repository.
 
 ---
 
@@ -35,63 +35,66 @@
 - Create: `.github/releases/1.0.6.md`
 
 **Interfaces:**
-- Produces `ReleaseItem(kind: str, name: str, version: str, tag: str, title: str, notes_file: str)` as an immutable dataclass.
-- Produces `load_release_manifest(root: Path, manifest_path: Path | None = None) -> dict`.
-- Produces `validate_release_manifest(root: Path, manifest_path: Path | None = None) -> list[str]` where an empty list means valid.
-- Produces `release_items(root: Path, manifest_path: Path | None = None) -> list[ReleaseItem]`, repository item first, then plugins in manifest order; raises `ValueError` when validation fails.
-- CLI: `python scripts/release_manifest.py validate [--root PATH] [--manifest PATH]` exits 0 for valid, 1 and prints one error per line for invalid.
-- CLI: `python scripts/release_manifest.py items [--root PATH] [--manifest PATH] --format tsv` prints six tab-separated fields matching `ReleaseItem` in stable order.
+- `ReleaseItem(kind: str, name: str, version: str, tag: str, title: str, notes_file: str)` — frozen dataclass.
+- `load_release_manifest(root: Path, manifest_path: Path | None = None) -> dict`.
+- `validate_release_manifest(root: Path, manifest_path: Path | None = None) -> list[str]`.
+- `release_items(root: Path, manifest_path: Path | None = None) -> list[ReleaseItem]`; repository first, then plugin entries in manifest order; raise `ValueError` if validation fails.
+- CLI `python scripts/release_manifest.py validate [--root PATH] [--manifest PATH]` — exit 0 when valid, 1 when invalid.
+- CLI `python scripts/release_manifest.py items [--root PATH] [--manifest PATH] --format tsv` — six stable tab-separated fields in dataclass order.
 
-- [ ] **Step 1: Write RED manifest tests**
+- [ ] **Step 1: Write the failing manifest tests**
 
-Create `tests/test_release_manifest.py` covering:
+Create a temporary-fixture helper inside `tests/test_release_manifest.py` that writes `.github/releases/release.json`, notes files, and minimal plugin manifests. Then add these executable assertions:
 
 ```python
-from pathlib import Path
-import json
-import tempfile
-import unittest
-
-from scripts.release_manifest import release_items, validate_release_manifest
-
-
 class ReleaseManifestTests(unittest.TestCase):
     def test_repository_only_1_0_6_manifest_is_valid(self):
         root = Path(__file__).resolve().parents[1]
         self.assertEqual(validate_release_manifest(root), [])
-        items = release_items(root)
-        self.assertEqual([(item.kind, item.tag) for item in items], [("repository", "1.0.6")])
+        self.assertEqual(
+            [(item.kind, item.name, item.version, item.tag) for item in release_items(root)],
+            [("repository", "repository", "1.0.6", "1.0.6")],
+        )
 
-    def test_repository_tag_must_equal_strict_semver_version(self):
-        # temporary fixture writes version 1.0.6 and tag repository-1.0.6
-        # expected error contains "repository tag must equal version"
-        ...
+    def test_repository_tag_must_equal_version(self):
+        root = self.make_fixture(repository_version="1.0.6", repository_tag="repository-1.0.6")
+        self.assertTrue(any("repository tag must equal version" in e for e in validate_release_manifest(root)))
 
-    def test_notes_must_stay_under_github_releases_and_exist(self):
-        # reject ../notes.md and missing .github/releases file
-        ...
+    def test_repository_version_must_be_strict_semver(self):
+        root = self.make_fixture(repository_version="release-1", repository_tag="release-1")
+        self.assertTrue(any("strict SemVer" in e for e in validate_release_manifest(root)))
 
-    def test_plugin_entry_must_match_existing_plugin_and_manifest_version(self):
-        # reject unknown plugin and mismatched version
-        ...
+    def test_notes_path_must_be_confined_and_exist(self):
+        root = self.make_fixture(notes_file="../notes.md")
+        self.assertTrue(any(".github/releases" in e for e in validate_release_manifest(root)))
+        root = self.make_fixture(notes_file=".github/releases/missing.md", create_notes=False)
+        self.assertTrue(any("notes file does not exist" in e for e in validate_release_manifest(root)))
 
-    def test_plugin_tag_is_canonical_and_unique(self):
-        # require yandex-<service>-v<version>; reject duplicate plugin/tag
-        ...
+    def test_declared_plugin_must_exist_and_match_both_manifest_versions(self):
+        root = self.make_fixture(plugin="yandex-wordstat", plugin_version="1.2.0", actual_plugin_version="1.1.2")
+        errors = validate_release_manifest(root)
+        self.assertTrue(any("yandex-wordstat" in e and "1.1.2" in e and "1.2.0" in e for e in errors))
 
-    def test_release_tags_are_unique_across_repository_and_plugins(self):
-        ...
+    def test_plugin_tag_must_be_canonical(self):
+        root = self.make_fixture(plugin="yandex-wordstat", plugin_version="1.1.2", plugin_tag="wordstat-1.1.2")
+        self.assertTrue(any("yandex-wordstat-v1.1.2" in e for e in validate_release_manifest(root)))
+
+    def test_plugins_and_tags_must_be_unique(self):
+        root = self.make_fixture(duplicate_plugin=True)
+        errors = validate_release_manifest(root)
+        self.assertTrue(any("duplicate plugin" in e for e in errors))
+        self.assertTrue(any("duplicate release tag" in e for e in errors))
 ```
 
-Use fixture helper functions in the same test file rather than weakening production repository validation.
+The fixture helper returns `Path(tmp.name)` and retains each `TemporaryDirectory` with `self.addCleanup(tmp.cleanup)`.
 
-- [ ] **Step 2: Commit and run RED**
+- [ ] **Step 2: Commit RED and collect CI evidence**
 
-Commit only the tests first. CI/root test expectation: failures because `scripts.release_manifest`, `release.json`, and release notes do not exist yet; existing validator remains green.
+Commit only `tests/test_release_manifest.py`. Expected root failure is import/file-contract failure for the new helper/manifest; existing repository validator must still pass.
 
-- [ ] **Step 3: Implement the minimal manifest helper**
+- [ ] **Step 3: Implement the manifest helper**
 
-`scripts/release_manifest.py` must:
+Start `scripts/release_manifest.py` with:
 
 ```python
 from dataclasses import dataclass
@@ -113,9 +116,13 @@ class ReleaseItem:
     notes_file: str
 ```
 
-Validate schema version `1`, required scalar fields, path confinement using resolved paths, repository tag/version equality, existing plugin directory, both `.codex-plugin/plugin.json` and `.claude-plugin/plugin.json` version equality for declared plugins, canonical plugin tag, and uniqueness.
+Validation rules are exact: schema `1`; `repository` object and `plugins` list required; all release scalar fields non-empty strings; repository strict SemVer and `tag == version`; notes resolve under `<root>/.github/releases` and exist with `.md` suffix; plugin directory exists; both Codex/Claude plugin manifests parse and equal declared version; plugin tag equals `<plugin>-v<version>`; plugin names unique; all release tags unique.
 
-- [ ] **Step 4: Add repository-only declaration**
+`release_items()` first calls validation and raises `ValueError("; ".join(errors))` if non-empty.
+
+CLI parser has subcommands `validate` and `items`. `validate` writes errors to stderr and returns 1. `items --format tsv` writes `kind`, `name`, `version`, `tag`, `title`, `notes_file` separated by tabs.
+
+- [ ] **Step 4: Add the repository-only `1.0.6` declaration**
 
 `.github/releases/release.json`:
 
@@ -132,15 +139,11 @@ Validate schema version `1`, required scalar fields, path confinement using reso
 }
 ```
 
-`.github/releases/1.0.6.md` states that the release migrates to one declarative publisher, retires active historical publishers, preserves immutable history, and leaves all seven plugin versions unchanged.
+`.github/releases/1.0.6.md` says this release consolidates publication into one manifest-driven workflow, retires historical active publishers from current tip while preserving them in Git history, preserves hardened immutable/rollback behavior, and leaves all seven plugin versions unchanged.
 
-- [ ] **Step 5: Run GREEN**
+- [ ] **Step 5: Run GREEN and commit**
 
-Run through CI/root suite and require all manifest tests green on Python 3.10 and 3.13.
-
-- [ ] **Step 6: Commit manifest implementation**
-
-Commit helper + manifest + notes without any legacy workflow deletion yet.
+Require root tests green on Python 3.10/3.13 for manifest tests. Commit helper + manifest + notes separately from the RED test commit.
 
 ---
 
@@ -149,43 +152,72 @@ Commit helper + manifest + notes without any legacy workflow deletion yet.
 **Files:**
 - Create: `tests/test_current_release_publisher.py`
 - Create: `.github/workflows/publish-current-release.yml`
-- Read/migrate behavior from: `.github/workflows/publish-repository-1.0.5.yml`
+- Source behavior: `.github/workflows/publish-repository-1.0.5.yml`
 
 **Interfaces:**
-- Consumes `python scripts/release_manifest.py validate` and `items --format tsv` from Task 1.
-- Consumes `.github/releases/release.json` and declared notes files from Task 1.
-- Produces one automatic workflow named `Publish current declared release`.
+- Consumes Task 1 `validate` and `items --format tsv` CLI.
+- Produces one workflow named `Publish current declared release`.
 
-- [ ] **Step 1: Write RED generic publisher tests**
+- [ ] **Step 1: Write RED workflow tests**
 
-`tests/test_current_release_publisher.py` parses workflow text and asserts stable safety tokens/order rather than exact prose. Required tests:
+The test module loads `WORKFLOW.read_text()` and uses token assertions plus order checks:
 
 ```python
-def test_trigger_is_successful_canonical_main_ci_only(): ...
-def test_checkout_is_exact_target_sha(): ...
-def test_publisher_validates_manifest_before_remote_mutation(): ...
-def test_stale_initial_main_is_no_publish(): ...
-def test_existing_release_targets_must_form_one_common_ancestor(): ...
-def test_remote_tag_probe_fails_closed(): ...
-def test_draft_reservation_precedes_publication(): ...
-def test_mutable_published_release_is_rejected(): ...
-def test_standalone_tag_is_rejected(): ...
-def test_rollback_checks_is_immutable_before_delete(): ...
-def test_rollback_is_disarmed_before_post_immutability_probes(): ...
-def test_final_verification_checks_every_declared_item(): ...
-def test_empty_plugins_manifest_cannot_publish_plugin_tags(): ...
-def test_concurrency_serializes_without_cancellation(): ...
+class CurrentReleasePublisherTests(unittest.TestCase):
+    def setUp(self):
+        self.text = WORKFLOW.read_text(encoding="utf-8") if WORKFLOW.exists() else ""
+
+    def test_trigger_is_successful_canonical_main_ci_only(self):
+        for token in ('workflows: ["CI"]', "conclusion == 'success'", "workflow_run.event == 'push'", "head_branch == 'main'", "head_repository.full_name == github.repository"):
+            self.assertIn(token, self.text)
+
+    def test_checkout_is_exact_target_sha(self):
+        self.assertIn("TARGET_SHA: ${{ github.event.workflow_run.head_sha }}", self.text)
+        self.assertIn("ref: ${{ env.TARGET_SHA }}", self.text)
+
+    def test_manifest_is_validated_before_release_mutation(self):
+        validate_i = self.text.index("python scripts/release_manifest.py validate")
+        create_i = self.text.index("gh release create")
+        self.assertLess(validate_i, create_i)
+
+    def test_remote_tag_probe_fails_closed(self):
+        self.assertIn("git ls-remote --exit-code", self.text)
+        self.assertIn("2) return 1", self.text)
+        self.assertIn("Unable to determine remote tag state", self.text)
+
+    def test_rollback_rechecks_immutability_before_delete(self):
+        probe_i = self.text.index('cleanup_release_immutable="$(gh release view')
+        delete_i = self.text.index('gh release delete "$tag"')
+        self.assertLess(probe_i, delete_i)
+        self.assertIn("already immutable; rollback is neither required nor safe", self.text)
+
+    def test_rollback_is_disarmed_before_post_immutability_tag_probe(self):
+        immutable_i = self.text.index('[[ "$published_is_immutable" == "true" ]]')
+        disarm_i = self.text.index("rollback_armed=false", immutable_i)
+        trap_i = self.text.index("trap - ERR", disarm_i)
+        fetch_i = self.text.index('git fetch origin "refs/tags/$tag:refs/tags/$tag"', trap_i)
+        self.assertLess(immutable_i, disarm_i)
+        self.assertLess(disarm_i, trap_i)
+        self.assertLess(trap_i, fetch_i)
+
+    def test_repository_only_manifest_does_not_hardcode_plugin_publish_calls(self):
+        self.assertNotIn('publish_one "yandex-', self.text)
+        self.assertIn("release_manifest.py items", self.text)
+
+    def test_concurrency_serializes_without_cancel(self):
+        self.assertIn("group: current-release-publisher", self.text)
+        self.assertIn("cancel-in-progress: false", self.text)
 ```
 
-Pin ordering by comparing string indexes for `published_is_immutable`, `rollback_armed=false`, `trap - ERR`, and the first subsequent `git fetch origin "refs/tags/$tag`.
+Add explicit assertions for stale initial run -> no publication, common candidate target equality, ancestor recovery, mutable published release hard fail, standalone tag hard fail, draft reservation before publish, and final verification loop over every item.
 
-- [ ] **Step 2: Commit and observe RED**
+- [ ] **Step 2: Commit RED and collect CI evidence**
 
-CI should fail only the new generic workflow contract because `.github/workflows/publish-current-release.yml` does not exist yet.
+Commit only the new generic workflow test. Expected failures are all attributable to missing `publish-current-release.yml`.
 
-- [ ] **Step 3: Implement generic workflow from hardened `1.0.5` semantics**
+- [ ] **Step 3: Implement the generic workflow**
 
-Workflow structure:
+Required header:
 
 ```yaml
 name: Publish current declared release
@@ -203,102 +235,96 @@ concurrency:
   cancel-in-progress: false
 ```
 
-The job `if:` must require canonical repository, upstream success, `push`, same head repository, and `main` branch. `TARGET_SHA` is `${{ github.event.workflow_run.head_sha }}` and checkout uses `ref: ${{ env.TARGET_SHA }}`.
+The job condition requires canonical repo, upstream success, push event, same head repo, and main branch. Checkout uses exact `TARGET_SHA`.
 
-Algorithm steps:
+Implementation sequence is fixed:
 
-1. Validate release manifest locally before state mutation.
-2. Load all items into a stable TSV array from `scripts/release_manifest.py`.
-3. Inspect each declared release and remote tag; collect candidate targets from immutable releases or drafts.
-4. For no existing state, require `TARGET_SHA == origin/main`; if stale, emit verified no-op and do not publish.
-5. For recovery/existing state, require all candidate targets equal and common target ancestor of live main.
-6. Validate exact selected release target in a detached worktree with `scripts/validate_repo.py`, root unit tests, and manifest validation against that target.
-7. Reconcile each declared item using a reusable Bash `publish_one` with the hardened `rollback_armed` window.
-8. Final verification loops over all declared items and requires published + immutable + exact/common tag target.
+1. Run `python scripts/release_manifest.py validate` before any remote release mutation.
+2. Read normalized release items via `items --format tsv`.
+3. Inspect every declared release and remote tag, collecting immutable/draft target candidates.
+4. Fetch `origin/main` and determine live main.
+5. No candidate state: if `TARGET_SHA != live_main`, mark `stale=true`, `complete=false`, and skip validation/publication as a verified stale no-op; otherwise target is `TARGET_SHA`.
+6. Candidate state: every candidate must equal the first; target must be an ancestor of live main; otherwise fail closed.
+7. `complete=true` only if every declared item is already published immutable with no drafts and all tags match the common target.
+8. For incomplete non-stale state, detached worktree at common target runs manifest validation, `scripts/validate_repo.py`, and root `unittest` discovery.
+9. `publish_one` reserves absent releases as drafts, checks exact draft target/no tag, arms rollback, publishes, reads back draft/immutable/target, rolls back only while mutable, disarms immediately after immutability, then verifies remote tag SHA.
+10. Final verification loops over normalized items and proves published, non-draft, immutable, target/common SHA valid, and tag exact.
 
-Do not hardcode the seven plugin versions in this workflow. Plugin versions are checked by the manifest helper only for plugins declared for publication.
+Use `set -Eeuo pipefail` in publication code so ERR traps propagate through functions. Preserve the hardened `1.0.5` `remote_tag_exists()` distinction: rc 0 present, rc 2 absent, other rc fatal.
 
-- [ ] **Step 4: Run GREEN generic publisher contract**
+- [ ] **Step 4: Run GREEN and commit**
 
-Require all new publisher safety tests green while historical workflows still exist.
-
-- [ ] **Step 5: Commit generic publisher**
-
-Commit only generic workflow changes after RED evidence is recorded.
+Generic publisher tests must all pass while legacy workflows still exist. Commit the workflow only after RED evidence is recorded.
 
 ---
 
-### Task 3: Retire historical active publishers and migrate tests
+### Task 3: Retire historical publishers and migrate continuing tests
 
 **Files:**
-- Delete every release-specific `.github/workflows/publish-*.yml` except `publish-current-release.yml`, including:
-  - `.github/workflows/publish-docs-1.0.0.yml`
-  - `.github/workflows/publish-fable-2.0.0.yml`
-  - `.github/workflows/publish-fable-audit3-maintenance.yml`
-  - `.github/workflows/publish-fable-review5-maintenance.yml`
-  - `.github/workflows/publish-opus-1.1.0.yml`
-  - `.github/workflows/publish-opus-1.1.1.yml`
-  - `.github/workflows/publish-opus-1.1.2.yml`
-  - `.github/workflows/publish-opus-1.1.3.yml`
-  - `.github/workflows/publish-phase-7-topical-architecture.yml`
-  - `.github/workflows/publish-phase-7-topical-architecture-1.0.1.yml`
-  - `.github/workflows/publish-repository-1.0.2.yml`
-  - `.github/workflows/publish-repository-1.0.5.yml`
-- Delete/rewrite historical workflow-source tests whose only subject is one removed YAML, including publisher-specific FABLE/OPUS/Phase7/repository publisher suites.
-- Modify: `tests/test_publisher_repository_identity.py`
 - Create: `tests/test_publisher_migration_contract.py`
+- Modify: `tests/test_publisher_repository_identity.py`
+- Delete all release-specific `.github/workflows/publish-*.yml` except `publish-current-release.yml`.
+- Delete/rewrite publisher-specific tests that only pin removed YAML after their continuing safety assertions are migrated.
 
-**Interfaces:**
-- Current-tip workflow set becomes an invariant: exactly one filename matching `publish-*.yml`, `publish-current-release.yml`.
-- Historical workflow source remains available only through Git history/tags, not duplicated into an archive directory.
+**Historical workflows to remove from current tip:**
 
-- [ ] **Step 1: Write RED migration contract before deleting anything**
+```text
+publish-docs-1.0.0.yml
+publish-fable-2.0.0.yml
+publish-fable-audit3-maintenance.yml
+publish-fable-review5-maintenance.yml
+publish-opus-1.1.0.yml
+publish-opus-1.1.1.yml
+publish-opus-1.1.2.yml
+publish-opus-1.1.3.yml
+publish-phase-7-topical-architecture.yml
+publish-phase-7-topical-architecture-1.0.1.yml
+publish-repository-1.0.2.yml
+publish-repository-1.0.5.yml
+```
 
-`tests/test_publisher_migration_contract.py`:
+- [ ] **Step 1: Write RED migration assertions**
 
 ```python
-from pathlib import Path
-import unittest
-
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github/workflows"
 
 class PublisherMigrationContractTests(unittest.TestCase):
     def test_exactly_one_active_publish_workflow_exists(self):
-        publishers = sorted(path.name for path in WORKFLOWS.glob("publish-*.yml"))
-        self.assertEqual(publishers, ["publish-current-release.yml"])
+        self.assertEqual(
+            sorted(path.name for path in WORKFLOWS.glob("publish-*.yml")),
+            ["publish-current-release.yml"],
+        )
 
-    def test_historical_codenames_are_not_active_publish_workflows(self):
+    def test_historical_publish_names_are_absent_from_current_tip(self):
         names = "\n".join(path.name.lower() for path in WORKFLOWS.glob("publish-*.yml"))
         for token in ("opus", "fable", "phase", "docs", "1.0.2", "1.0.5"):
             self.assertNotIn(token, names)
 ```
 
-- [ ] **Step 2: Observe RED**
+- [ ] **Step 2: Commit and observe RED**
 
-Expect only migration assertions to fail because historical publisher workflows are still present.
+Expected two failures because legacy workflows still exist. Generic publisher tests from Task 2 remain green.
 
-- [ ] **Step 3: Inventory continuing safety assertions**
+- [ ] **Step 3: Inventory and migrate safety assertions before deletion**
 
-Before deleting old tests, inspect every publisher-specific test and map each continuing invariant to either `tests/test_current_release_publisher.py`, `tests/test_release_manifest.py`, or `tests/test_publisher_migration_contract.py`. At minimum retain: repository identity, exact checkout, idempotent immutable no-op, common-target recovery, draft recovery, remote probe failure distinction, ERR trace/rollback arm, cleanup residue checks, and post-immutability rollback disarm.
+Inspect these historical suites: FABLE audit/review publisher tests, OPUS 1.1.2/1.1.3 publisher + draft/residue/idempotency tests, Phase7 publisher/idempotency tests, repository 1.0.2/1.0.5 publisher tests, and publisher repository identity test.
 
-- [ ] **Step 4: Delete historical workflows and source-pinning tests**
+Map continuing behavior into `test_current_release_publisher.py` or `test_publisher_migration_contract.py`. The following must survive: canonical repository identity; exact checkout; complete immutable no-op; common-target recovery; draft recovery; remote-probe rc distinction; `set -E` ERR trace; rollback arm timing; cleanup residue verification; immutability-before-delete; post-immutability disarm; final exact-tag verification.
 
-Delete only tests that cannot have continuing value after the workflow is intentionally absent. If a test contains a reusable safety invariant, migrate that assertion first, then delete the historical test file.
+- [ ] **Step 4: Delete old workflow files and source-pinning tests**
 
-Update `tests/test_publisher_repository_identity.py` to inspect only `publish-current-release.yml` and require canonical `GH_REPO`/repository identity semantics there.
+After migration, remove all 12 historical workflow files. Remove historical test files whose subject no longer exists in current tip. Keep unrelated Phase7 functional contracts.
 
-- [ ] **Step 5: Run full repository GREEN**
+Rewrite `tests/test_publisher_repository_identity.py` to inspect only `.github/workflows/publish-current-release.yml` and assert canonical repository guard plus `GH_REPO`/`GITHUB_REPOSITORY` use rather than historical filenames.
 
-Require `python scripts/validate_repo.py` and `python -m unittest discover -s tests -v` to pass. No test may require a deleted historical workflow on current tip.
+- [ ] **Step 5: Run full GREEN and commit**
 
-- [ ] **Step 6: Commit retirement migration**
-
-Commit workflow deletions and test migration as one independently reviewable change.
+Require `python scripts/validate_repo.py` and `python -m unittest discover -s tests -v` green. Commit retirement/test migration together so no branch head lands with deleted safety tests but missing generic equivalents.
 
 ---
 
-### Task 4: Document the new policy and stage repository `1.0.6`
+### Task 4: Stage repository `1.0.6` documentation/governance surfaces
 
 **Files:**
 - Modify: `README.md`
@@ -307,100 +333,81 @@ Commit workflow deletions and test migration as one independently reviewable cha
 - Modify: `CHANGELOG.en.md`
 - Modify: `docs/RELEASE_POLICY.md`
 - Modify: `docs/RELEASE_POLICY.en.md`
-- Modify: `CONTRIBUTING.md` only if its release procedure references per-release workflows.
-- Modify: `tests/test_documentation_ux_contracts.py` if current repository release badge assertions are pinned to `1.0.5`.
-- Create or modify generic documentation/release tests as needed; do not revive historical publisher tests.
+- Modify: `CONTRIBUTING.md` only if it references release-specific workflow creation.
+- Modify/add documentation contract tests as needed.
 
-**Interfaces:**
-- Current repository version becomes `1.0.6` in root RU/EN release surfaces.
-- Release policy describes manifest-driven release sets and historical workflow retirement.
+- [ ] **Step 1: Add RED current-release and policy tests**
 
-- [ ] **Step 1: Write/update RED release-surface assertions**
-
-Tests require:
+Assertions must require:
 
 ```python
-assert "release-1.0.6" in README_RU
-assert "release-1.0.6" in README_EN
-assert "## [1.0.6]" in CHANGELOG_RU
-assert "## [1.0.6]" in CHANGELOG_EN
+self.assertIn("release-1.0.6", read("README.md"))
+self.assertIn("release-1.0.6", read("README.en.md"))
+self.assertIn("## [1.0.6] — 2026-09-05", read("CHANGELOG.md"))
+self.assertIn("## [1.0.6] — 2026-09-05", read("CHANGELOG.en.md"))
+for policy in (read("docs/RELEASE_POLICY.md"), read("docs/RELEASE_POLICY.en.md")):
+    self.assertIn(".github/releases/release.json", policy)
+    self.assertIn("publish-current-release.yml", policy)
 ```
 
-and release policy RU/EN must mention `.github/releases/release.json`, one active generic publisher, immutable Git history as the historical publisher archive, and the rule that every new release set receives a new repository SemVer.
+Also assert policy conveys: historical publisher YAML is removed from active default-branch workflows after immutable publication but remains in Git history/tags; every new release set increments repository SemVer; empty plugin list means no plugin tags.
 
-- [ ] **Step 2: Observe RED**
+- [ ] **Step 2: Commit and observe RED**
 
-Expected failures should be limited to current `1.0.5` release surfaces/policy wording.
+Expected failures are only `1.0.5` current surfaces and missing generic policy wording.
 
-- [ ] **Step 3: Update RU/EN docs and changelog**
+- [ ] **Step 3: Update RU/EN surfaces**
 
-Add `## [1.0.6] — 2026-09-05` to both changelogs with equivalent SemVer/release content. Update README badge/current repository release to `1.0.6` without changing the seven plugin versions.
+Add `## [1.0.6] — 2026-09-05` to both changelogs with parity. Update root release badge/current version to `1.0.6`. Do not alter the seven plugin versions.
 
-Release policy must explicitly say:
+Update release policy RU/EN with manifest-driven future releases, exactly one automatic current publisher, Git-history archival of historical workflow source, new repository SemVer for every release set, and `plugins: []` repository-only semantics.
 
-- future release intent is declared in `.github/releases/release.json`;
-- `publish-current-release.yml` is the only automatic publisher at current tip;
-- historical publisher YAML is removed from active default-branch workflows once immutable and remains recoverable from Git history/tags;
-- a new release set always increments repository SemVer, even when only a plugin is being released;
-- `plugins: []` is repository-only and produces no plugin tags.
+- [ ] **Step 4: Run GREEN and commit**
 
-- [ ] **Step 4: Run bilingual/contract GREEN**
-
-Require root validator + all repository tests green on exact branch head.
-
-- [ ] **Step 5: Commit repository `1.0.6` surfaces**
-
-Commit docs/version surfaces separately from publisher mechanics.
+Require bilingual validator and full root tests green. Commit docs/current release surfaces separately from publisher mechanics.
 
 ---
 
-### Task 5: Exact-head review, merge, and immutable `1.0.6` publication
+### Task 5: Exact-head CI, independent review, merge, and immutable `1.0.6`
 
-**Files:**
-- No new implementation files unless review finds a defect.
-- PR metadata for branch `refactor/declarative-release-publisher`.
+**Files:** no implementation changes unless review finds a defect.
 
-**Interfaces:**
-- Produces squash-merged `main` SHA.
-- Produces immutable repository release/tag `1.0.6` at exactly that SHA.
-- Must not produce any new plugin tags.
+- [ ] **Step 1: Open draft PR**
 
-- [ ] **Step 1: Open/update draft PR**
+Title: `refactor: consolidate release publishing into one declarative workflow`.
 
-PR title: `refactor: consolidate release publishing into one declarative workflow`.
+Body lists scope, non-goals, spec, plan, repository-only `1.0.6`, unchanged plugin versions, immutable-history guarantee, and RED/GREEN evidence.
 
-Body states scope, explicit non-goals, spec, plan, plugin versions unchanged, repository-only `1.0.6`, and immutable-history guarantee.
+- [ ] **Step 2: Require exact-head CI success**
 
-- [ ] **Step 2: Verify exact-head CI**
+Record exact branch SHA, CI run ID, and all job conclusions. Root matrices and affected plugin jobs must be green on the same SHA.
 
-Require all root matrix and affected plugin jobs green on one exact head SHA. Record run ID and job count.
+- [ ] **Step 3: Request independent exact-head Codex review**
 
-- [ ] **Step 3: Request independent exact-head review**
-
-Ask Codex review on the exact green SHA. Fix blocker findings via their own RED -> GREEN regression before re-requesting review. If review is unavailable due an explicit quota/tool limitation, document that limitation rather than claiming a clean review.
+Any blocker gets its own regression RED -> fix -> GREEN before thread resolution and re-review. If external review is explicitly unavailable because of quota/tool limitation, record the exception and do not label it clean review.
 
 - [ ] **Step 4: Final scope guard**
 
-Confirm changed files contain no plugin runtime/helper/manifest version changes and no historical tag/release mutation. Confirm `.github/workflows/` contains exactly one `publish-*.yml` at branch head.
+Verify no plugin runtime/helper/plugin manifest version changes; `.github/workflows/` has exactly one `publish-*.yml`; `release.json` has repository `1.0.6` and empty plugins; unresolved blocker threads are zero.
 
 - [ ] **Step 5: Squash merge with expected-head guard**
 
-Merge only when PR is mergeable, unresolved blocker threads are zero, exact-head CI is green, and head SHA has not moved.
+Merge only exact reviewed/verified head into `main`.
 
-- [ ] **Step 6: Verify post-merge CI at exact main SHA**
+- [ ] **Step 6: Verify post-merge CI and workflow retirement**
 
-Require post-merge `CI` success on the squash SHA. Confirm legacy publishers do not appear as new runs for that SHA; the only release publisher should be `Publish current declared release`.
+Require successful `CI` on exact squash SHA. Query workflow runs for that SHA: historical OPUS/FABLE/PHASE/DOCS/release-specific publishers must not start; the only release publisher is `Publish current declared release`.
 
-- [ ] **Step 7: Verify generic publisher run**
+- [ ] **Step 7: Verify generic publication**
 
-Require its run to target the same squash SHA and complete successfully. Inspect job steps for manifest validation, release-state detection, exact-target validation, publication, and final immutable-set verification.
+Publisher run must target exact squash SHA and complete manifest validation, release-state detection, exact-target validation, publication/recovery, and final immutable verification successfully.
 
-- [ ] **Step 8: Verify GitHub release state directly**
+- [ ] **Step 8: Verify release/tag state directly**
 
-Check release/tag `1.0.6`: release exists, draft=false, prerelease=false, immutable=true, target/tag SHA equals exact squash `main` SHA.
+`1.0.6`: release exists, draft=false, prerelease=false, immutable=true; release target and tag SHA equal exact squash main SHA.
 
-Re-check release/tag `1.0.5`: release ID/target remains unchanged and immutable. Verify no plugin service tag version advanced.
+`1.0.5`: same release ID, immutable state, and target as before PR B. Service plugin tags/versions remain unchanged.
 
-- [ ] **Step 9: Report final evidence**
+- [ ] **Step 9: Final evidence report**
 
-Report final branch head, PR number, exact-head CI run, review outcome, squash SHA, post-merge CI run, generic publisher run, `1.0.6` release ID/immutable state/tag SHA, unchanged `1.0.5`, unchanged plugin versions, and absence of legacy publisher runs on the new main SHA.
+Report PR, branch final SHA, exact-head CI, review outcome, squash SHA, post-merge CI, generic publisher run, `1.0.6` release ID/tag SHA/immutable state, `1.0.5` unchanged, plugin matrix unchanged, and zero historical publisher runs on the new main SHA.
