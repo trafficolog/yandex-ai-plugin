@@ -2,13 +2,13 @@
 
 <p align="center"><a href="README.md">Русский</a> · <strong>English</strong></p>
 
-<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.8-3155ff"></p>
+<p align="center"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-white"> <img alt="plugins 7" src="https://img.shields.io/badge/plugins-7-3155ff"> <img alt="independent semver" src="https://img.shields.io/badge/semver-independent-3155ff"> <img alt="release" src="https://img.shields.io/badge/release-1.0.9-3155ff"></p>
 
 # Yandex AI Plugins
 
 A marketplace of independent AI plugins **for Yandex services** — Direct, Metrika, Webmaster, Wordstat, Search, plus cross-service SEO/Marketing orchestration — used from AI agents and coding assistants. This is not a plugin set for YandexGPT: each plugin gives an agent specialized skills, verifiable API/workflow contracts, and a safe path to the owning Yandex service.
 
-The current repository release is `1.0.8`. Plugins version independently; published release/tag records are treated as immutable.
+The current repository release is `1.0.9`. Plugins version independently; published release/tag records are treated as immutable.
 
 ## What this is and who it is for
 
@@ -164,6 +164,7 @@ Strict reference freshness is checked separately with `python scripts/check_refe
 
 - [`docs/GETTING_STARTED.en.md`](docs/GETTING_STARTED.en.md) — installation, credentials, and a first safe request;
 - [`docs/ARCHITECTURE.en.md`](docs/ARCHITECTURE.en.md) — ownership, evidence flow, transport boundaries;
+- [`docs/ROADMAP.en.md`](docs/ROADMAP.en.md) — product strategy, safety/memory/workflow/eval priorities, and the frozen expansion backlog;
 - [`docs/GLOSSARY.en.md`](docs/GLOSSARY.en.md) — plain-language explanations of exact terms/tokens;
 - [`docs/SERVICE_MATRIX.en.md`](docs/SERVICE_MATRIX.en.md) — available services and versions;
 - [`docs/PLUGIN_STANDARD.en.md`](docs/PLUGIN_STANDARD.en.md) — normative production plugin contract;

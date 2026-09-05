@@ -37,7 +37,7 @@ class DocumentationGuardTests(unittest.TestCase):
         content = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
         marker = "### Phase 6B — Yandex Marketing"
         self.assertIn(marker, content)
-        phase = content.split(marker, 1)[1].split("# Future release backlog", 1)[0]
+        phase = content.split(marker, 1)[1].split("# Стратегия развития после 1.0.8", 1)[0]
         self.assertIn("Изначально выпущен как plugin `1.0.0`", phase)
         self.assertIn("не содержит Yandex API clients", phase)
 
@@ -53,10 +53,11 @@ class DocumentationGuardTests(unittest.TestCase):
         self.assertIn("## [1.0.0] — 2026-09-02", changelog)
         self.assertIn("First Release Independent Review Guide", review)
 
-    def test_future_services_remain_documented_as_backlog(self):
+    def test_future_services_remain_documented_as_frozen_backlog(self):
         roadmap = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
         matrix = (ROOT / "docs/SERVICE_MATRIX.md").read_text(encoding="utf-8")
-        self.assertIn("# Future release backlog", roadmap)
+        self.assertIn("## Frozen expansion backlog", roadmap)
+        self.assertIn("заморожены для реализации", roadmap)
         self.assertNotIn("## Phase 7 — Operations, AI, mobile", roadmap)
         for service in ["Yandex Tracker", "Yandex 360", "Yandex Maps", "AppMetrica", "YandexGPT", "SpeechKit"]:
             self.assertIn(service, roadmap)
