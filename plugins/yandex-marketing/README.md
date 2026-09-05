@@ -6,7 +6,7 @@
 
 > `DOCS 1.0.0` меняет только documentation layer.
 
-Marketplace policy: `.agents` entry использует `authentication: ON_USE` как schema-compatible deferred-auth metadata. Для этого transport-free плагина это означает отложенную авторизацию в сервисных плагинах-владельцах, а не собственную credential surface.
+Marketplace policy: `.agents` entry использует `authentication: ON_USE`; для transport-free Marketing authentication выполняется только в owning service plugins. Полная семантика deferred authentication и transport ownership: [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 
 ## Оркестрация
 
