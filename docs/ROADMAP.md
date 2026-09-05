@@ -20,7 +20,7 @@ Implemented as plugin `1.0.0`. Добавлены mixed v4/v4.1 routing, query/i
 
 ### Phase 4 — Yandex Wordstat
 
-Implemented as plugin `1.0.0` с девятью workflow skills, Cloud Wordstat v2 helpers, provenance-aware semantics, regions/trends и quota/cost planning.
+Implemented as plugin `1.0.0` с девятью workflow skills, Wordstat API в составе Yandex Search API v2 helpers, provenance-aware semantics, regions/trends и quota/cost planning.
 
 ### Phase 5 — Yandex Search
 
