@@ -18,10 +18,10 @@ jobs:
       matrix:
         python-version: ['3.10', '3.13']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Compute validation change scope
@@ -59,7 +59,7 @@ jobs:
       seo: ${{ steps.detect.outputs.seo }}
       marketing: ${{ steps.detect.outputs.marketing }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
       - id: detect
@@ -139,8 +139,8 @@ jobs:
       run:
         working-directory: plugins/yandex-direct
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Direct regression tests
@@ -157,8 +157,8 @@ jobs:
       run:
         working-directory: plugins/yandex-metrika
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Metrika tests
@@ -175,8 +175,8 @@ jobs:
       run:
         working-directory: plugins/yandex-webmaster
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Webmaster tests
@@ -193,8 +193,8 @@ jobs:
       run:
         working-directory: plugins/yandex-wordstat
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Wordstat tests
@@ -211,8 +211,8 @@ jobs:
       run:
         working-directory: plugins/yandex-search
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Search tests
@@ -229,8 +229,8 @@ jobs:
       run:
         working-directory: plugins/yandex-seo
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run SEO tests
@@ -247,8 +247,8 @@ jobs:
       run:
         working-directory: plugins/yandex-marketing
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.13'
       - name: Run Marketing tests
