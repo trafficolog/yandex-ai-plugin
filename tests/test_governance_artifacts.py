@@ -61,9 +61,13 @@ class GovernanceArtifactTests(unittest.TestCase):
         self.assertIn("docs/superpowers/", en)
         self.assertIn("historical implementation", en)
 
-    def test_root_readmes_link_review_index(self):
+    def test_root_readmes_link_review_index_and_latest_dated_artifact(self):
+        latest_stem = "docs/reviews/2026-09-05-opus-codex-governance"
         for relative in ("README.md", "README.en.md"):
-            self.assertIn("docs/reviews/README", self.read(relative))
+            text = self.read(relative)
+            with self.subTest(relative=relative):
+                self.assertIn("docs/reviews/README", text)
+                self.assertIn(latest_stem, text)
 
 
 if __name__ == "__main__":
