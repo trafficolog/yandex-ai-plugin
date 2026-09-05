@@ -43,7 +43,7 @@ class FableRound2GovernanceBaselineTests(unittest.TestCase):
         en = (ROOT / "docs/ROADMAP.en.md").read_text(encoding="utf-8")
         self.assertGreaterEqual(ru.count("Изначально выпущен"), 5)
         self.assertGreaterEqual(en.count("Initially shipped"), 5)
-        self.assertIn("девять initial workflow skills", ru)
+        self.assertIn("девятью initial workflow skills", ru)
         self.assertIn("nine initial workflow skills", en)
         self.assertNotIn("The plugin contains no Yandex API clients and performs no live writes.", ru)
         self.assertIn("обычные предложения", ru.casefold())
