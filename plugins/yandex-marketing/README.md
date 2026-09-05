@@ -51,7 +51,7 @@ Generic `metric: demand` запрещён. Money evidence без currency/VAT/pe
 
 ## Finding taxonomy
 
-`IMPLEMENTED_FINDING_TYPES` содержит только девять реально производимых deterministic classes. Future classes находятся в `DEFERRED_FINDING_TYPES`; unknown/deferred сортируются после implemented и получают `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` допускается только как approved external finding для узкого goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` route отсутствует. Нормативное соответствие design vocabulary и executable taxonomy закреплено в `docs/superpowers/specs/2026-09-02-yandex-marketing-plugin-design.md`.
+`IMPLEMENTED_FINDING_TYPES` содержит только девять реально производимых deterministic classes. Future classes находятся в `DEFERRED_FINDING_TYPES`; unknown/deferred сортируются после implemented и получают `UNKNOWN_OR_DEFERRED_TYPE`. `GOAL_ALIGNMENT_RISK` допускается только как approved external finding для узкого goal-change delegation. Dead `NEW_CAMPAIGN_CANDIDATE` route отсутствует. Нормативное соответствие vocabulary и executable taxonomy определяется текущими Marketing scripts/tests и repository production contracts; исторические design specs можно использовать только как ненормативный контекст реализации.
 
 ```bash
 python -m unittest discover -s tests -v
