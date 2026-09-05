@@ -1,27 +1,22 @@
-import re
 from pathlib import Path
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOWS = ROOT / ".github" / "workflows"
+WORKFLOW = ROOT / ".github/workflows/publish-current-release.yml"
 CANONICAL_REPOSITORY = "trafficolog/yandex-ai-plugins-skills"
-REPOSITORY_GUARD = re.compile(r"github\.repository\s*==\s*['\"]([^'\"]+)['\"]")
 
 
 class PublisherRepositoryIdentityTests(unittest.TestCase):
-    def test_all_literal_publish_repository_guards_use_canonical_repository(self):
-        mismatches = []
-        guards = []
-        for path in sorted(WORKFLOWS.glob("publish-*.yml")):
-            text = path.read_text(encoding="utf-8")
-            for match in REPOSITORY_GUARD.finditer(text):
-                repository = match.group(1)
-                guards.append((path.name, repository))
-                if repository != CANONICAL_REPOSITORY:
-                    mismatches.append((path.name, repository))
-        self.assertTrue(guards, "expected at least one explicit publisher repository guard")
-        self.assertEqual(mismatches, [])
+    def test_current_publisher_uses_canonical_repository_identity(self):
+        self.assertTrue(WORKFLOW.is_file(), "generic release publisher is missing")
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn(
+            f"github.repository == '{CANONICAL_REPOSITORY}'",
+            text,
+        )
+        self.assertIn(f"GH_REPO: {CANONICAL_REPOSITORY}", text)
+        self.assertIn("github.event.workflow_run.head_repository.full_name == github.repository", text)
 
 
 if __name__ == "__main__":
