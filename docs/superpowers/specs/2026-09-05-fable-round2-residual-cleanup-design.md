@@ -146,9 +146,9 @@ It must distinguish:
 - original Fable Round 2 finding;
 - current `1.0.8` disposition (`closed`, `closed as explicit backlog`, or previously closed);
 - mechanical evidence vs semantic/review evidence;
-- exact PR/head/CI/release evidence once available.
+- the repository base and the intended `1.0.8` remediation scope.
 
-Before merge, fields that depend on final GitHub identifiers may use clearly marked `pre-merge` wording, not fake SHA/run IDs. Final PR body carries exact run IDs; the repository artifact must not invent unavailable evidence.
+The artifact is part of the release commit, so it **must not claim future self-referential evidence** such as the eventual squash-merge SHA, post-merge CI run ID, publisher run ID or release ID. Once PR # is known, the artifact may link that PR. Dynamic exact-head/post-merge/publication evidence belongs in the PR discussion/body and the GitHub immutable release record. No later mutation of the `1.0.8` release is performed merely to backfill those identifiers.
 
 ## 4. Canonical ownership after 1.0.8
 
