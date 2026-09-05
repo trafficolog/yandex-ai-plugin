@@ -31,6 +31,7 @@ The table below assigns stable IDs to the existing production requirements. `Enf
 | REQ-ID | Requirement | Enforcement | Canonical document |
 |---|---|---|---|
 | REQ-SKILL-ROUTING | Each plugin provides a router plus focused task-specific skills. | validator + CI | `scripts/validate_repo.py`, this standard |
+| REQ-SKILL-CONTENT | `SKILL.md` keeps bounded discoverable metadata/content, progressive disclosure, explicit ownership/delegation boundaries and limitation propagation; write-capable skills preserve repository safety metadata. | validator + CI + review | `scripts/validate_repo.py`, this standard, `ARCHITECTURE.en.md` |
 | REQ-REFERENCE-VOLATILITY | Volatile API/platform facts live in references and freshness-controlled facts carry verification metadata. | validator + CI + review | `scripts/contract_controls.py`, this standard |
 | REQ-HELPER-TESTS | Bundled executable helpers have regression tests and high-risk contracts use exact test traceability. | validator + CI + review | `docs/CONTRACT_MATRIX.json`, `scripts/contract_controls.py` |
 | REQ-EVAL-CONTRACT | Plugins maintain structurally valid offline eval expectations without claiming model execution unless a runner actually runs them. | validator + CI + review | `docs/EVAL_TOKEN_REGISTRY.json`, this standard |
@@ -91,7 +92,11 @@ description: Use when ...
 ---
 ```
 
-Descriptions start with `Use when`; references contain long/volatile API facts.
+The mechanical repository contract requires the frontmatter `name` to match the skill directory, `description` to start with `Use when`, and description length to remain within `32–500` characters. A `SKILL.md` must not exceed `15 KiB` (`15 * 1024` bytes). Long or volatile facts move to `references/` through progressive disclosure instead of inflating the discoverable skill body.
+
+For write-capable skills participating in the write eval contract, the body preserves the repository safety metadata `approval-contract: exact-preview` and `untrusted-data-policy: data-not-instructions`; these markers do not replace the full safety semantics in §3.
+
+Semantic review additionally checks that a skill states or makes clear when it must not own the request, delegates adjacent capability to the owning skill/plugin rather than silently absorbing it, preserves source/API limitations downstream, and does not redefine repository-wide approval or ownership semantics. These body semantics are review + policy requirements; they are intentionally not converted into brittle mandatory-heading grep rules.
 
 ## 6. API freshness
 
