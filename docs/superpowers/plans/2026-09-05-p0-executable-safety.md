@@ -12,10 +12,10 @@
 
 ## Global constraints
 
-- Approval schema: `yandex-ai-approval/v2`.
-- Execution receipt schema: `yandex-ai-execution/v1`.
-- Repository policy: `BULK_THRESHOLD = 20`.
-- Cardinality shape: `scale=KNOWN|UNKNOWN`; unknown uses `items=null`, `bulk=true`.
+- Approval schema is exactly `yandex-ai-approval/v2`.
+- Execution receipt schema is exactly `yandex-ai-execution/v1`.
+- Repository safety policy is `BULK_THRESHOLD = 20`.
+- Cardinality shape is `scale=KNOWN|UNKNOWN`; unknown uses `items=null`, `bulk=true`.
 - Bulk or unknown-scale execution requires exact `--approve <preview_id>` plus `--ack-bulk`.
 - A `yandex-ai-approval/v1` digest never authorizes a v2 write.
 - Raw OAuth/API credentials never appear in previews, receipts, errors, fixtures, or committed docs.
@@ -23,7 +23,7 @@
 - SEO and Marketing remain Yandex-credential/transport-free; owning service plugins execute writes.
 - P0 creates no `.yandex-ai/`, `decisions.jsonl`, durable rollback storage, dashboard, Electron app, or new Yandex plugin.
 - Rollback is never automatic. Until a callable, separately approved restore/compensating path has executable tests, advertise `rollback=NOT_AVAILABLE`.
-- `EXECUTED` and `VERIFIED` are separate facts. The initial P0 implementation uses `RESPONSE_ONLY` + `UNVERIFIED` unless an operation-specific tested read-back contract is deliberately added.
+- `EXECUTED` and `VERIFIED` are separate facts. The initial P0 implementation uses `RESPONSE_ONLY` + `UNVERIFIED` unless a deliberately added operation-specific test proves a stronger read-back contract.
 - Version/release surfaces are staged only after runtime, plugin, root, and documentation tests are green.
 
 ## File map
@@ -47,7 +47,7 @@ require_bulk_ack(cardinality: dict[str, object], ack_bulk: bool) -> None
 execution_receipt(preview_id: str, plugin: str, operation: str, target: dict[str, object], cardinality: dict[str, object], result: object, verification_capability: str, verification_state: str, rollback_capability: str) -> dict[str, object]
 ```
 
-`_approval.py` remains the local deterministic SHA-256 canonicalizer; P0 changes the envelopes passed into it, not its hashing algorithm.
+`_approval.py` remains the local deterministic SHA-256 canonicalizer; P0 changes envelopes passed into it, not its hashing algorithm.
 
 ### Runtime files modified
 
@@ -59,153 +59,90 @@ execution_receipt(preview_id: str, plugin: str, operation: str, target: dict[str
 
 ### Tests
 
-- `plugins/yandex-direct/tests/test_approval.py`
-- `plugins/yandex-direct/tests/test_yd_api.py`
-- `plugins/yandex-direct/tests/test_safety.py` (new)
-- `plugins/yandex-metrika/tests/test_approval.py`
-- `plugins/yandex-metrika/tests/test_ym_api.py`
-- `plugins/yandex-metrika/tests/test_ym_logs.py`
-- `plugins/yandex-metrika/tests/test_ym_import.py`
-- `plugins/yandex-metrika/tests/test_safety.py` (new)
-- `plugins/yandex-webmaster/tests/test_approval.py`
-- `plugins/yandex-webmaster/tests/test_yw_api.py`
-- `plugins/yandex-webmaster/tests/test_safety.py` (new)
-- `tests/test_p0_executable_safety_contract.py` (new)
-- `tests/test_documentation_ux_contracts.py`
-- `tests/test_repository_1_1_0_release_surfaces.py` (new, final staging only)
-- `docs/CONTRACT_MATRIX.json`
+- Direct: `test_approval.py`, `test_yd_api.py`, new `test_safety.py`.
+- Metrika: `test_approval.py`, `test_ym_api.py`, `test_ym_logs.py`, `test_ym_import.py`, new `test_safety.py`.
+- Webmaster: `test_approval.py`, `test_yw_api.py`, new `test_safety.py`.
+- Root: new `tests/test_p0_executable_safety_contract.py`, modified `tests/test_documentation_ux_contracts.py`, new final-stage `tests/test_repository_1_1_0_release_surfaces.py`.
+- Traceability: `docs/CONTRACT_MATRIX.json`.
 
 ### Production documentation and release files
 
-- `docs/PLUGIN_STANDARD.md`, `docs/PLUGIN_STANDARD.en.md`
-- `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`
-- `SECURITY.md`, `SECURITY.en.md`
-- Direct/Metrika/Webmaster `references/safety.md`
-- Direct/Metrika/Webmaster `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`
-- Direct/Metrika/Webmaster `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`
-- `.claude-plugin/marketplace.json`
-- root `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`
-- `.github/releases/1.1.0.md`
-- `.github/releases/yandex-direct-2.1.0.md`
-- `.github/releases/yandex-metrika-2.1.0.md`
-- `.github/releases/yandex-webmaster-2.1.0.md`
-- `.github/releases/release.json`
+- `docs/PLUGIN_STANDARD.md`, `docs/PLUGIN_STANDARD.en.md`.
+- `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`.
+- `SECURITY.md`, `SECURITY.en.md`.
+- Direct/Metrika/Webmaster `references/safety.md`.
+- Direct/Metrika/Webmaster `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`.
+- Direct/Metrika/Webmaster `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`.
+- `.claude-plugin/marketplace.json`.
+- root `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`.
+- `.github/releases/1.1.0.md`.
+- `.github/releases/yandex-direct-2.1.0.md`.
+- `.github/releases/yandex-metrika-2.1.0.md`.
+- `.github/releases/yandex-webmaster-2.1.0.md`.
+- `.github/releases/release.json`.
 
 ---
 
 ## Task 1: Direct approval/v2 kernel and reference envelope
 
 **Files**
-- Create: `plugins/yandex-direct/scripts/_safety.py`
-- Create: `plugins/yandex-direct/tests/test_safety.py`
-- Modify: `plugins/yandex-direct/tests/test_approval.py`
-- Modify: `plugins/yandex-direct/scripts/yd_api.py`
-- Modify: `plugins/yandex-direct/tests/test_yd_api.py`
-- Create: `tests/test_p0_executable_safety_contract.py`
+- Create `plugins/yandex-direct/scripts/_safety.py`.
+- Create `plugins/yandex-direct/tests/test_safety.py`.
+- Modify `plugins/yandex-direct/tests/test_approval.py`.
+- Modify `plugins/yandex-direct/scripts/yd_api.py`.
+- Modify `plugins/yandex-direct/tests/test_yd_api.py`.
+- Create `tests/test_p0_executable_safety_contract.py`.
 
-**Produces**
-- Direct local safety kernel.
-- Direct v2 envelope.
-- Direct-only root smoke test; Task 5 expands it to all three plugins.
+- [ ] **Step 1: Write Direct local-kernel RED tests**
 
-- [ ] **Step 1: Write the Direct local-kernel RED test**
-
-Create `plugins/yandex-direct/tests/test_safety.py`:
+Create tests that assert:
 
 ```python
-import unittest
-from scripts import _safety
-
-
-class SafetyKernelTests(unittest.TestCase):
-    def test_exact_contract(self):
-        self.assertEqual(_safety.APPROVAL_SCHEMA, "yandex-ai-approval/v2")
-        self.assertEqual(_safety.EXECUTION_SCHEMA, "yandex-ai-execution/v1")
-        self.assertEqual(_safety.BULK_THRESHOLD, 20)
-        self.assertEqual(
-            _safety.known_cardinality(3),
-            {"scale": "KNOWN", "items": 3, "threshold": 20, "bulk": False},
-        )
-        self.assertEqual(
-            _safety.unknown_cardinality(),
-            {"scale": "UNKNOWN", "items": None, "threshold": 20, "bulk": True},
-        )
-
-    def test_bulk_ack_gate(self):
-        _safety.require_bulk_ack(_safety.known_cardinality(20), False)
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            _safety.require_bulk_ack(_safety.known_cardinality(21), False)
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            _safety.require_bulk_ack(_safety.unknown_cardinality(), False)
-        _safety.require_bulk_ack(_safety.known_cardinality(21), True)
-
-    def test_principal_binding_is_stable_and_token_sensitive(self):
-        first = _safety.principal_binding("secret-a", domain=b"yandex-direct-auth-principal/v2")
-        same = _safety.principal_binding("secret-a", domain=b"yandex-direct-auth-principal/v2")
-        changed = _safety.principal_binding("secret-b", domain=b"yandex-direct-auth-principal/v2")
-        self.assertEqual(first, same)
-        self.assertNotEqual(first, changed)
-        self.assertNotIn("secret-a", first)
+self.assertEqual(_safety.APPROVAL_SCHEMA, "yandex-ai-approval/v2")
+self.assertEqual(_safety.EXECUTION_SCHEMA, "yandex-ai-execution/v1")
+self.assertEqual(_safety.BULK_THRESHOLD, 20)
+self.assertEqual(
+    _safety.known_cardinality(3),
+    {"scale": "KNOWN", "items": 3, "threshold": 20, "bulk": False},
+)
+self.assertEqual(
+    _safety.unknown_cardinality(),
+    {"scale": "UNKNOWN", "items": None, "threshold": 20, "bulk": True},
+)
+with self.assertRaisesRegex(ValueError, "ack-bulk"):
+    _safety.require_bulk_ack(_safety.known_cardinality(21), False)
+with self.assertRaisesRegex(ValueError, "ack-bulk"):
+    _safety.require_bulk_ack(_safety.unknown_cardinality(), False)
+_safety.require_bulk_ack(_safety.known_cardinality(20), False)
+_safety.require_bulk_ack(_safety.known_cardinality(21), True)
+first = _safety.principal_binding("secret-a", domain=b"yandex-direct-auth-principal/v2")
+changed = _safety.principal_binding("secret-b", domain=b"yandex-direct-auth-principal/v2")
+self.assertNotEqual(first, changed)
+self.assertNotIn("secret-a", first)
 ```
 
-- [ ] **Step 2: Update approval canonicalizer tests to use v2 sample envelopes**
+- [ ] **Step 2: Update Direct approval canonicalizer samples to v2**
 
-In `plugins/yandex-direct/tests/test_approval.py`, replace sample schema literals `yandex-ai-approval/v1` with `yandex-ai-approval/v2`. Keep the existing assertions that canonical JSON is key-order independent and missing/wrong approval does not leak the expected digest.
+In `test_approval.py`, replace sample schema literals with `yandex-ai-approval/v2`. Preserve key-order determinism and the existing requirement that missing/wrong approval errors do not reveal the expected digest.
 
-- [ ] **Step 3: Add Direct envelope RED tests**
+- [ ] **Step 3: Add Direct v2 envelope RED tests**
 
-Append to `TestYandexDirectClient`:
+For `campaigns.update` with two `Campaigns`, assert:
 
 ```python
-def test_v2_envelope_binds_target_principal_and_scale(self):
-    client = YandexDirectClient("secret-token", client_login="client-a")
-    envelope = client.approval_envelope(
-        "campaigns", "update", {"Campaigns": [{"Id": 1}, {"Id": 2}]}
-    )
-    self.assertEqual(envelope["schema"], "yandex-ai-approval/v2")
-    self.assertEqual(envelope["target"]["client_login"], "client-a")
-    self.assertIn("auth_principal_binding", envelope["target"])
-    self.assertEqual(envelope["cardinality"]["items"], 2)
-    self.assertFalse(envelope["cardinality"]["bulk"])
-    self.assertNotIn("secret-token", str(envelope))
-
-
-def test_v1_digest_cannot_authorize_v2_execution(self):
-    client = YandexDirectClient("token", client_login="client")
-    params = {"Campaigns": [{"Id": 123}]}
-    legacy = {
-        "schema": "yandex-ai-approval/v1",
-        "plugin": "yandex-direct",
-        "operation": "campaigns.update",
-        "method": "POST",
-        "target": {"environment": "production", "client_login": "client"},
-        "url": client.endpoint("campaigns"),
-        "body": client.body("update", params),
-        "artifacts": [],
-    }
-    with patch("scripts.yd_api._http.request_json") as request_json:
-        with self.assertRaises(ValueError):
-            client.request("campaigns", "update", params, approve=preview_id(legacy))
-    request_json.assert_not_called()
+self.assertEqual(envelope["schema"], "yandex-ai-approval/v2")
+self.assertEqual(envelope["target"]["client_login"], "client-a")
+self.assertIn("auth_principal_binding", envelope["target"])
+self.assertEqual(envelope["cardinality"]["items"], 2)
+self.assertFalse(envelope["cardinality"]["bulk"])
+self.assertNotIn("secret-token", str(envelope))
 ```
+
+Construct a legacy v1 envelope using the current v1 shape, hash it with `preview_id`, pass that digest to the new write path, assert `ValueError`, and assert `_http.request_json` was not called.
 
 - [ ] **Step 4: Add a Direct-only root smoke RED test**
 
-Create `tests/test_p0_executable_safety_contract.py`:
-
-```python
-from pathlib import Path
-import unittest
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-class P0ExecutableSafetyContractTests(unittest.TestCase):
-    def test_direct_has_local_v2_kernel(self):
-        text = (ROOT / "plugins/yandex-direct/scripts/_safety.py").read_text(encoding="utf-8")
-        self.assertIn('APPROVAL_SCHEMA = "yandex-ai-approval/v2"', text)
-        self.assertIn("BULK_THRESHOLD = 20", text)
-```
+Create `tests/test_p0_executable_safety_contract.py` with class `P0ExecutableSafetyContractTests` and method `test_direct_has_local_v2_kernel`. It reads `plugins/yandex-direct/scripts/_safety.py` and asserts the exact approval schema and threshold literals. Task 5 replaces this Direct-only smoke assertion with three-plugin behavioural convergence.
 
 - [ ] **Step 5: Run RED**
 
@@ -214,9 +151,11 @@ class P0ExecutableSafetyContractTests(unittest.TestCase):
 python -m unittest tests.test_p0_executable_safety_contract -v
 ```
 
-Expected: missing `_safety.py` and v2 envelope assertions fail. No write transport is called by approval-failure tests.
+Expected failure cause: missing `_safety.py` and missing v2 envelope semantics. Authorization failures must happen before transport.
 
-- [ ] **Step 6: Implement `plugins/yandex-direct/scripts/_safety.py`**
+- [ ] **Step 6: Implement Direct local kernel**
+
+Create `_safety.py` with these exact mechanics:
 
 ```python
 from __future__ import annotations
@@ -301,9 +240,9 @@ def execution_receipt(
     }
 ```
 
-- [ ] **Step 7: Convert Direct `approval_envelope()` to v2**
+- [ ] **Step 7: Convert Direct envelope to v2**
 
-Add `_safety` import and this conservative cardinality registry:
+Add `_safety` import. Add exact entity-list mapping:
 
 ```python
 ENTITY_LIST_KEYS = {
@@ -315,58 +254,43 @@ ENTITY_LIST_KEYS = {
     "feeds": "Feeds",
     "creatives": "Creatives",
 }
-
-
-def mutation_cardinality(service: str, params: Mapping[str, Any] | None) -> dict[str, object]:
-    key = ENTITY_LIST_KEYS.get(service)
-    value = (params or {}).get(key) if key else None
-    if isinstance(value, list):
-        return _safety.known_cardinality(len(value))
-    return _safety.unknown_cardinality()
 ```
 
-Keep `auth_principal_binding(token)` as a compatibility wrapper but change its domain separator to `b"yandex-direct-auth-principal/v2"` and implement it through `_safety.principal_binding`.
+`mutation_cardinality(service, params)` returns known list length only for this mapping; all other write shapes return `_safety.unknown_cardinality()`.
 
-The envelope must contain:
+Keep `auth_principal_binding(token)` as compatibility function, but implement it through `_safety.principal_binding` with domain `b"yandex-direct-auth-principal/v2"`.
 
-```python
-{
-    "schema": _safety.APPROVAL_SCHEMA,
-    "plugin": "yandex-direct",
-    "operation": f"{normalized_service}.{normalized_method}",
-    "request": {
-        "method": "POST",
-        "environment": self.environment,
-        "api_version": "v501",
-        "url": self.endpoint(service),
-        "path": normalized_service,
-        "query": {},
-        "body": self.body(method, params),
-    },
-    "target": {
-        "client_login": self.client_login,
-        "auth_principal_binding": auth_principal_binding(self.token),
-    },
-    "artifacts": [],
-    "cardinality": mutation_cardinality(normalized_service, params),
-    "safety": {
-        "verification": "RESPONSE_ONLY",
-        "rollback": "NOT_AVAILABLE",
-        "risk_flags": [],
-    },
-}
+The v2 envelope fields are exactly:
+
+```text
+schema
+plugin
+operation
+request.method
+request.environment
+request.api_version
+request.url
+request.path
+request.query
+request.body
+target.client_login
+target.auth_principal_binding
+artifacts
+cardinality
+safety.verification
+safety.rollback
+safety.risk_flags
 ```
 
-- [ ] **Step 8: Run Task 1 GREEN**
+Use `request.api_version="v501"`, `safety.verification="RESPONSE_ONLY"`, `safety.rollback="NOT_AVAILABLE"`, and empty risk flags.
+
+Preview output exposes `approval_schema`, `cardinality`, `safety`, and `preview_id` without exposing the raw principal credential.
+
+- [ ] **Step 8: Run GREEN and commit**
 
 ```bash
 (cd plugins/yandex-direct && python -m unittest discover -s tests -v && python -m compileall -q scripts)
 python -m unittest tests.test_p0_executable_safety_contract -v
-```
-
-- [ ] **Step 9: Commit**
-
-```bash
 git add plugins/yandex-direct/scripts/_safety.py plugins/yandex-direct/scripts/yd_api.py plugins/yandex-direct/tests/test_safety.py plugins/yandex-direct/tests/test_approval.py plugins/yandex-direct/tests/test_yd_api.py tests/test_p0_executable_safety_contract.py
 git commit -m "feat(direct): introduce approval v2 safety kernel"
 ```
@@ -376,53 +300,15 @@ git commit -m "feat(direct): introduce approval v2 safety kernel"
 ## Task 2: Direct bulk gate and execution receipt
 
 **Files**
-- Modify: `plugins/yandex-direct/scripts/yd_api.py`
-- Modify: `plugins/yandex-direct/tests/test_yd_api.py`
+- Modify `plugins/yandex-direct/scripts/yd_api.py`.
+- Modify `plugins/yandex-direct/tests/test_yd_api.py`.
 
-**Produces**
-- `YandexDirectClient.request(..., ack_bulk: bool = False)`.
-- CLI `--ack-bulk`.
-- Consequential write receipts; read response shape remains unchanged.
+- [ ] **Step 1: Write RED tests for scale gate and receipt**
 
-- [ ] **Step 1: Write RED tests**
-
-```python
-def test_bulk_write_needs_ack_before_transport(self):
-    client = YandexDirectClient("token", client_login="client")
-    params = {"Campaigns": [{"Id": i} for i in range(21)]}
-    approve = preview_id(client.approval_envelope("campaigns", "update", params))
-    with patch("scripts.yd_api._http.request_json") as request_json:
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            client.request("campaigns", "update", params, approve=approve)
-    request_json.assert_not_called()
-
-
-def test_unknown_scale_needs_ack_before_transport(self):
-    client = YandexDirectClient("token")
-    params = {"OpaqueMutation": {"Id": 1}}
-    approve = preview_id(client.approval_envelope("strategies", "update", params))
-    with patch("scripts.yd_api._http.request_json") as request_json:
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            client.request("strategies", "update", params, approve=approve)
-    request_json.assert_not_called()
-
-
-def test_write_returns_execution_receipt(self):
-    client = YandexDirectClient("token", client_login="client")
-    params = {"Campaigns": [{"Id": 123}]}
-    approve = preview_id(client.approval_envelope("campaigns", "update", params))
-    payload = {"result": {"UpdateResults": [{"Id": 123}]}}
-    with patch("scripts.yd_api._http.request_json", return_value=(payload, {})):
-        receipt = client.request("campaigns", "update", params, approve=approve)
-    self.assertEqual(receipt["schema"], "yandex-ai-execution/v1")
-    self.assertEqual(receipt["preview_id"], approve)
-    self.assertEqual(receipt["execution"]["state"], "EXECUTED")
-    self.assertEqual(
-        receipt["verification"],
-        {"capability": "RESPONSE_ONLY", "state": "UNVERIFIED"},
-    )
-    self.assertEqual(receipt["rollback"]["capability"], "NOT_AVAILABLE")
-```
+Add tests proving:
+- 21 `Campaigns` with exact approval and `ack_bulk=False` fail before transport with an `ack-bulk` error.
+- an opaque `strategies.update` mutation is `UNKNOWN` and fails before transport without scale acknowledgement.
+- one `Campaigns` mutation with exact approval returns receipt schema `yandex-ai-execution/v1`, execution state `EXECUTED`, verification `{capability: RESPONSE_ONLY, state: UNVERIFIED}`, rollback capability `NOT_AVAILABLE`, and the exact `preview_id`.
 
 - [ ] **Step 2: Run RED**
 
@@ -430,18 +316,20 @@ def test_write_returns_execution_receipt(self):
 (cd plugins/yandex-direct && python -m unittest tests.test_yd_api -v)
 ```
 
-- [ ] **Step 3: Enforce approval then scale acknowledgement before transport**
+- [ ] **Step 3: Add explicit `ack_bulk: bool = False` parameter to `YandexDirectClient.request`**
 
-Change the request signature to include `ack_bulk: bool = False`. For consequential writes execute exactly:
+For consequential writes execute in this order:
 
 ```python
 approved_preview = require_approval(envelope, approve)
 _safety.require_bulk_ack(envelope["cardinality"], ack_bulk)
 ```
 
-Only after these two calls invoke `_http.request_json`. Wrap the successful API payload in `_safety.execution_receipt` with `RESPONSE_ONLY`, `UNVERIFIED`, and `NOT_AVAILABLE`.
+Only then invoke `_http.request_json`. Wrap successful write result using `_safety.execution_receipt`. Read operations keep the current raw result/transport shape.
 
-- [ ] **Step 4: Add CLI `--ack-bulk` and forward it**
+- [ ] **Step 4: Add CLI `--ack-bulk`**
+
+Use:
 
 ```python
 parser.add_argument(
@@ -451,7 +339,7 @@ parser.add_argument(
 )
 ```
 
-Update CLI mock functions in `test_yd_api.py` to accept and assert `ack_bulk`.
+Forward `args.ack_bulk` to `client.request`. Update CLI mocks to assert forwarding.
 
 - [ ] **Step 5: Run GREEN and commit**
 
@@ -466,129 +354,81 @@ git commit -m "feat(direct): enforce bulk acknowledgement and receipts"
 ## Task 3: Metrika v2 parity for Management, Logs, and imports
 
 **Files**
-- Create: `plugins/yandex-metrika/scripts/_safety.py`
-- Create: `plugins/yandex-metrika/tests/test_safety.py`
-- Modify: `plugins/yandex-metrika/tests/test_approval.py`
-- Modify: `plugins/yandex-metrika/scripts/ym_api.py`
-- Modify: `plugins/yandex-metrika/scripts/ym_logs.py`
-- Modify: `plugins/yandex-metrika/scripts/ym_import.py`
-- Modify: `plugins/yandex-metrika/tests/test_ym_api.py`
-- Modify: `plugins/yandex-metrika/tests/test_ym_logs.py`
-- Modify: `plugins/yandex-metrika/tests/test_ym_import.py`
+- Create `plugins/yandex-metrika/scripts/_safety.py`.
+- Create `plugins/yandex-metrika/tests/test_safety.py`.
+- Modify `plugins/yandex-metrika/tests/test_approval.py`.
+- Modify `plugins/yandex-metrika/scripts/ym_api.py`.
+- Modify `plugins/yandex-metrika/scripts/ym_logs.py`.
+- Modify `plugins/yandex-metrika/scripts/ym_import.py`.
+- Modify `plugins/yandex-metrika/tests/test_ym_api.py`.
+- Modify `plugins/yandex-metrika/tests/test_ym_logs.py`.
+- Modify `plugins/yandex-metrika/tests/test_ym_import.py`.
 
-**Produces**
-- Local v2 safety kernel with the exact interface from File map.
-- Management generic mutations: `UNKNOWN` scale, bulk acknowledgement required.
-- Logs `create`/`clean`: `KNOWN items=1`.
-- Import upload: `KNOWN items=1`, plus approval-bound `artifact_rows`.
+- [ ] **Step 1: Write Metrika kernel RED tests**
 
-- [ ] **Step 1: Create explicit Metrika kernel RED tests**
+Assert exact schema constants, threshold, `known_cardinality(1, artifact_rows=37)`, `unknown_cardinality()`, missing bulk acknowledgement rejection, successful bulk acknowledgement, and token-sensitive principal binding using domain `b"yandex-metrika-auth-principal/v2"`.
 
-Create `test_safety.py` with the same four behaviours expressed directly for Metrika:
+- [ ] **Step 2: Update Metrika approval canonicalizer samples to v2**
 
-```python
-import unittest
-from scripts import _safety
-
-
-class SafetyKernelTests(unittest.TestCase):
-    def test_exact_contract_and_cardinality(self):
-        self.assertEqual(_safety.APPROVAL_SCHEMA, "yandex-ai-approval/v2")
-        self.assertEqual(_safety.EXECUTION_SCHEMA, "yandex-ai-execution/v1")
-        self.assertEqual(_safety.BULK_THRESHOLD, 20)
-        self.assertEqual(
-            _safety.known_cardinality(1, artifact_rows=37),
-            {"scale": "KNOWN", "items": 1, "threshold": 20, "bulk": False, "artifact_rows": 37},
-        )
-        self.assertEqual(
-            _safety.unknown_cardinality(),
-            {"scale": "UNKNOWN", "items": None, "threshold": 20, "bulk": True},
-        )
-
-    def test_bulk_ack_and_principal_binding(self):
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            _safety.require_bulk_ack(_safety.unknown_cardinality(), False)
-        _safety.require_bulk_ack(_safety.unknown_cardinality(), True)
-        first = _safety.principal_binding("token-a", domain=b"yandex-metrika-auth-principal/v2")
-        changed = _safety.principal_binding("token-b", domain=b"yandex-metrika-auth-principal/v2")
-        self.assertNotEqual(first, changed)
-        self.assertNotIn("token-a", first)
-```
-
-- [ ] **Step 2: Update Metrika approval canonicalizer tests to v2 sample schema**
-
-Replace sample v1 schema literals in `test_approval.py` with v2 and preserve all digest non-leak assertions.
+Replace sample schema literals in `test_approval.py`; preserve canonicalization and digest non-leak tests.
 
 - [ ] **Step 3: Write Management RED tests**
 
-Add tests proving:
-- `prepare_request(... token="token-a")` emits `approval_schema == "yandex-ai-approval/v2"` and `UNKNOWN` cardinality.
-- replay under `token-b` fails before `request_json`, even with `ack_bulk=True`.
-- exact approval without `ack_bulk` fails before transport.
-- exact approval plus `ack_bulk=True` returns a receipt with `RESPONSE_ONLY/UNVERIFIED/NOT_AVAILABLE`.
+Assert a consequential generic Management preview:
 
-Use this principal replay assertion:
-
-```python
-preview = prepare_request(
-    method="POST",
-    path="counter/123/goals",
-    token="token-a",
-    body={"goal": {"name": "Lead"}},
-)
-with patch("scripts.ym_api.request_json") as request_json:
-    with self.assertRaises(ValueError):
-        run_request(
-            method="POST",
-            path="counter/123/goals",
-            token="token-b",
-            body={"goal": {"name": "Lead"}},
-            execute=True,
-            approve=preview["preview_id"],
-            ack_bulk=True,
-        )
-request_json.assert_not_called()
+```text
+approval_schema = yandex-ai-approval/v2
+cardinality.scale = UNKNOWN
+cardinality.items = null
+cardinality.bulk = true
 ```
+
+Build preview with token A and execute same method/path/body with token B plus `ack_bulk=True`; assert approval mismatch before `request_json`. Exact approval with no `ack_bulk` also fails before transport. Exact approval plus `ack_bulk=True` returns response-only/unverified receipt.
 
 - [ ] **Step 4: Write Logs RED tests**
 
-For consequential `create` and `clean`, assert `cardinality == {"scale":"KNOWN","items":1,"threshold":20,"bulk":False}`. Build preview with `token-a`, execute under `token-b`, and prove the transport is not called. Exact single-operation approval must not require `ack_bulk` and successful execution must return a receipt.
+For `create` and `clean`, assert known cardinality one. Token mutation invalidates exact approval before `request_json`. Exact single-operation approval executes without bulk acknowledgement and returns receipt.
 
 - [ ] **Step 5: Write import RED tests**
 
-Extend the existing exact-byte tests with:
+For one-row CSV assert:
 
-```python
-preview = prepare_import("offline-conversions", 123, path, "secret")
-self.assertEqual(preview["approval_schema"], "yandex-ai-approval/v2")
-self.assertEqual(preview["cardinality"]["scale"], "KNOWN")
-self.assertEqual(preview["cardinality"]["items"], 1)
-self.assertEqual(preview["cardinality"]["artifact_rows"], 1)
+```text
+approval_schema = yandex-ai-approval/v2
+cardinality.scale = KNOWN
+cardinality.items = 1
+cardinality.artifact_rows = 1
 ```
 
-Also prove `token-a` preview cannot execute under `token-b` and file mutation after preview still blocks before upload. Existing `DIRECT_DUPLICATION_RISK` and `DIRECT_SOURCE_UNVERIFIED` tests remain mandatory.
+Assert token mutation invalidates approval; file-byte mutation after preview still invalidates approval before upload. Keep Direct-expense risk tests green. A CSV with more than 20 rows remains one upload operation; `artifact_rows` changes the preview but does not turn API operation cardinality into bulk.
 
-- [ ] **Step 6: Run Metrika RED**
+- [ ] **Step 6: Run RED**
 
 ```bash
 (cd plugins/yandex-metrika && python -m unittest discover -s tests -v)
 ```
 
-- [ ] **Step 7: Create Metrika `_safety.py` with the exact Task 1 implementation**
+- [ ] **Step 7: Create Metrika local kernel**
 
-Create a service-local file containing the exact constants/functions shown in Task 1 Step 6. This is copied source inside the independently installable plugin, not a cross-plugin import. Use Metrika's domain only at call sites: `b"yandex-metrika-auth-principal/v2"`.
+From repository root copy the already-green local implementation, then keep it as a plugin-owned file:
 
-- [ ] **Step 8: Convert all three Metrika envelopes to v2**
-
-Change signatures so an executable envelope always receives the active token:
-
-```text
-ym_api.approval_envelope(..., token: str)
-ym_logs.logs_approval_envelope(..., token: str)
-ym_import.import_approval_envelope(..., token: str)
+```bash
+cp plugins/yandex-direct/scripts/_safety.py plugins/yandex-metrika/scripts/_safety.py
 ```
 
-Update every existing test/helper call to these functions to supply the test token. Bind `auth_principal_binding` in `target` via `_safety.principal_binding`.
+No runtime import crosses plugin boundaries.
+
+- [ ] **Step 8: Convert Metrika envelopes to token-bound v2**
+
+Set exact signatures:
+
+```text
+ym_api.approval_envelope(method: str, path: str, token: str, query: dict[str, Any] | None = None, body: Any | None = None) -> dict[str, Any]
+ym_logs.logs_approval_envelope(counter_id: int, action: str, token: str, request_id: int | None = None, part_number: int | None = None, query: dict[str, Any] | None = None) -> dict[str, Any]
+ym_import.import_approval_envelope(kind: str, counter_id: int, file_path: Path, token: str, source: str | None = None, allow_direct_risk: bool = False, _file_bytes: bytes | None = None, **query: Any) -> dict[str, Any]
+```
+
+Update every existing test/helper call to supply its test token. Bind principal with domain `b"yandex-metrika-auth-principal/v2"`.
 
 Use exact scale policy:
 
@@ -598,17 +438,15 @@ Logs create/clean                         -> known_cardinality(1)
 Import upload                             -> known_cardinality(1, artifact_rows=file_info["rows"])
 ```
 
-Metrika import `risk_flags` contains the existing Direct-risk warning tokens when present, and those flags are included in the v2 envelope.
+Include existing import Direct-risk warning tokens in approval-bound `safety.risk_flags`.
 
-- [ ] **Step 9: Enforce bulk and return receipts**
+Each consequential preview exposes `approval_schema`, `cardinality`, `safety`, and `preview_id`.
 
-`ym_api.run_request(..., ack_bulk: bool = False)` requires `ack_bulk` for every generic consequential Management mutation. Logs and import remain `items=1`, so their CLI paths do not add an unused `--ack-bulk` flag in P0. Every successful consequential Metrika path returns `yandex-ai-execution/v1` with `RESPONSE_ONLY`, `UNVERIFIED`, `NOT_AVAILABLE`.
+- [ ] **Step 9: Enforce scale and receipts**
 
-- [ ] **Step 10: Add Management CLI `--ack-bulk` and update forwarding tests**
+Add `ack_bulk: bool = False` to `ym_api.run_request`; generic Management writes require it after exact approval. Logs/import need no CLI bulk flag in P0 because their API operation cardinality is always one. Every successful consequential Metrika path returns `yandex-ai-execution/v1` with `RESPONSE_ONLY`, `UNVERIFIED`, `NOT_AVAILABLE`.
 
-Add the same argparse flag text as Direct and pass it to `run_request`.
-
-- [ ] **Step 11: Run GREEN and commit**
+- [ ] **Step 10: Add Management CLI `--ack-bulk`, run GREEN, commit**
 
 ```bash
 (cd plugins/yandex-metrika && python -m unittest discover -s tests -v && python -m compileall -q scripts)
@@ -621,117 +459,86 @@ git commit -m "feat(metrika): converge writes on approval v2"
 ## Task 4: Webmaster v2 parity and descriptor-derived scale
 
 **Files**
-- Create: `plugins/yandex-webmaster/scripts/_safety.py`
-- Create: `plugins/yandex-webmaster/tests/test_safety.py`
-- Modify: `plugins/yandex-webmaster/tests/test_approval.py`
-- Modify: `plugins/yandex-webmaster/scripts/yw_api.py`
-- Modify: `plugins/yandex-webmaster/tests/test_yw_api.py`
+- Create `plugins/yandex-webmaster/scripts/_safety.py`.
+- Create `plugins/yandex-webmaster/tests/test_safety.py`.
+- Modify `plugins/yandex-webmaster/tests/test_approval.py`.
+- Modify `plugins/yandex-webmaster/scripts/yw_api.py`.
+- Modify `plugins/yandex-webmaster/tests/test_yw_api.py`.
 
-**Produces**
-- OAuth-principal binding on every consequential v2 envelope.
-- Exact batch scale for feed add/remove.
-- Known single scale for currently verified specialized single-operation paths.
-- Unknown scale for arbitrary generic writes.
+- [ ] **Step 1: Write Webmaster kernel RED tests**
 
-- [ ] **Step 1: Create explicit Webmaster kernel RED tests**
+Assert exact schemas, threshold, 21-item bulk classification, unknown classification, bulk acknowledgement, and token-sensitive principal binding using domain `b"yandex-webmaster-auth-principal/v2"`.
 
-Create `test_safety.py`:
+- [ ] **Step 2: Update Webmaster approval canonicalizer samples to v2**
 
-```python
-import unittest
-from scripts import _safety
+Replace sample v1 schema literals; preserve canonicalization and digest non-leak tests.
 
+- [ ] **Step 3: Write exact scale RED tests**
 
-class SafetyKernelTests(unittest.TestCase):
-    def test_exact_contract(self):
-        self.assertEqual(_safety.APPROVAL_SCHEMA, "yandex-ai-approval/v2")
-        self.assertEqual(_safety.EXECUTION_SCHEMA, "yandex-ai-execution/v1")
-        self.assertEqual(_safety.BULK_THRESHOLD, 20)
-        self.assertTrue(_safety.known_cardinality(21)["bulk"])
-        self.assertEqual(_safety.unknown_cardinality()["scale"], "UNKNOWN")
-
-    def test_ack_and_principal_binding(self):
-        with self.assertRaisesRegex(ValueError, "ack-bulk"):
-            _safety.require_bulk_ack(_safety.known_cardinality(21), False)
-        _safety.require_bulk_ack(_safety.known_cardinality(21), True)
-        first = _safety.principal_binding("oauth-a", domain=b"yandex-webmaster-auth-principal/v2")
-        changed = _safety.principal_binding("oauth-b", domain=b"yandex-webmaster-auth-principal/v2")
-        self.assertNotEqual(first, changed)
-        self.assertNotIn("oauth-a", first)
-```
-
-- [ ] **Step 2: Update Webmaster approval canonicalizer tests to v2 samples**
-
-Replace sample v1 schema literals in `test_approval.py` with v2 and preserve non-leak checks.
-
-- [ ] **Step 3: Write scale RED tests for exact existing descriptor paths**
-
-Assert `KNOWN items=1` for:
+Assert known single cardinality for existing paths ending in:
 
 ```text
-/user/<id>/hosts/<host>/recrawl/queue
-/user/<id>/hosts/<host>/user-added-sitemaps
-/user/<id>/hosts/<host>/user-added-sitemaps/<sitemap_id>
-/user/<id>/hosts/<host>/sitemaps/<sitemap_id>/recrawl
-/user/<id>/hosts/<host>/feeds/add/start
-/user/<id>/hosts/<host>/indexing/archive
+/recrawl/queue
+/user-added-sitemaps
+/user-added-sitemaps/<sitemap_id>
+/sitemaps/<sitemap_id>/recrawl
+/feeds/add/start
+/indexing/archive
 ```
 
-Assert `items=len(body["feeds"])` for `/feeds/batch/add` and `items=len(body["urls"])` for `/feeds/batch/remove`. A batch of 21 is bulk.
+Assert `/feeds/batch/add` uses `len(body["feeds"])` and `/feeds/batch/remove` uses `len(body["urls"])`. A 21-feed batch is bulk. An unrecognized generic mutation is unknown scale.
 
-- [ ] **Step 4: Write principal/secret RED tests**
+- [ ] **Step 4: Write principal, secret, bulk, and receipt RED tests**
 
-A preview built with `oauth-secret-a` must fail before transport under `oauth-secret-b`, including operations without embedded feed credentials. Keep the existing assertions that embedded feed basic-auth user/password are redacted from preview and replaced with OAuth-keyed approval binding.
+A token-A preview cannot execute under token B, even without embedded basic-auth credentials. Existing embedded feed credentials stay redacted and OAuth-keyed. A 21-feed exact preview without `ack_bulk` fails before transport. With `ack_bulk=True`, successful transport returns response-only/unverified receipt.
 
-- [ ] **Step 5: Write receipt and bulk-gate RED tests**
-
-Prove a 21-feed batch with exact approval but no `ack_bulk` fails before transport. With `ack_bulk=True`, successful transport returns `yandex-ai-execution/v1`, `RESPONSE_ONLY`, `UNVERIFIED`, `NOT_AVAILABLE`.
-
-- [ ] **Step 6: Run RED**
+- [ ] **Step 5: Run RED**
 
 ```bash
 (cd plugins/yandex-webmaster && python -m unittest discover -s tests -v)
 ```
 
-- [ ] **Step 7: Create Webmaster `_safety.py` with the exact Task 1 implementation**
+- [ ] **Step 6: Create Webmaster local kernel**
 
-Create a service-local file containing the exact constants/functions from Task 1 Step 6. Webmaster calls `principal_binding` with domain `b"yandex-webmaster-auth-principal/v2"`.
-
-- [ ] **Step 8: Implement exact conservative `webmaster_cardinality`**
-
-```python
-def webmaster_cardinality(path: str, body: Any | None) -> dict[str, object]:
-    normalized = path.strip("/")
-    if normalized.endswith("/feeds/batch/add") and isinstance(body, dict) and isinstance(body.get("feeds"), list):
-        return _safety.known_cardinality(len(body["feeds"]))
-    if normalized.endswith("/feeds/batch/remove") and isinstance(body, dict) and isinstance(body.get("urls"), list):
-        return _safety.known_cardinality(len(body["urls"]))
-    if normalized.endswith("/recrawl/queue"):
-        return _safety.known_cardinality(1)
-    if normalized.endswith("/user-added-sitemaps"):
-        return _safety.known_cardinality(1)
-    if "/user-added-sitemaps/" in normalized:
-        return _safety.known_cardinality(1)
-    if normalized.endswith("/recrawl"):
-        return _safety.known_cardinality(1)
-    if normalized.endswith("/feeds/add/start"):
-        return _safety.known_cardinality(1)
-    if normalized.endswith("/indexing/archive"):
-        return _safety.known_cardinality(1)
-    return _safety.unknown_cardinality()
+```bash
+cp plugins/yandex-direct/scripts/_safety.py plugins/yandex-webmaster/scripts/_safety.py
 ```
 
-Do not modify the specialized descriptor modules in this task; classifier rules adapt to their existing endpoint paths.
+No cross-plugin runtime import is introduced.
 
-- [ ] **Step 9: Convert `yw_api.approval_envelope` to v2**
+- [ ] **Step 7: Implement `webmaster_cardinality(path, body)`**
 
-Require token for consequential envelope construction. Preserve `_approval_url_credentials()` and `_redact_preview_value()`. Add target OAuth principal binding, API version/path/query/body, cardinality, and safety metadata.
+Use exact decision order:
 
-- [ ] **Step 10: Enforce approval then bulk ack before transport and return receipt**
+```text
+feeds/batch/add + list feeds      -> known length of feeds
+feeds/batch/remove + list urls    -> known length of urls
+recrawl/queue                     -> known 1
+user-added-sitemaps exact suffix  -> known 1
+user-added-sitemaps/<id>          -> known 1
+any path ending /recrawl          -> known 1
+feeds/add/start                   -> known 1
+indexing/archive                  -> known 1
+otherwise                         -> unknown
+```
 
-Change `run_request` to accept `ack_bulk: bool = False`. For consequential writes call `require_approval` then `_safety.require_bulk_ack`; only then call injected transport or `request_json`. Wrap successful write response in execution receipt. Reads preserve current response shape.
+Do not modify specialized descriptor modules; classify their existing paths.
 
-- [ ] **Step 11: Add CLI `--ack-bulk`, run GREEN, commit**
+- [ ] **Step 8: Convert `yw_api.approval_envelope` to v2**
+
+Set exact signature:
+
+```text
+approval_envelope(method: str, path: str, token: str, params: dict[str, Any] | None = None, body: Any | None = None, version: str = "v4") -> dict[str, Any]
+```
+
+Preserve `_approval_url_credentials` and preview redaction. Bind OAuth principal with domain `b"yandex-webmaster-auth-principal/v2"`. Bind API version/path/query/body/cardinality/safety. Preview exposes `approval_schema`, `cardinality`, `safety`, and `preview_id`.
+
+- [ ] **Step 9: Enforce approval then scale before transport**
+
+Add `ack_bulk: bool = False` to `run_request`. Consequential order is exact approval, bulk acknowledgement, transport, then receipt. Reads keep current response shape.
+
+- [ ] **Step 10: Add CLI `--ack-bulk`, run GREEN, commit**
 
 ```bash
 (cd plugins/yandex-webmaster && python -m unittest discover -s tests -v && python -m compileall -q scripts)
@@ -744,53 +551,24 @@ git commit -m "feat(webmaster): converge writes on approval v2"
 ## Task 5: Repository behavioural convergence and ownership guard
 
 **Files**
-- Modify: `tests/test_p0_executable_safety_contract.py`
-- Modify: `docs/CONTRACT_MATRIX.json`
+- Modify `tests/test_p0_executable_safety_contract.py`.
+- Modify `docs/CONTRACT_MATRIX.json`.
 
-**Produces**
-- Cross-plugin behavioural proof while preserving independent installability.
-- Exact traceability selectors for P0.
+- [ ] **Step 1: Expand root test to isolated three-plugin behaviour**
 
-- [ ] **Step 1: Expand root test from Direct-only to three isolated plugins**
+Add helper `run_plugin_python(plugin: str, source: str) -> dict[str, object]` using `subprocess.run([sys.executable, "-c", source], cwd=ROOT / "plugins" / plugin, check=True, text=True, capture_output=True)` and JSON output.
+
+Rename the Direct-only smoke method to `test_local_safety_kernels_converge`. For each of `yandex-direct`, `yandex-metrika`, `yandex-webmaster`, execute isolated code that returns schema constants, threshold, known(20), known(21), and unknown cardinality; assert exact parity.
+
+- [ ] **Step 2: Add secret-sentinel convergence test**
+
+Use token `P0_SENTINEL_SECRET_6c90b2` in each isolated plugin, generate principal binding and representative receipt, serialize them, and assert the sentinel is absent.
+
+- [ ] **Step 3: Update exact contract-matrix traceability**
+
+Keep existing IDs `direct.preview-bound-write`, `metrika.preview-bound-write`, `webmaster.preview-bound-write`. Their exact `test_refs` must cover v2 target/principal binding, pre-transport approval rejection, pre-transport bulk rejection, and receipt semantics.
 
 Add:
-
-```python
-import json
-import subprocess
-import sys
-
-PLUGINS = ("yandex-direct", "yandex-metrika", "yandex-webmaster")
-
-
-def run_plugin_python(plugin: str, source: str) -> dict[str, object]:
-    completed = subprocess.run(
-        [sys.executable, "-c", source],
-        cwd=ROOT / "plugins" / plugin,
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    return json.loads(completed.stdout)
-```
-
-For each plugin execute code that imports `scripts._safety`, serializes `APPROVAL_SCHEMA`, `EXECUTION_SCHEMA`, `BULK_THRESHOLD`, known(20), known(21), and unknown cardinality, then assert exact parity.
-
-- [ ] **Step 2: Add isolated secret-sentinel tests**
-
-Use `P0_SENTINEL_SECRET_6c90b2` as token inside each plugin subprocess. Generate a principal binding and representative receipt and assert the sentinel string is absent from serialized output.
-
-- [ ] **Step 3: Update existing contract-matrix entries**
-
-Keep IDs:
-
-```text
-direct.preview-bound-write
-metrika.preview-bound-write
-webmaster.preview-bound-write
-```
-
-Update `helpers` and exact `test_refs` so each references its v2 target/principal test, pre-transport approval/bulk rejection, and receipt test. Add infrastructure entry:
 
 ```json
 {
@@ -798,22 +576,26 @@ Update `helpers` and exact `test_refs` so each references its v2 target/principa
   "plugin": "repository",
   "status": "infrastructure",
   "skills": [],
-  "helpers": ["plugins/yandex-direct/scripts/_safety.py", "plugins/yandex-metrika/scripts/_safety.py", "plugins/yandex-webmaster/scripts/_safety.py"],
-  "test_refs": ["tests/test_p0_executable_safety_contract.py::P0ExecutableSafetyContractTests::test_local_safety_kernels_converge"],
+  "helpers": [
+    "plugins/yandex-direct/scripts/_safety.py",
+    "plugins/yandex-metrika/scripts/_safety.py",
+    "plugins/yandex-webmaster/scripts/_safety.py"
+  ],
+  "test_refs": [
+    "tests/test_p0_executable_safety_contract.py::P0ExecutableSafetyContractTests::test_local_safety_kernels_converge"
+  ],
   "references": [],
   "freshness_controlled_references": []
 }
 ```
 
-Use the exact final method name `test_local_safety_kernels_converge` in the root test.
-
-- [ ] **Step 4: Verify existing cross-service ownership guard**
+- [ ] **Step 4: Verify existing SEO/Marketing ownership guard**
 
 ```bash
 python -m unittest tests.test_validate_repo.ValidateRepositoryTests.test_cross_service_transport_is_rejected -v
 ```
 
-No validator code change is planned: the existing guard is the canonical enforcement unless this exact test fails.
+The planned implementation does not modify `scripts/validate_repo.py` because this existing test already owns the boundary.
 
 - [ ] **Step 5: Run root GREEN and commit**
 
@@ -829,42 +611,35 @@ git commit -m "test: enforce P0 write safety convergence"
 ## Task 6: Production docs and exact claims
 
 **Files**
-- Modify: `tests/test_documentation_ux_contracts.py`
-- Modify: `docs/PLUGIN_STANDARD.md`, `docs/PLUGIN_STANDARD.en.md`
-- Modify: `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`
-- Modify: `SECURITY.md`, `SECURITY.en.md`
-- Modify: `plugins/yandex-direct/references/safety.md`
-- Modify: `plugins/yandex-metrika/references/safety.md`
-- Modify: `plugins/yandex-webmaster/references/safety.md`
-- Modify: Direct/Metrika/Webmaster `README.md`, `README.en.md`
+- Modify `tests/test_documentation_ux_contracts.py`.
+- Modify `docs/PLUGIN_STANDARD.md`, `docs/PLUGIN_STANDARD.en.md`.
+- Modify `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`.
+- Modify `SECURITY.md`, `SECURITY.en.md`.
+- Modify Direct/Metrika/Webmaster `references/safety.md`, `README.md`, `README.en.md`.
 
-- [ ] **Step 1: Add documentation RED assertions**
+- [ ] **Step 1: Add docs RED assertions**
 
-In `tests/test_documentation_ux_contracts.py`, add a test loading both Plugin Standard language files and asserting exact markers:
+In `tests/test_documentation_ux_contracts.py`, load both Plugin Standard language files and assert both contain:
 
-```python
-for marker in (
-    "yandex-ai-approval/v2",
-    "--ack-bulk",
-    "yandex-ai-execution/v1",
-    "RESPONSE_ONLY",
-    "NOT_AVAILABLE",
-):
-    self.assertIn(marker, ru)
-    self.assertIn(marker, en)
+```text
+yandex-ai-approval/v2
+--ack-bulk
+yandex-ai-execution/v1
+RESPONSE_ONLY
+NOT_AVAILABLE
 ```
 
-Also assert RU and EN each contain a sentence stating that standalone CLI approval does not prove that a human supplied the value in a later conversational turn.
+Also assert each language explicitly says standalone CLI cannot prove that a human supplied approval in a later conversational turn.
 
-- [ ] **Step 2: Run docs RED**
+- [ ] **Step 2: Run RED**
 
 ```bash
 python -m unittest tests.test_documentation_ux_contracts tests.test_bilingual_docs tests.test_bilingual_docs_contracts -v
 ```
 
-- [ ] **Step 3: Update standard, architecture, and security docs**
+- [ ] **Step 3: Update canonical docs**
 
-Canonical distinction must be explicit:
+State explicitly:
 
 ```text
 Mechanically enforced by helper:
@@ -875,15 +650,15 @@ Mechanically enforced by helper:
 - structured receipt and truthful capability declaration
 
 Host/operator policy, not proven by standalone CLI:
-- the user actually saw the preview
-- the user personally supplied approval in a later conversational turn
+- user actually saw the preview
+- user personally supplied approval in a later conversational turn
 ```
 
-Never call `RESPONSE_ONLY + UNVERIFIED` a verified final state.
+Never call `RESPONSE_ONLY + UNVERIFIED` verified final state.
 
-- [ ] **Step 4: Update three service safety references and README capability descriptions**
+- [ ] **Step 4: Update service docs**
 
-Document `BULK_THRESHOLD=20` as repository safety policy, not Yandex API limit. Direct/Webmaster document `--ack-bulk` for bulk/unknown mutations; Metrika Management documents it for unknown generic writes. Logs/import explain why their API operation cardinality is one and import row count remains separate risk context.
+Describe threshold 20 as repository policy, not Yandex API limit. Direct/Webmaster document bulk/unknown acknowledgement. Metrika Management documents unknown-scale acknowledgement; Logs/import document single API-operation cardinality and separate import-row risk context.
 
 - [ ] **Step 5: Run GREEN and commit**
 
@@ -900,20 +675,20 @@ git commit -m "docs: document executable write safety v2"
 
 **Files:** no planned file changes.
 
-- [ ] **Step 1: Compile repository and root scripts**
+- [ ] **Step 1: Compile repository scripts**
 
 ```bash
 python -m compileall -q scripts plugins
 ```
 
-- [ ] **Step 2: Run root validator/tests**
+- [ ] **Step 2: Run root validation**
 
 ```bash
 python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 ```
 
-- [ ] **Step 3: Run exact CI-equivalent test+compile commands for all seven plugins**
+- [ ] **Step 3: Run exact CI-equivalent commands for all seven plugins**
 
 ```bash
 (cd plugins/yandex-direct && python -m unittest discover -s tests -v && python -m compileall -q scripts)
@@ -925,31 +700,31 @@ python -m unittest discover -s tests -v
 (cd plugins/yandex-marketing && python -m unittest discover -s tests -v && python -m compileall -q scripts)
 ```
 
-- [ ] **Step 4: Inspect exact scope against P0 base**
+- [ ] **Step 4: Inspect exact scope against base**
 
 ```bash
 git diff --stat d036200564f9f1d66352894b71fd6a8b25a9c51f...HEAD
 git diff --name-only d036200564f9f1d66352894b71fd6a8b25a9c51f...HEAD
 ```
 
-Expected before release staging: Direct/Metrika/Webmaster safety runtime/tests, repository convergence matrix/test, bilingual safety docs, plus the approved spec/plan. No Wordstat/Search runtime change, no SEO/Marketing Yandex transport, no `.yandex-ai/`.
+Expected pre-release scope: Direct/Metrika/Webmaster safety runtime/tests, repository convergence matrix/test, bilingual safety docs, approved spec/plan. No Wordstat/Search runtime change, no SEO/Marketing Yandex transport, no `.yandex-ai/`.
 
-- [ ] **Step 5: Defect rule**
+- [ ] **Step 5: Apply defect rule**
 
-A defect found in verification is fixed only after adding the smallest reproducing regression test and observing it fail. After the fix rerun Steps 1–4. Do not create an empty verification commit.
+Any defect found here gets the smallest reproducing regression test first; observe RED, patch owning implementation, rerun Steps 1–4. Do not create an empty verification commit.
 
 ---
 
 ## Task 8: Stage Repository 1.1.0 and three plugin 2.1.0 releases
 
 **Files**
-- Create: `tests/test_repository_1_1_0_release_surfaces.py`
-- Modify: Direct/Metrika/Webmaster `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`
-- Modify: `.claude-plugin/marketplace.json`
-- Modify: Direct/Metrika/Webmaster `CHANGELOG.md`, `CHANGELOG.en.md`
-- Modify: root `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`
-- Create: four release-note files listed in File map
-- Modify: `.github/releases/release.json`
+- Create `tests/test_repository_1_1_0_release_surfaces.py`.
+- Modify Direct/Metrika/Webmaster `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`.
+- Modify `.claude-plugin/marketplace.json`.
+- Modify Direct/Metrika/Webmaster `CHANGELOG.md`, `CHANGELOG.en.md`.
+- Modify root `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`.
+- Create four release-note files listed in File map.
+- Modify `.github/releases/release.json`.
 
 **Exact version target**
 
@@ -964,25 +739,19 @@ Yandex SEO             1.1.2 unchanged
 Yandex Marketing       1.1.0 unchanged
 ```
 
-- [ ] **Step 1: Create intentional release-surface RED test**
+- [ ] **Step 1: Create intentional release RED test**
 
-`tests/test_repository_1_1_0_release_surfaces.py` must load `.github/releases/release.json`, all marketplace entries, and all seven Claude/Codex manifests. Assert the exact version target above, exact three plugin tags, and existence of all four new notes files. Run it while metadata still declares 1.0.10/old plugin versions and record the expected release-only failures.
+`tests/test_repository_1_1_0_release_surfaces.py` loads release manifest, marketplace entries, and all seven Claude/Codex manifests. It asserts the exact version target above, exact three plugin tags, and existence of all four new release notes. Run while current surfaces remain 1.0.10/2.0.x and record release-only failure.
 
-- [ ] **Step 2: Bump only Direct/Metrika/Webmaster manifests and marketplace entries**
+- [ ] **Step 2: Bump exactly three plugin manifests and marketplace entries**
 
-Set both Claude and Codex plugin manifests to 2.1.0 for these three plugins. Leave other four plugin manifests untouched.
+Set Direct/Metrika/Webmaster Claude and Codex manifests plus marketplace entries to 2.1.0. Leave the other four plugin manifests untouched.
 
-- [ ] **Step 3: Add RU/EN plugin changelog entries**
+- [ ] **Step 3: Add bilingual plugin changelog entries**
 
-Each 2.1.0 entry describes:
-- approval/v2 target/principal/scale binding;
-- `--ack-bulk` where applicable;
-- structured execution receipts;
-- truthful verification/rollback capability declaration.
+Each 2.1.0 entry describes v2 target/principal/scale binding, bulk acknowledgement where applicable, structured execution receipt, and truthful verification/rollback declaration.
 
 - [ ] **Step 4: Create exact release notes**
-
-Create:
 
 ```text
 .github/releases/1.1.0.md
@@ -991,9 +760,9 @@ Create:
 .github/releases/yandex-webmaster-2.1.0.md
 ```
 
-Repository note summarizes the P0 generation and explicitly states Wordstat/Search/SEO/Marketing SemVer is unchanged. Each plugin note describes only that plugin's behaviour change.
+Repository note states the other four plugin versions remain unchanged. Plugin notes describe only their owning plugin change.
 
-- [ ] **Step 5: Replace release manifest with the exact accepted schema**
+- [ ] **Step 5: Replace release manifest with exact accepted schema**
 
 ```json
 {
@@ -1030,9 +799,9 @@ Repository note summarizes the P0 generation and explicitly states Wordstat/Sear
 }
 ```
 
-- [ ] **Step 6: Update repository RU/EN release surfaces**
+- [ ] **Step 6: Update root RU/EN release surfaces**
 
-README current-release marker becomes `release-1.1.0`; root changelogs prepend `## [1.1.0]`. State exact three plugin bumps and unchanged versions of the other four.
+README current release marker becomes `release-1.1.0`; changelogs prepend `## [1.1.0]`. State exact three plugin bumps and unchanged versions of other four.
 
 - [ ] **Step 7: Run release GREEN**
 
@@ -1060,33 +829,33 @@ The staged-name review must show no historical release-note edits and no changes
 
 **Files:** no planned implementation changes.
 
-- [ ] **Step 1: Open one PR from the implementation branch**
+- [ ] **Step 1: Open one PR from implementation branch**
 
-PR body records exact base SHA, final head SHA, RED/GREEN evidence, local verification commands, scope, human-approval boundary limitation, verification/rollback limitations, intended versions/tags, and independent-review evidence or explicit absence of it.
+PR body records exact base SHA, final head SHA, RED/GREEN evidence, local verification commands, scope, human-approval limitation, verification/rollback limitations, intended versions/tags, and independent-review evidence or explicit absence.
 
 - [ ] **Step 2: Require exact-head CI before merge**
 
-All ten expected CI jobs must be successful on the current PR head: root Python 3.10, root Python 3.13, detect, and seven plugin jobs. Any head change invalidates previous CI evidence.
+All ten expected CI jobs must be successful on current PR head: root Python 3.10, root Python 3.13, detect, and seven plugin jobs. Any head change invalidates prior CI evidence.
 
-- [ ] **Step 3: Inspect PR review state without inventing review evidence**
+- [ ] **Step 3: Inspect review state**
 
-Fetch reviews, review threads, and comments. Empty review state is reported as absence of independent review, not as a clean independent review.
+Fetch reviews, review threads, comments. Empty review state is absence of independent review, not clean independent review.
 
 - [ ] **Step 4: Merge with expected-head guard**
 
-Use squash merge and pass the exact verified PR head SHA.
+Use squash merge with exact verified PR head SHA.
 
-- [ ] **Step 5: Require successful exact-main CI**
+- [ ] **Step 5: Require exact-main CI**
 
-Post-merge CI must be completed/successful and its `head_sha` must equal the current `main` SHA.
+Post-merge CI must be completed/successful and its `head_sha` equal current `main` SHA.
 
-- [ ] **Step 6: Let the repository-native generic publisher publish the declared set**
+- [ ] **Step 6: Let repository-native publisher publish declared set**
 
-The publisher is triggered from successful main CI. Do not manually create or move tags/releases.
+Publisher is triggered by successful main CI. Do not manually create or move tags/releases.
 
 - [ ] **Step 7: Verify exact immutable set**
 
-All four tags must resolve to the same merge/main SHA:
+All four tags resolve to same merge/main SHA:
 
 ```text
 1.1.0
@@ -1095,9 +864,9 @@ yandex-metrika-v2.1.0
 yandex-webmaster-v2.1.0
 ```
 
-For all four GitHub releases verify `draft=false`, `prerelease=false`, `immutable=true`, and exact target SHA. Verify Repository 1.0.10 and the previous plugin releases remain unchanged. Verify no Wordstat/Search/SEO/Marketing tag points to the new P0 SHA.
+For all four releases verify `draft=false`, `prerelease=false`, `immutable=true`, exact target SHA. Verify Repository 1.0.10 and previous plugin releases unchanged. Verify no Wordstat/Search/SEO/Marketing tag points to P0 SHA.
 
-- [ ] **Step 8: Record final evidence on the PR**
+- [ ] **Step 8: Record final PR evidence**
 
 Record exact merge/main SHA, post-merge CI run ID, publisher run ID, release IDs, tag SHAs, historical immutability result, and review-evidence status.
 
@@ -1105,13 +874,13 @@ Record exact merge/main SHA, post-merge CI run ID, publisher run ID, release IDs
 
 ## Self-review mapping
 
-- Spec §§6–8: Tasks 1, 3, 4 implement v2 envelope and target/principal binding.
-- Spec §9: Tasks 1–4 implement known/unknown scale and `--ack-bulk`; Task 5 proves convergence.
-- Spec §§10–14: Tasks 1–4 expose receipt/capability semantics without unsupported `READ_BACK` or rollback claims.
-- Spec §15: Task 6 documents the human-approval boundary without overclaiming standalone CLI proof.
-- Spec §16: Tasks 2–4 preserve `--execute --approve` and add the scale acknowledgement at execution surfaces that can require it.
-- Spec §17: Tasks 1–4 test fail-closed pre-transport approval/scale failures.
-- Spec §18: Task 5 owns behavioural convergence and exact contract-matrix traceability.
-- Spec §19: execution order is Direct, Metrika, Webmaster, convergence, docs, verification, release.
-- Spec §§20–21: Tasks 7–9 enforce green-before-version, exact-head merge, exact-main publisher, and immutable releases.
-- Spec §22: no P1 project-memory surface is created.
+- Spec §§6–8 -> Tasks 1, 3, 4.
+- Spec §9 -> Tasks 1–4 and convergence Task 5.
+- Spec §§10–14 -> Tasks 1–4 without unsupported read-back/rollback claims.
+- Spec §15 -> Task 6 human-approval boundary.
+- Spec §16 -> Tasks 2–4 preserve `--execute --approve` and add exact scale acknowledgement.
+- Spec §17 -> Tasks 1–4 fail closed before transport.
+- Spec §18 -> Task 5 behavioural convergence and matrix traceability.
+- Spec §19 -> Direct, Metrika, Webmaster, convergence, docs, verification, release order.
+- Spec §§20–21 -> Tasks 7–9 green-before-version, exact-head, exact-main, immutable publish.
+- Spec §22 -> no P1 project-memory surface.
