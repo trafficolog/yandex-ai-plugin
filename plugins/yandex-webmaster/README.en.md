@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `2.0.0`. Service plugin for hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports and raw API workflows.
+Version `2.1.0`. Service plugin for hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports and raw API workflows.
 
 ## Migration 1.x → 2.0.0
 
