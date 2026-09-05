@@ -2,7 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `2.0.0`. Service plugin для аналитики Яндекс Метрики: reporting, conversions, ecommerce, attribution, goals, Logs API, imports и low-level Management API.
+Версия `2.1.0`. Service plugin для аналитики Яндекс Метрики: reporting, conversions, ecommerce, attribution, goals, Logs API, imports и low-level Management API.
 
 ## Migration 1.x → 2.0.0
 
