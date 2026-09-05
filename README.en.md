@@ -170,8 +170,11 @@ Strict reference freshness is checked separately with `python scripts/check_refe
 - [`docs/RELEASE_POLICY.en.md`](docs/RELEASE_POLICY.en.md) — repository/plugin versioning and release gates;
 - [`docs/REVIEW_FIRST_RELEASE.en.md`](docs/REVIEW_FIRST_RELEASE.en.md) — independent review guide;
 - [`docs/reviews/README.en.md`](docs/reviews/README.en.md) — index of dated independent review artifacts;
-- [`docs/reviews/2026-09-05-opus-codex-governance.en.md`](docs/reviews/2026-09-05-opus-codex-governance.en.md) — latest dated governance review artifact;
+- [`docs/reviews/2026-09-05-fable-round2-closure.en.md`](docs/reviews/2026-09-05-fable-round2-closure.en.md) — latest dated Fable Round 2 remediation artifact;
+- [`docs/reviews/2026-09-05-opus-codex-governance.en.md`](docs/reviews/2026-09-05-opus-codex-governance.en.md) — previous governance review artifact;
+- [`SECURITY.en.md`](SECURITY.en.md) — security-sensitive reporting guidance;
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contributor entrypoint;
+- [`CODE_OF_CONDUCT.en.md`](CODE_OF_CONDUCT.en.md) — repository community interaction baseline;
 - [`CHANGELOG.en.md`](CHANGELOG.en.md) · [Russian changelog](CHANGELOG.md).
 
 ## Structure
