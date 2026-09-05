@@ -46,6 +46,16 @@ class CurrentReleasePublisherTests(unittest.TestCase):
         self.assertIn('git merge-base --is-ancestor "$release_target" "$live_main"', self.text)
         self.assertIn("is not an ancestor of live main", self.text)
 
+    def test_draft_targets_participate_in_recovery_consensus(self):
+        self.assertIn('if [[ ! "$target" =~ ^[0-9a-fA-F]{40}$ ]]', self.text)
+        self.assertIn('candidates+=("${target,,}")', self.text)
+        self.assertIn("drafts=$((drafts + 1))", self.text)
+
+    def test_complete_state_covers_every_declared_item(self):
+        self.assertIn('if [[ "$stale" == "false" && "$published" -eq "$total" && "$drafts" -eq 0 ]]', self.text)
+        self.assertIn("complete=true", self.text)
+        self.assertIn("steps.state.outputs.complete != 'true'", self.text)
+
     def test_remote_tag_probe_distinguishes_absence_from_probe_failure(self):
         self.assertIn("git ls-remote --exit-code origin", self.text)
         self.assertIn("0) return 0", self.text)
@@ -66,6 +76,17 @@ class CurrentReleasePublisherTests(unittest.TestCase):
         self.assertLess(draft_i, publish_i)
         self.assertIn('--draft --target "$RELEASE_TARGET"', self.text)
         self.assertIn("Draft reservation $tag unexpectedly materialized a tag.", self.text)
+
+    def test_reused_draft_must_match_target_and_reapplies_canonical_metadata(self):
+        self.assertIn('if [[ "$target" != "$RELEASE_TARGET" ]]', self.text)
+        publish_i = self.text.find('gh release edit "$tag"')
+        state_i = self.text.find("published_state=", publish_i)
+        self.assertGreaterEqual(publish_i, 0)
+        self.assertGreater(state_i, publish_i)
+        edit_segment = self.text[publish_i:state_i]
+        self.assertIn('--target "$RELEASE_TARGET"', edit_segment)
+        self.assertIn('--title "$title"', edit_segment)
+        self.assertIn('--notes-file "$notes_tmp"', edit_segment)
 
     def test_publish_step_enables_errtrace(self):
         self.assertIn("set -Eeuo pipefail", self.text)
@@ -105,6 +126,38 @@ class CurrentReleasePublisherTests(unittest.TestCase):
         self.assertLess(immutable_i, disarm_i)
         self.assertLess(disarm_i, trap_i)
         self.assertLess(trap_i, fetch_i)
+
+    def test_late_live_main_guard_precedes_publication_loop(self):
+        publish_step = self.text.find("- name: Publish declared immutable release set")
+        fetch_i = self.text.find("git fetch origin main --prune", publish_step)
+        initial_i = self.text.find('if [[ "${{ steps.state.outputs.initial }}" == "true" ]]', fetch_i)
+        guard_i = self.text.find('if [[ "$live_main" != "$TARGET_SHA" || "$RELEASE_TARGET" != "$TARGET_SHA" ]]', initial_i)
+        loop_i = self.text.find("while IFS=$'\\t' read -r kind name version tag title notes_file", guard_i)
+        self.assertGreaterEqual(publish_step, 0)
+        self.assertGreater(fetch_i, publish_step)
+        self.assertGreater(initial_i, fetch_i)
+        self.assertGreater(guard_i, initial_i)
+        self.assertGreater(loop_i, guard_i)
+
+    def test_exact_target_is_validated_in_detached_worktree(self):
+        for token in (
+            'git show "$RELEASE_TARGET:.github/releases/release.json"',
+            "cmp -s .github/releases/release.json /tmp/target-release.json",
+            'git worktree add --detach "$WT" "$RELEASE_TARGET"',
+            "python scripts/release_manifest.py validate",
+            "python scripts/validate_repo.py",
+            "python -m unittest discover -s tests -v",
+        ):
+            self.assertIn(token, self.text)
+
+    def test_publication_has_no_administration_token_dependency(self):
+        for forbidden in (
+            "IMMUTABILITY_TOKEN",
+            "RELEASE_ADMIN_TOKEN",
+            "/immutable-releases",
+            "/rulesets",
+        ):
+            self.assertNotIn(forbidden, self.text)
 
     def test_final_verification_checks_every_declared_item(self):
         self.assertIn("Verify complete immutable release set", self.text)
