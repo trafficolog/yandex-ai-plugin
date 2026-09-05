@@ -4,6 +4,8 @@
 
 First-release scope заморожен после Phase 6B. Ниже зафиксированы выпущенные архитектурные фазы и post-first-release milestones; backlog не является обещанием срока или следующего релиза.
 
+RU-primary означает, что обычные предложения и поясняющий prose в этом документе пишутся по-русски. Английские product names, identifiers, code, API names и устоявшиеся технические термины допустимы; целые английские предложения используются только как цитаты или когда перевод исказил бы точный внешний contract.
+
 ## Первый релиз — завершён
 
 ### Phase 1 — Marketplace foundation
@@ -12,27 +14,27 @@ Direct перенесён в `plugins/yandex-direct/`; marketplace metadata, plu
 
 ### Phase 2 — Yandex Metrika
 
-Implemented as plugin `1.0.0`. Добавлены Reporting/Management/Logs/Data Import workflows, quality metadata и preview-before-write guards.
+Изначально выпущен как plugin `1.0.0`. Добавлены Reporting/Management/Logs/Data Import workflows, quality metadata и preview-before-write guards.
 
 ### Phase 3 — Yandex Webmaster
 
-Implemented as plugin `1.0.0`. Добавлены mixed v4/v4.1 routing, query/indexing, recrawl, sitemaps, feeds и export workflows.
+Изначально выпущен как plugin `1.0.0`. Добавлены mixed v4/v4.1 routing, query/indexing, recrawl, sitemaps, feeds и export workflows.
 
 ### Phase 4 — Yandex Wordstat
 
-Implemented as plugin `1.0.0` с девятью workflow skills, Wordstat API в составе Yandex Search API v2 helpers, provenance-aware semantics, regions/trends и quota/cost planning.
+Изначально выпущен как plugin `1.0.0` с девятью initial workflow skills, Wordstat API в составе Yandex Search API v2 helpers, provenance-aware semantics, regions/trends и quota/cost planning. Это historical initial count, а не текущее число skill directories или capability rows; current version определяется SERVICE_MATRIX/manifests.
 
 ### Phase 5 — Yandex Search
 
-Implemented as plugin `1.0.0` с Search API v2 sync/deferred helpers, SERP snapshots, rankings, competitor analysis и URL-overlap clustering.
+Изначально выпущен как plugin `1.0.0` с Search API v2 sync/deferred helpers, SERP snapshots, rankings, competitor analysis и URL-overlap clustering.
 
 ### Phase 6A — Yandex SEO
 
-Implemented as plugin `1.0.0` с SEO Evidence Bundle, context alignment, findings, transparent prioritization и preview-only delegated actions. The plugin contains no Yandex API clients and performs no live writes.
+Изначально выпущен как plugin `1.0.0` с SEO Evidence Bundle, context alignment, findings, transparent prioritization и preview-only delegated actions. Плагин не содержит Yandex API clients и не выполняет live writes.
 
 ### Phase 6B — Yandex Marketing
 
-Implemented as plugin `1.0.0` с Direct-required Marketing Evidence Bundle, KPI reconciliation, demand/query/landing/budget findings и preview-only delegated actions. The plugin contains no Yandex API clients and performs no live writes.
+Изначально выпущен как plugin `1.0.0` с Direct-required Marketing Evidence Bundle, KPI reconciliation, demand/query/landing/budget findings и preview-only delegated actions. Плагин не содержит Yandex API clients и не выполняет live writes.
 
 ### Maintenance — 1.0.1 / OPUS 1.1.0
 
@@ -60,6 +62,20 @@ RU-primary / EN-mirror documentation layer, hero assets и orchestration diagram
 # Future release backlog
 
 Backlog — направление исследований, а не release promise.
+
+## AI quality / evals
+
+### Model eval runner / judge
+
+Нужен отдельный model eval runner / judge поверх существующих `evals/scenarios.json` v2. Definition of done:
+
+1. runner реально выполняет fixtures против выбранного runtime/model и семантически оценивает `outcome`, `must_convey` и `must_not_claim`;
+2. deterministic exact-token lint (`must_mention_tokens`) остаётся отдельным mechanical evidence, а не заменяется judge;
+3. результат фиксирует runtime, model, version и evaluation timestamp;
+4. минимум один paired backend-equivalence scenario прогоняет один и тот же consequential request через connected MCP/app path и bundled-helper/file path и подтверждает одинаковый exact-preview + later-turn approval gate;
+5. отчёт явно разделяет model/judge semantic evidence и repository validator/CI evidence.
+
+До появления такого runner зелёный eval-v2 validator не означает, что модель семантически прошла сценарии.
 
 ## Operations / collaboration
 
