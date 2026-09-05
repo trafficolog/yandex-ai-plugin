@@ -60,14 +60,14 @@ class ValidateRepositoryTests(unittest.TestCase):
         (plugin / 'scripts/helper.py').write_text('VALUE = 1\n', encoding='utf-8')
         (plugin / 'tests/test_helper.py').write_text('def test_value(): assert True\n', encoding='utf-8')
         (root / 'docs/CONTRACT_MATRIX.json').write_text(json.dumps({
-            'version': 1,
+            'version': 2,
             'contracts': [{
                 'id': 'fixture.contract',
                 'plugin': plugin_dir,
                 'status': 'implemented',
                 'skills': [f'plugins/{plugin_dir}/skills/router/SKILL.md'],
                 'helpers': [f'plugins/{plugin_dir}/scripts/helper.py'],
-                'tests': [f'plugins/{plugin_dir}/tests/test_helper.py'],
+                'test_refs': [f'plugins/{plugin_dir}/tests/test_helper.py::test_value'],
                 'references': [],
                 'freshness_controlled_references': [],
             }],

@@ -2,16 +2,16 @@
 
 [Русский](REVIEW_FIRST_RELEASE.md) · [**English**](REVIEW_FIRST_RELEASE.en.md)
 
-The goal is an independent challenge of architecture boundaries, API assumptions, safety contracts, evidence semantics and implementation-vs-spec consistency across the seven shipped plugins.
+The goal is an independent challenge of architecture boundaries, API assumptions, safety contracts, evidence semantics, and implementation-vs-canonical-contract consistency across the seven shipped plugins.
 
-Release responsibilities are defined in [`RELEASE_POLICY.en.md`](RELEASE_POLICY.en.md): AI audit is advisory input, CI is mechanical evidence, independent review is a separate semantic/safety gate, and a human maintainer decides whether to merge/release. None of these signals silently replaces another.
+Release responsibilities are defined in [`RELEASE_POLICY.en.md`](RELEASE_POLICY.en.md): AI audit is advisory input, CI is mechanical evidence, independent review is a separate semantic/safety gate, and a human maintainer decides whether to merge/release. None of these signals silently replaces another. Dated evidence from completed reviews lives under [`docs/reviews/`](reviews/README.en.md).
 
 ## 1. Review order
 
 1. Repository contracts: `README.en.md`, plugin standard, service matrix, roadmap, marketplaces, CI, validator and root tests.
 2. Service plugins: Direct → Metrika → Webmaster → Wordstat → Search.
 3. Cross-service plugins: SEO → Marketing.
-4. Approved specs/plans under `docs/superpowers/`.
+4. Historical implementation context under `docs/superpowers/` may be used to understand design intent and decisions from a particular PR, but those specs/plans are **not normative or canonical production sources**. When they differ from the current repository, current governance docs, executable validators/tests, plugin contracts, and machine-owned registries/matrices take precedence.
 
 ## 2. Core invariants
 

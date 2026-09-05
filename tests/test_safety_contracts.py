@@ -66,25 +66,25 @@ class SafetyContractTests(unittest.TestCase):
         expected = {
             "direct.preview-bound-write": (
                 "plugins/yandex-direct/scripts/yd_api.py",
-                "plugins/yandex-direct/tests/test_yd_api.py",
+                "plugins/yandex-direct/tests/test_yd_api.py::TestYandexDirectClient::test_write_execute_requires_approval_before_transport",
                 "plugins/yandex-direct/references/safety.md",
             ),
             "metrika.preview-bound-write": (
                 "plugins/yandex-metrika/scripts/ym_api.py",
-                "plugins/yandex-metrika/tests/test_ym_api.py",
+                "plugins/yandex-metrika/tests/test_ym_api.py::TestMetrikaApi::test_execute_without_approval_is_blocked_before_transport",
                 "plugins/yandex-metrika/references/safety.md",
             ),
             "webmaster.preview-bound-write": (
                 "plugins/yandex-webmaster/scripts/yw_api.py",
-                "plugins/yandex-webmaster/tests/test_yw_api.py",
+                "plugins/yandex-webmaster/tests/test_yw_api.py::TestWebmasterApi::test_specialized_write_descriptors_are_all_bound_at_transport_boundary",
                 "plugins/yandex-webmaster/references/safety.md",
             ),
         }
-        for contract_id, (helper, test, reference) in expected.items():
+        for contract_id, (helper, test_ref, reference) in expected.items():
             with self.subTest(contract=contract_id):
                 item = contracts[contract_id]
                 self.assertIn(helper, item["helpers"])
-                self.assertIn(test, item["tests"])
+                self.assertIn(test_ref, item["test_refs"])
                 self.assertIn(reference, item["references"])
                 self.assertTrue(item["skills"])
 

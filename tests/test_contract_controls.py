@@ -73,14 +73,14 @@ class ContractMatrixTests(unittest.TestCase):
         test.write_text("def test_value(): assert True\n", encoding="utf-8")
         reference.write_text(f"Verified: {verified}\n", encoding="utf-8")
         matrix = {
-            "version": 1,
+            "version": 2,
             "contracts": [{
                 "id": "direct.preview-before-write",
                 "plugin": "yandex-direct",
                 "status": "implemented",
                 "skills": ["plugins/yandex-direct/skills/router/SKILL.md"],
                 "helpers": ["plugins/yandex-direct/scripts/helper.py"],
-                "tests": ["plugins/yandex-direct/tests/test_helper.py"],
+                "test_refs": ["plugins/yandex-direct/tests/test_helper.py::test_value"],
                 "references": ["plugins/yandex-direct/references/api.md"],
                 "freshness_controlled_references": ["plugins/yandex-direct/references/api.md"],
             }],
@@ -132,9 +132,20 @@ class ContractMatrixTests(unittest.TestCase):
     def test_implemented_contract_requires_regression_test(self):
         tmp, root, matrix = self.make_tree()
         self.addCleanup(tmp.cleanup)
-        matrix["contracts"][0]["tests"] = []
+        matrix["contracts"][0]["test_refs"] = []
         errors = validate_contract_matrix(root, matrix, known_plugins={"yandex-direct"}, today=date(2026, 9, 2))
-        self.assertTrue(any("regression test" in error.lower() for error in errors))
+        self.assertTrue(any("regression test_ref" in error.lower() for error in errors))
+
+    def test_infrastructure_contract_requires_regression_test(self):
+        tmp, root, matrix = self.make_tree()
+        self.addCleanup(tmp.cleanup)
+        matrix["contracts"][0]["status"] = "infrastructure"
+        matrix["contracts"][0]["plugin"] = "repository"
+        matrix["contracts"][0]["skills"] = []
+        matrix["contracts"][0]["helpers"] = []
+        matrix["contracts"][0]["test_refs"] = []
+        errors = validate_contract_matrix(root, matrix, known_plugins={"yandex-direct"}, today=date(2026, 9, 2))
+        self.assertTrue(any("regression test_ref" in error.lower() for error in errors))
 
     def test_freshness_controlled_reference_requires_valid_marker(self):
         tmp, root, matrix = self.make_tree()

@@ -26,9 +26,29 @@ A plugin is the installation/versioning boundary. A `SKILL.md` is a discoverable
 
 ## 2. Production requirements
 
-Every plugin MUST provide a router and focused task skills; keep volatile API facts in references; test bundled executable code; include offline eval expectations; default to read-first; preview consequential writes; require explicit approval; keep secrets out of content; expose a capability matrix; use independent SemVer; avoid universal business thresholds and runtime-specific home paths; preserve source-specific semantics; and keep cross-service plugins transport-free.
+The table below assigns stable IDs to the existing production requirements. `Enforcement` states whether a rule is mechanically checked by validator/CI, requires semantic review, or is primarily policy. A green mechanical check never upgrades a review-only statement into behavioral proof.
 
-The documentation contract additionally requires RU-primary `README.md`/`CHANGELOG.md` and English `README.en.md`/`CHANGELOG.en.md` with reciprocal language links. RU/EN changelog release markers must match. Key repository docs follow the same `.en.md` convention. A documentation-only repository release does not bump plugin SemVer.
+| REQ-ID | Requirement | Enforcement | Canonical document |
+|---|---|---|---|
+| REQ-SKILL-ROUTING | Each plugin provides a router plus focused task-specific skills. | validator + CI | `scripts/validate_repo.py`, this standard |
+| REQ-REFERENCE-VOLATILITY | Volatile API/platform facts live in references and freshness-controlled facts carry verification metadata. | validator + CI + review | `scripts/contract_controls.py`, this standard |
+| REQ-HELPER-TESTS | Bundled executable helpers have regression tests and high-risk contracts use exact test traceability. | validator + CI + review | `docs/CONTRACT_MATRIX.json`, `scripts/contract_controls.py` |
+| REQ-EVAL-CONTRACT | Plugins maintain structurally valid offline eval expectations without claiming model execution unless a runner actually runs them. | validator + CI + review | `docs/EVAL_TOKEN_REGISTRY.json`, this standard |
+| REQ-READ-FIRST | Workflows default to read and analysis before consequential mutation. | review + policy | this standard and plugin safety contracts |
+| REQ-WRITE-PREVIEW | Consequential writes require a secret-free exact preview before execution. | validator + CI + review | this standard and owning plugin safety contracts |
+| REQ-EXPLICIT-APPROVAL | Consequential writes require later-turn explicit approval bound to the exact preview. | validator + CI + review | this standard and owning plugin safety contracts |
+| REQ-NO-SECRETS | Repository content must not contain credentials or credential-like secret literals. | validator + CI + review | `scripts/validate_repo.py`, this standard |
+| REQ-CAPABILITY-MATRIX | Every plugin README exposes the required capability matrix. | validator + CI | `scripts/validate_repo.py`, this standard |
+| REQ-PLUGIN-SEMVER | Plugins version independently with SemVer and service tags follow the canonical plugin-tag form. | validator + CI + policy | this standard, `docs/RELEASE_POLICY.en.md` |
+| REQ-NO-UNIVERSAL-THRESHOLDS | Plugins must not encode universal business thresholds as Yandex facts. | review + policy | this standard and plugin references |
+| REQ-RUNTIME-PATH-PORTABILITY | Plugin content must not depend on runtime-specific home/workspace paths. | validator + CI | `scripts/validate_repo.py`, this standard |
+| REQ-SOURCE-SEMANTICS | Source-specific metric/evidence semantics remain distinct and provenance is preserved. | review + policy | this standard and plugin evidence contracts |
+| REQ-CROSS-SERVICE-TRANSPORT | Cross-service SEO/Marketing plugins remain transport-free and delegate writes to the owning service plugin. | validator + CI + review | `scripts/validate_repo.py`, this standard |
+| REQ-BILINGUAL-DOCS | Production plugin and key repository documentation maintain RU-primary and English mirror pairs with reciprocal links. | validator + CI | `scripts/bilingual_docs.py`, this standard |
+| REQ-CHANGELOG-PARITY | RU/EN changelog release-marker sets remain aligned. | validator + CI | `scripts/bilingual_docs.py`, this standard |
+| REQ-DOCS-RELEASE-NO-PLUGIN-BUMP | Repository-only documentation/governance changes do not bump plugin SemVer unless a plugin contract actually changes. | CI + review + policy | `docs/RELEASE_POLICY.en.md`, this standard |
+
+These IDs are stable requirement identifiers. Future releases may append IDs, but must not silently repurpose an existing ID to mean a different rule.
 
 ## 3. Safety contract
 
@@ -131,11 +151,13 @@ Example:
 
 Important: the repository validator checks **structure, enum/registry/vocabulary, real skill references, and fixture consistency**, but it **does not execute scenarios against a model or judge semantic satisfaction** of `must_convey`/`must_not_claim`. Green validator/CI means the eval contract is structurally ready for a future runner/judge; it is not proof that a model passed the semantic evals.
 
-## 10. Contract matrix: traceability, not semantic proof
+## 10. Contract matrix: exact traceability, not semantic proof
 
-`docs/CONTRACT_MATRIX.json` is a traceability index for high-risk contracts. It links `SKILL.md` → helper → regression-test file → reference/freshness metadata.
+`docs/CONTRACT_MATRIX.json` is the traceability index for high-risk contracts. Schema v2 links `SKILL.md` → helper → exact Python regression-test selector → reference/freshness metadata. Selectors use `test_file.py::test_function` or `test_file.py::TestClass::test_method`.
 
-Validation checks matrix structure, unique IDs, supported statuses, referenced path existence, presence of a declared regression-test file for `implemented` contracts, and selected reference freshness metadata. It **does not inspect the semantic content of the test code** and therefore cannot prove that a listed test assertion actually enforces the stated invariant. A green matrix gate proves traceability metadata is consistent; it does not replace semantic test review or external API verification.
+Validation checks matrix structure, unique IDs, supported statuses, referenced paths, exact function/method existence through Python AST, and statically provable skip decorators, plus selected reference freshness metadata. It rejects legacy file-only `tests` metadata and does not import or execute test modules.
+
+The validator still **does not inspect assertion semantics** and cannot prove that a named test actually enforces the stated invariant. Dynamic skip conditions and runtime `skipTest` behavior are also outside static traceability. A green matrix gate proves that the declared exact test target exists and is not statically skipped under the supported rules; it does not replace semantic review of the test, runtime execution, or external API verification.
 
 ## 11. Shared code rule
 

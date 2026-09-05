@@ -4,6 +4,23 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.7] — 2026-09-05
+
+Repository-only release для hardening governance и contract traceability. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- `CONTRACT_MATRIX.json` переведён на schema v2: file-only test links заменены exact Python selectors `test_file.py::test_function` / `test_file.py::TestClass::test_method`.
+- Contract validator разрешает selectors через `ast.parse` без import/execute тестовых модулей, fail-closed обрабатывает invalid Python/non-UTF8 и отклоняет statically skipped tests.
+- `PLUGIN_STANDARD` RU/EN получил 17 стабильных `REQ-ID` с явным enforcement ownership и сохранением границы между mechanical validation и semantic review/policy.
+- Добавлены bilingual repository-owned review artifacts с exact evidence по PR #56 и явно зафиксированным exact-head Codex code-review quota limitation; отсутствие review не представляется как clean review.
+- Добавлены `SECURITY.md` / `SECURITY.en.md` для secret exposure, approval bypass, prompt-injection/data-as-instructions, transport ownership, immutable release history и supply-chain concerns без выдуманных контактов или response SLA.
+- `docs/superpowers/` явно классифицирован как historical implementation context, а не canonical production authority; root README RU/EN получил навигацию к dated review index.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.6] — 2026-09-05
 
 Repository-only release для консолидации release infrastructure. Production runtime и SemVer плагинов не меняются.

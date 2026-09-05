@@ -4,6 +4,23 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.7] — 2026-09-05
+
+Repository-only release for governance and contract-traceability hardening. Production runtime and plugin SemVer are unchanged.
+
+### Changed
+
+- `CONTRACT_MATRIX.json` moves to schema v2: file-only test links are replaced by exact Python selectors `test_file.py::test_function` / `test_file.py::TestClass::test_method`.
+- Contract validation resolves selectors through `ast.parse` without importing or executing test modules, handles invalid Python/non-UTF8 fail-closed, and rejects statically skipped tests.
+- `PLUGIN_STANDARD` RU/EN now carries 17 stable `REQ-ID` values with explicit enforcement ownership while preserving the boundary between mechanical validation and semantic review/policy.
+- Added bilingual repository-owned review artifacts with exact PR #56 evidence and an explicit record of the exact-head Codex code-review quota limitation; absence of review is not represented as a clean review.
+- Added `SECURITY.md` / `SECURITY.en.md` covering secret exposure, approval bypass, prompt-injection/data-as-instructions, transport ownership, immutable release history, and supply-chain concerns without inventing contact details or response SLAs.
+- `docs/superpowers/` is explicitly classified as historical implementation context rather than canonical production authority; the RU/EN root README now links the dated review index.
+
+### Plugin versions unchanged
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.6] — 2026-09-05
 
 Repository-only release consolidating release infrastructure. Production runtime and plugin SemVer are unchanged.
