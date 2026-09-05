@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `2.0.1`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API workflows.
+Version `2.1.0`. Service plugin for Yandex Direct campaigns, Reports API, audits, keywords/negatives, budgets, optimization and low-level API workflows.
 
 ## Execution model
 
