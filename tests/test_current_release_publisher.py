@@ -109,6 +109,15 @@ class CurrentReleasePublisherTests(unittest.TestCase):
         self.assertLess(probe_i, delete_i)
         self.assertIn("already immutable; rollback is neither required nor safe", self.text)
 
+    def test_rollback_immutability_probe_failure_blocks_delete(self):
+        probe_i = self.text.find('cleanup_release_immutable="$(gh release view')
+        delete_i = self.text.find('gh release delete "$tag"')
+        self.assertGreaterEqual(probe_i, 0)
+        self.assertGreater(delete_i, probe_i)
+        segment = self.text[probe_i:delete_i]
+        self.assertNotIn("|| true", segment)
+        self.assertIn("Unable to determine release immutability", segment)
+
     def test_rollback_checks_release_and_tag_residue(self):
         self.assertIn("Rollback residue: release $tag remains.", self.text)
         self.assertIn("Rollback residue: tag $tag remains.", self.text)
