@@ -29,8 +29,46 @@ class TestYandexDirectClient(unittest.TestCase):
         self.assertTrue(preview["dry_run"])
         self.assertEqual(preview["headers"]["Authorization"], "Bearer ***REDACTED***")
         self.assertEqual(preview["body"]["method"], "update")
+        self.assertEqual(preview["approval_schema"], "yandex-ai-approval/v2")
+        self.assertEqual(preview["cardinality"]["items"], 1)
+        self.assertEqual(preview["safety"]["verification"], "RESPONSE_ONLY")
+        self.assertEqual(preview["safety"]["rollback"], "NOT_AVAILABLE")
         self.assertEqual(preview["preview_id"], preview_id(client.approval_envelope("campaigns", "update", {"Campaigns": [{"Id": 123}]})))
         self.assertNotIn("secret-token", str(client.approval_envelope("campaigns", "update", {})))
+
+    def test_v2_envelope_binds_target_principal_and_scale(self):
+        client = YandexDirectClient("secret-token", client_login="client-a")
+        envelope = client.approval_envelope(
+            "campaigns", "update", {"Campaigns": [{"Id": 1}, {"Id": 2}]}
+        )
+        self.assertEqual(envelope["schema"], "yandex-ai-approval/v2")
+        self.assertEqual(envelope["target"]["client_login"], "client-a")
+        self.assertIn("auth_principal_binding", envelope["target"])
+        self.assertEqual(envelope["cardinality"]["items"], 2)
+        self.assertFalse(envelope["cardinality"]["bulk"])
+        self.assertNotIn("secret-token", str(envelope))
+
+    def test_v1_digest_cannot_authorize_v2_execution(self):
+        client = YandexDirectClient("token", client_login="client")
+        params = {"Campaigns": [{"Id": 123}]}
+        legacy = {
+            "schema": "yandex-ai-approval/v1",
+            "plugin": "yandex-direct",
+            "operation": "campaigns.update",
+            "method": "POST",
+            "target": {
+                "environment": "production",
+                "client_login": "client",
+                "auth_principal_hmac_sha256": yd_api.auth_principal_binding("token"),
+            },
+            "url": client.endpoint("campaigns"),
+            "body": client.body("update", params),
+            "artifacts": [],
+        }
+        with patch("scripts.yd_api._http.request_json", return_value=({}, {})) as request_json:
+            with self.assertRaises(ValueError):
+                client.request("campaigns", "update", params, approve=preview_id(legacy))
+        request_json.assert_not_called()
 
     def test_write_execute_requires_approval_before_transport(self):
         client = YandexDirectClient("token", client_login="client")
