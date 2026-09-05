@@ -4,6 +4,25 @@
 
 All notable repository-level changes are documented here. Plugins use independent SemVer and keep their own changelogs.
 
+## [1.0.9] — 2026-09-05
+
+Repository-only release defining a depth-first product strategy after the Fable 5.1 review. Production runtime and plugin SemVer are unchanged.
+
+### Changed
+
+- ROADMAP shifts the primary direction from catalog-style Yandex API expansion toward methodology/safety/orchestration and user-problem-driven development; transport is treated as a replaceable layer.
+- P0 prioritizes mechanically enforced write safety: exact `preview_id`/approval binding, rollback where technically correct, post-write verification, and bulk guards.
+- P1 introduces the planned `.yandex-ai/` domain-memory contract: `project.yaml`, append-only `decisions.jsonl`, freshness-aware baselines, hypotheses, `USER_STATED`, no secrets, and memory-as-data semantics.
+- P2 places one roughly 10-minute read-only end-to-end workflow plus portable artifacts (versioned JSON, self-contained HTML, Mermaid/DOT, predictable artifact folders) ahead of desktop UI; Electron is explicitly unnecessary at the personal-use stage.
+- P3 evolves eval fixtures into an executable multi-model benchmark with semantic judging, backend equivalence, and memory-aware adversarial scenarios.
+- Tracker, Yandex 360, Maps, AppMetrica, YandexGPT, and SpeechKit move to a Frozen expansion backlog until a distinct external user signal/use case justifies them.
+- A 90-day external-validation loop is defined; without real runs/issues/PRs the project moves to low-maintenance/personal-tool mode.
+- Release intent remains repository-only: `.github/releases/release.json` contains `plugins: []`, so no new plugin tags are published.
+
+### Plugin versions unchanged
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.8] — 2026-09-05
 
 Repository-only release closing the remaining Fable Round 2 governance/documentation gaps. Production runtime and plugin SemVer are unchanged.
