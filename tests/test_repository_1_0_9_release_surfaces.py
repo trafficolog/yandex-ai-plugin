@@ -19,27 +19,17 @@ class Repository109ReleaseSurfaceTests(unittest.TestCase):
     def read(self, relative: str) -> str:
         return (ROOT / relative).read_text(encoding="utf-8")
 
-    def test_root_readmes_stage_repository_1_0_9(self):
-        for filename in ("README.md", "README.en.md"):
-            text = self.read(filename)
-            with self.subTest(filename=filename):
-                self.assertIn("release-1.0.9", text)
-                self.assertIn("1.0.9", text)
-
-    def test_bilingual_changelogs_stage_repository_1_0_9(self):
+    def test_bilingual_changelogs_preserve_repository_1_0_9(self):
         marker = "## [1.0.9] — 2026-09-05"
         for filename in ("CHANGELOG.md", "CHANGELOG.en.md"):
             with self.subTest(filename=filename):
                 self.assertIn(marker, self.read(filename))
 
-    def test_declarative_manifest_is_repository_only_1_0_9(self):
-        data = json.loads(self.read(".github/releases/release.json"))
-        self.assertEqual(data["repository"]["version"], "1.0.9")
-        self.assertEqual(data["repository"]["tag"], "1.0.9")
-        self.assertEqual(data["repository"]["title"], "Repository 1.0.9")
-        self.assertEqual(data["repository"]["notes_file"], ".github/releases/1.0.9.md")
-        self.assertEqual(data["plugins"], [])
-        self.assertTrue((ROOT / ".github/releases/1.0.9.md").is_file())
+    def test_repository_1_0_9_release_notes_remain_historical(self):
+        notes = self.read(".github/releases/1.0.9.md")
+        self.assertIn("Repository 1.0.9", notes)
+        self.assertIn("repository-only", notes.lower())
+        self.assertIn("no plugin tags", notes.lower())
 
     def test_plugin_versions_remain_unchanged(self):
         for plugin, expected in EXPECTED_PLUGINS.items():
