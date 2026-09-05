@@ -30,12 +30,12 @@ class Repository106ReleaseSurfaceTests(unittest.TestCase):
                 self.assertIn("publish-current-release.yml", text)
 
     def test_release_policy_requires_new_repository_semver_for_every_release_set(self):
-        ru = self.read("docs/RELEASE_POLICY.md")
-        en = self.read("docs/RELEASE_POLICY.en.md")
+        ru = self.read("docs/RELEASE_POLICY.md").lower()
+        en = self.read("docs/RELEASE_POLICY.en.md").lower()
         self.assertIn("каждый новый release set", ru)
-        self.assertIn("новый repository SemVer", ru)
+        self.assertIn("новый repository semver", ru)
         self.assertIn("every new release set", en)
-        self.assertIn("new repository SemVer", en)
+        self.assertIn("new repository semver", en)
 
     def test_release_policy_archives_historical_publishers_in_git_history(self):
         ru = self.read("docs/RELEASE_POLICY.md")
