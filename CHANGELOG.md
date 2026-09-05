@@ -4,6 +4,25 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.9] — 2026-09-05
+
+Repository-only release, фиксирующий depth-first продуктовую стратегию после Fable 5.1 review. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- ROADMAP меняет основной вектор с catalog-style расширения новых Yandex API на methodology/safety/orchestration и user-problem-driven развитие; transport считается заменяемым слоем.
+- P0 закрепляет mechanically enforced write safety: exact `preview_id`/approval binding, rollback там, где он технически корректен, post-write verification и bulk guards.
+- P1 вводит planned `.yandex-ai/` domain-memory contract: `project.yaml`, append-only `decisions.jsonl`, freshness-aware baselines, hypotheses, `USER_STATED`, no secrets и memory-as-data semantics.
+- P2 ставит один примерно 10-minute read-only end-to-end workflow и portable artifacts (versioned JSON, self-contained HTML, Mermaid/DOT, predictable artifact folders) выше desktop UI; Electron явно не нужен на personal stage.
+- P3 развивает eval fixtures в executable multi-model benchmark с semantic judge, backend equivalence и memory-aware adversarial scenarios.
+- Tracker, Yandex 360, Maps, AppMetrica, YandexGPT и SpeechKit переведены в Frozen expansion backlog до отдельного external user signal/use case.
+- Добавлен 90-day external-validation loop; при отсутствии реальных runs/issues/PR проект переходит в low-maintenance/personal-tool mode.
+- Release intent остаётся repository-only: `.github/releases/release.json` содержит `plugins: []`, поэтому новые plugin tags не публикуются.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.8] — 2026-09-05
 
 Repository-only release для закрытия остаточных Fable Round 2 governance/documentation gaps. Production runtime и SemVer плагинов не меняются.
