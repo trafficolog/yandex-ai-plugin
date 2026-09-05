@@ -237,9 +237,19 @@ jobs:
               exit "$original_rc"
             fi
             rollback_armed=false
-            cleanup_release_immutable="$(gh release view "$tag" --repo "$GH_REPO" --json isImmutable --jq '.isImmutable' 2>/dev/null || true)"
+
+            cleanup_release_immutable="$(gh release view "$tag" --repo "$GH_REPO" --json isImmutable --jq '.isImmutable' 2>/dev/null)"
+            probe_rc=$?
+            if [[ "$probe_rc" -ne 0 ]]; then
+              echo "Unable to determine release immutability for $tag; refusing destructive rollback." >&2
+              exit "$original_rc"
+            fi
             if [[ "$cleanup_release_immutable" == "true" ]]; then
               echo "Release $tag is already immutable; rollback is neither required nor safe." >&2
+              exit "$original_rc"
+            fi
+            if [[ "$cleanup_release_immutable" != "false" ]]; then
+              echo "Unable to determine release immutability for $tag; refusing destructive rollback." >&2
               exit "$original_rc"
             fi
 
