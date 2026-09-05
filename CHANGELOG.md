@@ -4,6 +4,23 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.10] — 2026-09-05
+
+Repository-only supply-chain hardening release, закрывающий issue #43. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- Все внешние GitHub Actions в трёх active workflows закреплены на полные immutable 40-hex commit SHA вместо mutable major tags.
+- Actions одновременно переведены на Node 24 generation: `actions/checkout` v5, `actions/setup-python` v6 и `actions/github-script` v8.
+- Добавлен `.github/dependabot.yml` для еженедельных `github-actions` update PR, чтобы обновления pinned SHA проходили через reviewable changes.
+- Добавлен fail-closed regression contract, запрещающий mutable/non-SHA external `uses:` refs и требующий Dependabot GitHub Actions update contract.
+- Exact-head PR CI подтвердил отсутствие прежнего Node 20 action-runtime deprecation warning.
+- Release intent остаётся repository-only: `.github/releases/release.json` содержит `plugins: []`, поэтому новые plugin tags не публикуются.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.9] — 2026-09-05
 
 Repository-only release, фиксирующий depth-first продуктовую стратегию после Fable 5.1 review. Production runtime и SemVer плагинов не меняются.
