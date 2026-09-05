@@ -2,7 +2,7 @@
 
 [Русский](README.md) · [**English**](README.en.md)
 
-Version `2.0.0`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
+Version `2.1.0`. Service plugin for Yandex Metrika reporting, conversions, ecommerce, attribution, goals, Logs API, imports and low-level Management API workflows.
 
 ## Migration 1.x → 2.0.0
 
