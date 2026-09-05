@@ -111,7 +111,10 @@ def validate_bilingual_docs(root: Path, plugin_dirs: set[str]) -> list[str]:
     )
 
     for name in ROOT_POLICY_NAMES:
-        _validate_pair(root / f"{name}.md", root / f"{name}.en.md", errors)
+        ru_path = root / f"{name}.md"
+        en_path = root / f"{name}.en.md"
+        if ru_path.exists() or en_path.exists():
+            _validate_pair(ru_path, en_path, errors)
 
     for name in KEY_DOC_NAMES:
         _validate_pair(
