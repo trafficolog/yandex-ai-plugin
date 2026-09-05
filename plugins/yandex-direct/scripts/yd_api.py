@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import hmac
 import json
 import os
 import sys
@@ -12,10 +10,11 @@ from dataclasses import dataclass
 from typing import Any, Callable, Mapping
 
 try:
-    from . import _http
+    from . import _http, _safety
     from ._approval import preview_id, require_approval
 except ImportError:  # CLI execution from scripts directory
     import _http
+    import _safety
     from _approval import preview_id, require_approval
 
 PRODUCTION_API_BASE = "https://api.direct.yandex.com/json/v501"
@@ -60,7 +59,16 @@ READ_METHODS = {
     "getchanges",
 }
 LEGACY_TOKEN_OPTIONS = {"--t", "--to", "--tok", "--toke", "--token"}
-AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v1"
+AUTH_PRINCIPAL_DOMAIN = b"yandex-direct-auth-principal/v2"
+ENTITY_LIST_KEYS = {
+    "campaigns": "Campaigns",
+    "adgroups": "AdGroups",
+    "ads": "Ads",
+    "keywords": "Keywords",
+    "bids": "Bids",
+    "feeds": "Feeds",
+    "creatives": "Creatives",
+}
 
 
 class YandexDirectError(RuntimeError):
@@ -74,11 +82,17 @@ def is_read_method(method: str) -> bool:
 
 
 def auth_principal_binding(token: str) -> str:
-    return hmac.new(
-        token.encode("utf-8"),
-        AUTH_PRINCIPAL_DOMAIN,
-        hashlib.sha256,
-    ).hexdigest()
+    return _safety.principal_binding(token, domain=AUTH_PRINCIPAL_DOMAIN)
+
+
+def mutation_cardinality(
+    service: str, params: Mapping[str, Any] | None
+) -> dict[str, object]:
+    key = ENTITY_LIST_KEYS.get(service)
+    value = (params or {}).get(key) if key else None
+    if isinstance(value, list):
+        return _safety.known_cardinality(len(value))
+    return _safety.unknown_cardinality()
 
 
 def emit_cli_error(error_type: str, message: str) -> int:
@@ -144,19 +158,32 @@ class YandexDirectClient:
     ) -> dict[str, Any]:
         normalized_service = validate_service(service)
         normalized_method = method.strip().lower()
+        cardinality = mutation_cardinality(normalized_service, params)
+        safety = {
+            "verification": "RESPONSE_ONLY",
+            "rollback": "NOT_AVAILABLE",
+            "risk_flags": [],
+        }
         return {
-            "schema": "yandex-ai-approval/v1",
+            "schema": _safety.APPROVAL_SCHEMA,
             "plugin": "yandex-direct",
             "operation": f"{normalized_service}.{normalized_method}",
-            "method": "POST",
-            "target": {
+            "request": {
+                "method": "POST",
                 "environment": self.environment,
-                "client_login": self.client_login,
-                "auth_principal_hmac_sha256": auth_principal_binding(self.token),
+                "api_version": "v501" if self.environment == "production" else "v5",
+                "url": self.endpoint(service),
+                "path": normalized_service,
+                "query": {},
+                "body": self.body(method, params),
             },
-            "url": self.endpoint(service),
-            "body": self.body(method, params),
+            "target": {
+                "client_login": self.client_login,
+                "auth_principal_binding": auth_principal_binding(self.token),
+            },
             "artifacts": [],
+            "cardinality": cardinality,
+            "safety": safety,
         }
 
     def request(
@@ -175,11 +202,14 @@ class YandexDirectClient:
             safe_headers["Authorization"] = "Bearer ***REDACTED***"
             return {
                 "dry_run": True,
+                "approval_schema": envelope["schema"],
                 "preview_id": preview_id(envelope),
                 "environment": self.environment,
                 "endpoint": self.endpoint(service),
                 "headers": safe_headers,
                 "body": body,
+                "cardinality": envelope["cardinality"],
+                "safety": envelope["safety"],
             }
 
         if not is_read_method(method):
