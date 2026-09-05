@@ -35,7 +35,7 @@ The PR MUST NOT:
 
 `docs/CONTRACT_MATRIX.json` advances from `version: 1` to `version: 2`.
 
-The v1 `tests` string-list is replaced by `test_refs`, a list of exact Python test selectors.
+The v1 `tests` string-list is replaced by `test_refs`, a list of exact Python test selectors. Under schema v2, the legacy `tests` key is forbidden on contract entries; validation fails if it is present, even when `test_refs` is also present. This prevents mixed v1/v2 metadata from becoming silently authoritative.
 
 Allowed selector forms are:
 
@@ -80,10 +80,10 @@ For every selector it MUST verify:
 
 Static skip detection covers unconditional decorators and literal skip conditions that can be proven from syntax:
 
-- `@unittest.skip(...)` or equivalent terminal decorator name `skip`;
-- `@unittest.skipIf(True, ...)`;
-- `@unittest.skipUnless(False, ...)`;
-- `@pytest.mark.skip(...)`;
+- `@unittest.skip(...)` or a decorator call whose terminal attribute/name is exactly `skip`;
+- `@unittest.skipIf(True, ...)` or terminal name `skipIf` with literal boolean `True` as its first argument;
+- `@unittest.skipUnless(False, ...)` or terminal name `skipUnless` with literal boolean `False` as its first argument;
+- `@pytest.mark.skip(...)` (also covered by terminal name `skip`);
 - the same skip decorators applied to the containing class.
 
 Dynamic skip conditions, runtime `self.skipTest(...)`, conditional imports, and semantic correctness of assertions remain outside validator scope. The standard MUST continue to state that traceability is not semantic proof.
@@ -103,7 +103,31 @@ Each normative row has four fields:
 | Enforcement | validator / CI / review / policy, including combinations |
 | Canonical document | the authoritative repository document or executable contract |
 
-The table covers the existing production requirements rather than inventing new runtime behavior. RU and EN documents MUST carry the same `REQ-ID` set. Tests enforce identifier parity and non-empty enforcement/canonical-document cells.
+For this migration, the RU and EN tables use exactly this stable ID set:
+
+```text
+REQ-SKILL-ROUTING
+REQ-REFERENCE-VOLATILITY
+REQ-HELPER-TESTS
+REQ-EVAL-CONTRACT
+REQ-READ-FIRST
+REQ-WRITE-PREVIEW
+REQ-EXPLICIT-APPROVAL
+REQ-NO-SECRETS
+REQ-CAPABILITY-MATRIX
+REQ-PLUGIN-SEMVER
+REQ-NO-UNIVERSAL-THRESHOLDS
+REQ-RUNTIME-PATH-PORTABILITY
+REQ-SOURCE-SEMANTICS
+REQ-CROSS-SERVICE-TRANSPORT
+REQ-BILINGUAL-DOCS
+REQ-CHANGELOG-PARITY
+REQ-DOCS-RELEASE-NO-PLUGIN-BUMP
+```
+
+These IDs map the requirements already present in the current standard; they do not introduce new plugin runtime behavior. Future releases may append new IDs deliberately, but MUST preserve the meaning of existing IDs rather than silently repurposing them.
+
+RU and EN documents MUST carry the same `REQ-ID` set. Tests enforce identifier parity, uniqueness, and non-empty Requirement / Enforcement / Canonical document cells. Enforcement text must distinguish mechanical validator/CI coverage from review-only or policy-only obligations.
 
 The purpose is to distinguish statements that are mechanically enforced from statements that require semantic review.
 
@@ -131,7 +155,7 @@ The dated artifact records factual review history relevant to the current reposi
 
 The artifact MUST NOT claim a clean review when the reviewer was unavailable, and MUST NOT present CI success as semantic review.
 
-Root RU/EN README documentation navigation links to the latest review artifact/index.
+Root RU/EN README documentation navigation links to the review index and latest dated artifact.
 
 ## 6. Security policy
 
@@ -150,6 +174,7 @@ The policy defines:
 - security-sensitive categories relevant to this repository: secret exposure, approval/write-safety bypass, prompt-injection/data-as-instructions boundary violations, cross-service transport/credential ownership violations, release/tag immutability failures, and dependency/supply-chain concerns;
 - private reporting preference via GitHub's repository security reporting UI when available;
 - fallback to a private contact method exposed by the repository owner/profile when the GitHub private-reporting UI is unavailable;
+- if no private reporting route is available, a public issue may request a private contact channel but MUST NOT contain vulnerability details or sensitive material;
 - a warning not to post exploit details, credentials, tokens, customer/account data, or other sensitive material in a public issue;
 - no invented SLA, bounty, email address, or guaranteed response time.
 
@@ -175,7 +200,7 @@ The implementation follows strict RED → GREEN cycles.
 
 Minimum regression coverage:
 
-1. matrix v2 rejects legacy `tests`-only entries;
+1. matrix v2 rejects a legacy `tests` key, including mixed `tests` + `test_refs` entries;
 2. valid top-level function selector passes;
 3. valid `unittest.TestCase` method selector passes;
 4. missing function/class/method fails;
@@ -188,7 +213,7 @@ Minimum regression coverage:
 11. literal `skipIf(True)` and `skipUnless(False)` fail;
 12. non-literal/dynamic skip conditions are not falsely treated as statically skipped;
 13. all production matrix entries resolve to existing non-statically-skipped exact tests;
-14. RU/EN `REQ-ID` sets match and every requirement row has enforcement plus canonical source;
+14. RU/EN `REQ-ID` sets match the fixed migration set, are unique, and every row has requirement, enforcement, and canonical source;
 15. review artifacts and SECURITY RU/EN pairs exist with reciprocal links;
 16. canonical governance docs no longer rely on `docs/superpowers/` prose as the sole enforcement source.
 
@@ -227,7 +252,7 @@ PR C is complete only when all of the following are true:
 
 - contract traceability is function-level and AST-validated for matrix v2;
 - statically skipped test targets cannot satisfy implemented/infrastructure traceability;
-- PLUGIN_STANDARD makes enforcement ownership explicit through stable requirement IDs;
+- PLUGIN_STANDARD makes enforcement ownership explicit through the fixed stable requirement IDs;
 - repository contains bilingual, factual review evidence with reviewer limitations recorded honestly;
 - repository contains a bilingual security policy without invented reporting coordinates or SLAs;
 - `docs/superpowers/` is clearly historical/non-normative for production contracts;
