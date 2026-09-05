@@ -34,6 +34,10 @@ class FableRound2GovernanceBaselineTests(unittest.TestCase):
         self.assertEqual(sum(ru_counts.values()), 1, ru_counts)
         self.assertEqual(sum(en_counts.values()), 1, en_counts)
 
+    def test_architecture_search_evidence_node_remains_explicit(self):
+        en = (ROOT / "docs/ARCHITECTURE.en.md").read_text(encoding="utf-8")
+        self.assertIn("S[Search] --> E", en)
+
     def test_roadmap_marks_initial_versions_and_ru_primary_prose(self):
         ru = (ROOT / "docs/ROADMAP.md").read_text(encoding="utf-8")
         en = (ROOT / "docs/ROADMAP.en.md").read_text(encoding="utf-8")
