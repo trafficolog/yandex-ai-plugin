@@ -4,6 +4,23 @@
 
 Все значимые изменения уровня репозитория фиксируются здесь. Плагины используют независимый SemVer и имеют собственные changelog-файлы.
 
+## [1.0.6] — 2026-09-05
+
+Repository-only release для консолидации release infrastructure. Production runtime и SemVer плагинов не меняются.
+
+### Изменено
+
+- Release intent вынесен в declarative `.github/releases/release.json`; один `publish-current-release.yml` теперь обслуживает будущие repository и явно объявленные plugin releases без нового workflow на каждый release.
+- Generic manifest validator проверяет schema, strict repository SemVer, notes paths, существование plugin directories, Codex/Claude manifest versions, canonical plugin tags и uniqueness release set.
+- Hardened publisher сохраняет successful exact-main CI gate, stale-main no-op, common-target draft recovery, fail-closed remote tag probes, detached-target validation, immutable verification и safe rollback window.
+- Все 12 historical OPUS/FABLE/PHASE/DOCS/release-specific publisher workflows удалены из active default-branch workflow set после завершённых immutable releases; их точный source остаётся доступен через Git history/tags.
+- Workflow-specific publisher tests заменены generic manifest/publisher/migration contracts с сохранением reusable safety assertions.
+- Release policy фиксирует правило: каждый новый release set получает новый repository SemVer/tag; `plugins: []` означает repository-only release и не создаёт plugin tags.
+
+### Версии плагинов не изменены
+
+Direct `2.0.1`, Metrika `2.0.0`, Webmaster `2.0.0`, Wordstat `1.1.2`, Search `1.0.2`, SEO `1.1.2`, Marketing `1.1.0`.
+
 ## [1.0.5] — 2026-09-04
 
 Documentation UX/governance release уровня репозитория. Production runtime и SemVer плагинов не меняются.
