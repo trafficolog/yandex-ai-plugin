@@ -6,7 +6,7 @@ Version `1.1.0`. Read/analyze/recommend/preview cross-service paid-acquisition p
 
 > `DOCS 1.0.0` changes documentation only.
 
-Marketplace policy: the `.agents` entry uses `authentication: ON_USE` as schema-compatible deferred-auth metadata. For this transport-free plugin it means authentication is deferred to owning service plugins, not that Marketing owns a credential surface.
+Marketplace policy: the `.agents` entry uses `authentication: ON_USE`; for transport-free Marketing, authentication occurs only in owning service plugins. Full deferred-authentication and transport-ownership semantics: [`docs/ARCHITECTURE.en.md`](../../docs/ARCHITECTURE.en.md).
 
 ## Orchestration
 
