@@ -16,7 +16,7 @@ Implemented as plugin `1.0.0` with Reporting/Management/Logs/Data Import workflo
 Implemented as plugin `1.0.0` with mixed v4/v4.1 routing, query/indexing, recrawl, sitemaps, feeds and exports.
 
 ### Phase 4 — Yandex Wordstat
-Implemented as plugin `1.0.0` with nine workflow skills, Cloud Wordstat v2 helpers, provenance-aware semantics, regions/trends and quota/cost planning.
+Implemented as plugin `1.0.0` with nine workflow skills, Wordstat API within Yandex Search API v2 helpers, provenance-aware semantics, regions/trends and quota/cost planning.
 
 ### Phase 5 — Yandex Search
 Implemented as plugin `1.0.0` with Search API v2 sync/deferred helpers, SERP snapshots, rankings, competitor analysis and URL-overlap clustering.
