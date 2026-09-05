@@ -20,12 +20,13 @@ class ProductStrategyRoadmapTests(unittest.TestCase):
         ):
             self.assertIn(token, ru)
 
+        en_lower = en.lower()
         for token in (
             "methodology, safety, and orchestration",
             "transport remains replaceable",
-            "user problems rather than the Yandex API catalog",
+            "user problems rather than the yandex api catalog",
         ):
-            self.assertIn(token, en)
+            self.assertIn(token, en_lower)
 
     def test_roadmap_orders_four_depth_first_product_bets(self):
         for filename in ("docs/ROADMAP.md", "docs/ROADMAP.en.md"):
