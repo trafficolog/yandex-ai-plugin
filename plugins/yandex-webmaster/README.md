@@ -2,7 +2,7 @@
 
 [**Русский**](README.md) · [English](README.en.md)
 
-Версия `2.0.0`. Service plugin для technical/search visibility: hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports и raw API workflows.
+Версия `2.1.0`. Service plugin для technical/search visibility: hosts, diagnostics, search queries, indexing, recrawl, sitemaps, links, feeds, archive/PRO exports и raw API workflows.
 
 ## Migration 1.x → 2.0.0
 
