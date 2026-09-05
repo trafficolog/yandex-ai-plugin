@@ -29,6 +29,12 @@ yandex-webmaster ─────────────▶ yandex-seo
 
 Service plugin выполняет API call или читает export, нормализует результат только в пределах задокументированного contract и передаёт downstream provenance вместе с limitations. Cross-service plugin анализирует полученные данные, но не создаёт второй transport stack.
 
+### Cross-service authentication metadata
+
+Marketplace schema `.agents` требует для plugin один из поддерживаемых authentication policies, поэтому transport-free `yandex-seo` и `yandex-marketing` используют `policy.authentication: ON_USE`. В их случае это **schema-compatible deferred-auth metadata**: authentication откладывается до обращения к owning service plugin, который реально владеет credentials и transport. `ON_USE` не выдаёт SEO/Marketing собственные Yandex credentials, HTTP client или право обходить service ownership; repository validator отдельно запрещает соответствующие transport/credential surfaces в cross-service plugins.
+
+Остальные документы могут кратко напоминать этот факт, но именно `ARCHITECTURE` является canonical explanatory source для semantics `ON_USE` у transport-free orchestration.
+
 ## 3. Safety и ownership записи
 
 Общий lifecycle:
