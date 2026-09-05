@@ -22,7 +22,7 @@ class Phase7ContractTests(unittest.TestCase):
             self.assertEqual(contract["status"], "implemented")
             self.assertTrue(contract["skills"], contract_id)
             self.assertTrue(contract["helpers"], contract_id)
-            self.assertTrue(contract["tests"], contract_id)
+            self.assertTrue(contract["test_refs"], contract_id)
             self.assertTrue(contract["references"], contract_id)
 
     def test_service_matrix_documents_ownership_pipeline_in_both_languages(self):
